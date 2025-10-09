@@ -6,9 +6,9 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import api from '@/lib/api';
-import Input from '@/components/ui/Input';
-import Button from '@/components/ui/Button';
+import api from '../../../lib/api';
+import Input from '../../../components/ui/Input';
+import Button from '../../../components/ui/Button';
 import { UserPlus } from 'lucide-react';
 
 const registerSchema = z.object({

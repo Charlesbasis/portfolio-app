@@ -2,10 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { Search, Filter, Github, ExternalLink, Star, Calendar, Code } from 'lucide-react';
 
-export default function ProjectsPage() {
+export default function Projects() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
 
@@ -174,8 +173,9 @@ export default function ProjectsPage() {
           </p>
         </div>
       </section>
+
       {/* Filters Section */}
-      <section className="bg-white border-b border-gray-200 sticky top-16 z-40 shadow-sm">
+      <section className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
             {/* Search Bar */}
@@ -186,7 +186,6 @@ export default function ProjectsPage() {
                 placeholder="Search projects..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
@@ -434,4 +433,3 @@ export default function ProjectsPage() {
     </div>
   );
 }
-      

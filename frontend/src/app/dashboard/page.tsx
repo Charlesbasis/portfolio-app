@@ -1,7 +1,7 @@
 'use client';
 
-import { useAuth } from '@/hooks/useAuth';
-import Card from '@/components/ui/Card';
+import { useAuth } from '../../hooks/useAuth';
+import Card from '../../components/ui/Card';
 import { 
   FolderKanban, 
   Award, 
