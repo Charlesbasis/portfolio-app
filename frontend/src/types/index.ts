@@ -17,7 +17,7 @@ export interface Project {
 export interface Skill {
   id: number;
   name: string;
-  category: 'frontend' | 'backend' | 'database' | 'tools';
+  category: 'frontend' | 'backend' | 'database' | 'tools' | 'devops' | 'other';
   proficiency: number;
   icon_url?: string;
   years_of_experience?: number;
@@ -39,13 +39,13 @@ export interface AuthResponse {
   };
 }
 
-export interface ApiResponse {
+export interface ApiResponse<T> {
   success: boolean;
   data: T;
   message?: string;
 }
 
-export interface PaginatedResponse {
+export interface PaginatedResponse<T> {
   success: boolean;
   data: {
     data: T[];
