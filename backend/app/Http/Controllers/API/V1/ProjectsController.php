@@ -112,7 +112,7 @@ class ProjectsController extends Controller
      */
     public function update(Request $request, Projects $projects)
     {
-        $this->authorize('update', $projects);
+        // $this->authorize('update', $projects);
 
         $validator = Validator::make($request->all(), [
             'title' => 'string|max:255',
@@ -161,7 +161,7 @@ class ProjectsController extends Controller
      */
     public function destroy(Projects $projects)
     {
-        $this->authorize('delete', $projects);
+        // $this->authorize('delete', $projects);
 
         // Delete associated image
         if ($projects->image_url) {

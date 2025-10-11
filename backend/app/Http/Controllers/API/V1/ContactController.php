@@ -147,7 +147,7 @@ class ContactController extends Controller
             $contact = Contact::create($data);
 
             // Send email notification
-            $this->emailService->sendContactNotification($contact);
+            // $this->emailService->sendContactNotification($contact);
 
             // Increment rate limiter
             RateLimiter::hit($key, 3600); // 1 hour

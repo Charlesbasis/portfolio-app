@@ -1,36 +1,63 @@
+'use client';
 import Link from 'next/link';
 import { ArrowRight, Code, Briefcase, Mail, Github, Linkedin, Twitter, ExternalLink, Star, CheckCircle } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Project } from '../types';
+import { projectsService } from '../services/projects.service';
 
 export default function Home() {
-  const featuredProjects = [
-    {
-      id: 1,
-      title: 'E-Commerce Platform',
-      description: 'A full-featured online shopping platform with real-time inventory, payment processing, and order management.',
-      image: '/images/project1.jpg',
-      technologies: ['Laravel', 'React', 'MySQL', 'Stripe'],
-      slug: 'e-commerce-platform',
-      featured: true,
-    },
-    {
-      id: 2,
-      title: 'Task Management SaaS',
-      description: 'Cloud-based project management tool with team collaboration, real-time updates, and analytics.',
-      image: '/images/project2.jpg',
-      technologies: ['Next.js', 'Node.js', 'MongoDB', 'Socket.io'],
-      slug: 'task-management-saas',
-      featured: true,
-    },
-    {
-      id: 3,
-      title: 'Social Media Dashboard',
-      description: 'Analytics dashboard for managing multiple social media accounts with automated posting and insights.',
-      image: '/images/project3.jpg',
-      technologies: ['Vue.js', 'Python', 'PostgreSQL', 'Redis'],
-      slug: 'social-media-dashboard',
-      featured: true,
-    },
-  ];
+  const [featuredProjects, setFeaturedProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchProjects() {
+      try {
+        const response = await projectsService.getAll({ featured: true, per_page: 3 });
+        setFeaturedProjects(response.data.data);
+      } catch (error) {
+        console.error('Failed to fetch projects:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchProjects();
+  }, []);
+
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">
+      <div className="text-xl">Loading...</div>
+    </div>;
+  }
+
+  // const featuredProjects = [
+  //   {
+  //     id: 1,
+  //     title: 'E-Commerce Platform',
+  //     description: 'A full-featured online shopping platform with real-time inventory, payment processing, and order management.',
+  //     image: '/images/project1.jpg',
+  //     technologies: ['Laravel', 'React', 'MySQL', 'Stripe'],
+  //     slug: 'e-commerce-platform',
+  //     featured: true,
+  //   },
+  //   {
+  //     id: 2,
+  //     title: 'Task Management SaaS',
+  //     description: 'Cloud-based project management tool with team collaboration, real-time updates, and analytics.',
+  //     image: '/images/project2.jpg',
+  //     technologies: ['Next.js', 'Node.js', 'MongoDB', 'Socket.io'],
+  //     slug: 'task-management-saas',
+  //     featured: true,
+  //   },
+  //   {
+  //     id: 3,
+  //     title: 'Social Media Dashboard',
+  //     description: 'Analytics dashboard for managing multiple social media accounts with automated posting and insights.',
+  //     image: '/images/project3.jpg',
+  //     technologies: ['Vue.js', 'Python', 'PostgreSQL', 'Redis'],
+  //     slug: 'social-media-dashboard',
+  //     featured: true,
+  //   },
+  // ];
 
   const skills = [
     { name: 'React/Next.js', level: 95 },
