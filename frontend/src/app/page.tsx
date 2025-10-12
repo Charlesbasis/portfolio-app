@@ -1,13 +1,15 @@
 'use client';
+import { ArrowRight, Briefcase, CheckCircle, Code, ExternalLink, Github, Linkedin, Mail, Star, Twitter } from 'lucide-react';
 import Link from 'next/link';
-import { ArrowRight, Code, Briefcase, Mail, Github, Linkedin, Twitter, ExternalLink, Star, CheckCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Project } from '../types';
 import { projectsService } from '../services/projects.service';
+import { skillsService } from '../services/skills.service';
+import { Project, Skill } from '../types';
 
 export default function Home() {
   const [featuredProjects, setFeaturedProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [skills, setSkills] = useState<Skill[]>([]);
 
   useEffect(() => {
     async function fetchProjects() {
@@ -21,13 +23,21 @@ export default function Home() {
       }
     }
     fetchProjects();
-  }, []);
+  }, []);  
 
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">
-      <div className="text-xl">Loading...</div>
-    </div>;
-  }
+  useEffect(() => {
+    async function fetchSkills() {
+      try {
+        const response = await skillsService.getAll();
+        setSkills(response.data);
+      } catch (error) {
+        console.error('Failed to fetch skills:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchSkills();
+  }, []);
 
   // const featuredProjects = [
   //   {
@@ -59,14 +69,14 @@ export default function Home() {
   //   },
   // ];
 
-  const skills = [
-    { name: 'React/Next.js', level: 95 },
-    { name: 'Laravel/PHP', level: 90 },
-    { name: 'Node.js', level: 85 },
-    { name: 'TypeScript', level: 88 },
-    { name: 'MySQL/PostgreSQL', level: 87 },
-    { name: 'AWS/Docker', level: 80 },
-  ];
+  // const skills = [
+  //   { name: 'React/Next.js', level: 95 },
+  //   { name: 'Laravel/PHP', level: 90 },
+  //   { name: 'Node.js', level: 85 },
+  //   { name: 'TypeScript', level: 88 },
+  //   { name: 'MySQL/PostgreSQL', level: 87 },
+  //   { name: 'AWS/Docker', level: 80 },
+  // ];
 
   const testimonials = [
     {
@@ -101,6 +111,12 @@ export default function Home() {
     }
   ];
 
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">
+      <div className="text-xl">Loading...</div>
+    </div>;
+  }
+  
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -224,12 +240,12 @@ export default function Home() {
               <div key={index} className="bg-gray-50 rounded-xl p-6 hover:shadow-lg transition-shadow">
                 <div className="flex items-center justify-between mb-3">
                   <span className="font-semibold text-gray-900">{skill.name}</span>
-                  <span className="text-blue-600 font-bold">{skill.level}%</span>
+                  <span className="text-blue-600 font-bold">{skill.proficiency}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
                   <div 
                     className="bg-gradient-to-r from-blue-600 to-purple-600 h-full rounded-full transition-all duration-1000"
-                    style={{ width: `${skill.level}%` }}
+                    style={{ width: `${skill.proficiency}%` }}
                   ></div>
                 </div>
               </div>
