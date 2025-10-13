@@ -4,12 +4,14 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { projectsService } from '../services/projects.service';
 import { skillsService } from '../services/skills.service';
-import { Project, Skill } from '../types';
+import { Project, Skill, Testimonial } from '../types';
+import { testimonialsService } from '../services/testimonials.service';
 
 export default function Home() {
   const [featuredProjects, setFeaturedProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [skills, setSkills] = useState<Skill[]>([]);
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
 
   useEffect(() => {
     async function fetchProjects() {
@@ -37,6 +39,20 @@ export default function Home() {
       }
     }
     fetchSkills();
+  }, []);
+
+  useEffect(() => {
+    async function fetchTestimonials() {
+      try {
+        const response = await testimonialsService.getAll();
+        setTestimonials(response.data);
+      } catch (error) {
+        console.error('Failed to fetch testimonials:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchTestimonials();
   }, []);
 
   // const featuredProjects = [
@@ -78,20 +94,20 @@ export default function Home() {
   //   { name: 'AWS/Docker', level: 80 },
   // ];
 
-  const testimonials = [
-    {
-      name: 'Sarah Johnson',
-      role: 'CEO, TechStart Inc.',
-      content: 'Outstanding work! Delivered our project on time with exceptional quality. Highly recommend!',
-      avatar: '/images/avatar1.jpg',
-    },
-    {
-      name: 'Michael Chen',
-      role: 'Product Manager, InnovateCo',
-      content: 'Professional, skilled, and great communicator. Made our vision come to life perfectly.',
-      avatar: '/images/avatar2.jpg',
-    },
-  ];
+  // const testimonials = [
+  //   {
+  //     name: 'Sarah Johnson',
+  //     role: 'CEO, TechStart Inc.',
+  //     content: 'Outstanding work! Delivered our project on time with exceptional quality. Highly recommend!',
+  //     avatar: '/images/avatar1.jpg',
+  //   },
+  //   {
+  //     name: 'Michael Chen',
+  //     role: 'Product Manager, InnovateCo',
+  //     content: 'Professional, skilled, and great communicator. Made our vision come to life perfectly.',
+  //     avatar: '/images/avatar2.jpg',
+  //   },
+  // ];
 
   const services = [
     {

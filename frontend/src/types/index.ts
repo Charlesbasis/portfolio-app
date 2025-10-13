@@ -23,6 +23,14 @@ export interface Skill {
   years_of_experience?: number;
 }
 
+export interface Testimonial {
+  id: number;
+  name: string;
+  role: string;
+  content: string;
+  avatar_url?: string;
+}
+
 export interface User {
   id: number;
   name: string;
