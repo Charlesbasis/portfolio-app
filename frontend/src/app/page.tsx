@@ -387,7 +387,7 @@ export default function Home() {
           </div>
 
           <div className="grid md:grid-cols-2 gap-8">
-            {testimonials.map((testimonial, index) => (
+            {testimonials?.map((testimonial, index) => (
               <div key={index} className="bg-white rounded-xl shadow-lg p-8 hover:shadow-2xl transition-shadow">
                 <div className="flex items-center mb-4">
                   {[...Array(5)].map((_, i) => (

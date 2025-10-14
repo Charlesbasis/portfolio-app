@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Project, Skill } from '../types';
+import { Project, Skill, Testimonial } from '../types';
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
@@ -64,6 +64,13 @@ export const skillsApi = {
     return data.data;
   },
 };
+
+export const testimonialsApi = {
+  getAll: async () => {
+    const { data } = await api.get<{ data: Testimonial[] }>('/testimonials');
+    return data.data;
+  },
+}
 
 // export const contactApi = {
 //   submit: async (formData: ContactSubmission) => {

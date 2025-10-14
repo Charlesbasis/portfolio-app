@@ -14,7 +14,7 @@ class SkillsController extends Controller
      */
     public function index(Request $request)
     {
-                $query = Skills::query()->orderBy('order')->orderBy('name');
+        $query = Skills::query()->orderBy('order')->orderBy('name');
 
         if ($request->has('category')) {
             $query->byCategory($request->category);
@@ -27,7 +27,7 @@ class SkillsController extends Controller
         // Group by category if requested
         if ($request->has('grouped') && $request->grouped === 'true') {
             $skills = $query->get()->groupBy('category');
-            
+
             return response()->json([
                 'success' => true,
                 'data' => $skills,
@@ -40,7 +40,6 @@ class SkillsController extends Controller
             'success' => true,
             'data' => $skills,
         ]);
-
     }
 
     /**
@@ -82,7 +81,6 @@ class SkillsController extends Controller
             'message' => 'Skill created successfully',
             'data' => $skill,
         ], 201);
-
     }
 
     /**
@@ -134,7 +132,6 @@ class SkillsController extends Controller
             'message' => 'Skill updated successfully',
             'data' => $skills,
         ]);
-
     }
 
     /**

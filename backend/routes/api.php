@@ -4,6 +4,7 @@ use App\Http\Controllers\API\V1\AuthController;
 use App\Http\Controllers\API\V1\ProjectsController;
 use App\Http\Controllers\API\V1\SkillsController;
 use App\Http\Controllers\API\V1\ContactController;
+use App\Http\Controllers\TestimonialController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -19,6 +20,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/projects/{slug}', [ProjectsController::class, 'show']);
     Route::get('/skills', [SkillsController::class, 'index']);
     Route::post('/contact', [ContactController::class, 'submit']);
+    Route::get('/testimonials', [TestimonialController::class, 'index']);
     
     // Auth routes
     Route::post('/register', [AuthController::class, 'register']);
