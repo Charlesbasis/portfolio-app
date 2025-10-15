@@ -31,6 +31,13 @@ export interface Testimonial {
   avatar_url?: string;
 }
 
+export interface Service {
+  id: number;
+  title: string;
+  description: string;
+  features: string[];
+}
+
 export interface User {
   id: number;
   name: string;

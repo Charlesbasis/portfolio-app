@@ -1,17 +1,19 @@
 'use client';
 import { ArrowRight, Briefcase, CheckCircle, Code, ExternalLink, Github, Linkedin, Mail, Star, Twitter } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import { projectsService } from '../services/projects.service';
 import { skillsService } from '../services/skills.service';
-import { Project, Skill, Testimonial } from '../types';
+import { Project, Service, Skill, Testimonial } from '../types';
 import { testimonialsService } from '../services/testimonials.service';
+import { servicesService } from '../services/services.service';
 
 export default function Home() {
   const [featuredProjects, setFeaturedProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [skills, setSkills] = useState<Skill[]>([]);
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
 
   useEffect(() => {
     async function fetchProjects() {
@@ -53,6 +55,20 @@ export default function Home() {
       }
     }
     fetchTestimonials();
+  }, []);
+
+  useEffect(() => {
+    async function fetchServices() {
+      try {
+        const response = await servicesService.getAll();
+        setServices(response.data);
+      } catch (error) {
+        console.error('Failed to fetch services:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchServices();
   }, []);
 
   // const featuredProjects = [
@@ -109,23 +125,23 @@ export default function Home() {
   //   },
   // ];
 
-  const services = [
-    {
-      title: 'Frontend Development',
-      description: 'Creating responsive, modern user interfaces with React, Next.js, Vue.js, and cutting-edge CSS frameworks.',
-      features: ['Responsive Design', 'Performance Optimization', 'Cross-browser Compatibility']
-    },
-    {
-      title: 'Backend Development',
-      description: 'Building robust server-side applications and APIs with Laravel, Node.js, and efficient database design.',
-      features: ['RESTful API Development', 'Database Architecture', 'Authentication & Security']
-    },
-    {
-      title: 'Full Stack Solutions',
-      description: 'End-to-end web application development, from concept to deployment and maintenance.',
-      features: ['Cloud Deployment (AWS, Vercel)', 'CI/CD Pipeline Setup', 'Performance Monitoring']
-    }
-  ];
+  // const services = [
+  //   {
+  //     title: 'Frontend Development',
+  //     description: 'Creating responsive, modern user interfaces with React, Next.js, Vue.js, and cutting-edge CSS frameworks.',
+  //     features: ['Responsive Design', 'Performance Optimization', 'Cross-browser Compatibility']
+  //   },
+  //   {
+  //     title: 'Backend Development',
+  //     description: 'Building robust server-side applications and APIs with Laravel, Node.js, and efficient database design.',
+  //     features: ['RESTful API Development', 'Database Architecture', 'Authentication & Security']
+  //   },
+  //   {
+  //     title: 'Full Stack Solutions',
+  //     description: 'End-to-end web application development, from concept to deployment and maintenance.',
+  //     features: ['Cloud Deployment (AWS, Vercel)', 'CI/CD Pipeline Setup', 'Performance Monitoring']
+  //   }
+  // ];
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">

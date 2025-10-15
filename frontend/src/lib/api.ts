@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Project, Skill, Testimonial } from '../types';
+import { Project, Service, Skill, Testimonial } from '../types';
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
@@ -68,6 +68,13 @@ export const skillsApi = {
 export const testimonialsApi = {
   getAll: async () => {
     const { data } = await api.get<{ data: Testimonial[] }>('/testimonials');
+    return data.data;
+  },
+}
+
+export const servicesApi = {
+  getAll: async () => {
+    const { data } = await api.get<{ data: Service[] }>('/services');
     return data.data;
   },
 }
