@@ -7,6 +7,7 @@ import { skillsService } from '../services/skills.service';
 import { Project, Service, Skill, Testimonial } from '../types';
 import { testimonialsService } from '../services/testimonials.service';
 import { servicesService } from '../services/services.service';
+import ContactForm from '../components/forms/ContactForm';
 
 export default function Home() {
   const [featuredProjects, setFeaturedProjects] = useState<Project[]>([]);
@@ -476,6 +477,20 @@ export default function Home() {
               <div className="text-gray-400">Support Available</div>
             </div>
           </div>
+        </div>
+      </section>
+      
+      {/* Contact Form */}
+      <section className="py-16 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Contact Me</h2>
+            <p className="text-xl text-gray-600">
+              Let's work together and create something amazing
+            </p>
+          </div>
+
+          <ContactForm />
         </div>
       </section>
     </div>
