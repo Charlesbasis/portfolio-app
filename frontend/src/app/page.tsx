@@ -1,4 +1,3 @@
-'use client';
 import { ArrowRight, Briefcase, CheckCircle, Code, ExternalLink, Github, Linkedin, Mail, Star, Twitter } from 'lucide-react';
 import Link from 'next/link';
 import { use, useEffect, useState } from 'react';
@@ -9,146 +8,14 @@ import { testimonialsService } from '../services/testimonials.service';
 import { servicesService } from '../services/services.service';
 import ContactForm from '../components/forms/ContactForm';
 
-export default function Home() {
-  const [featuredProjects, setFeaturedProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [skills, setSkills] = useState<Skill[]>([]);
-  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
-  const [services, setServices] = useState<Service[]>([]);
+export default async function Home() {
 
-  useEffect(() => {
-    async function fetchProjects() {
-      try {
-        const response = await projectsService.getAll({ featured: true, per_page: 3 });
-        setFeaturedProjects(response.data.data);
-      } catch (error) {
-        console.error('Failed to fetch projects:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchProjects();
-  }, []);  
-
-  useEffect(() => {
-    async function fetchSkills() {
-      try {
-        const response = await skillsService.getAll();
-        setSkills(response.data);
-      } catch (error) {
-        console.error('Failed to fetch skills:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchSkills();
-  }, []);
-
-  useEffect(() => {
-    async function fetchTestimonials() {
-      try {
-        const response = await testimonialsService.getAll();
-        setTestimonials(response.data);
-      } catch (error) {
-        console.error('Failed to fetch testimonials:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchTestimonials();
-  }, []);
-
-  useEffect(() => {
-    async function fetchServices() {
-      try {
-        const response = await servicesService.getAll();
-        setServices(response.data);
-      } catch (error) {
-        console.error('Failed to fetch services:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchServices();
-  }, []);
-
-  // const featuredProjects = [
-  //   {
-  //     id: 1,
-  //     title: 'E-Commerce Platform',
-  //     description: 'A full-featured online shopping platform with real-time inventory, payment processing, and order management.',
-  //     image: '/images/project1.jpg',
-  //     technologies: ['Laravel', 'React', 'MySQL', 'Stripe'],
-  //     slug: 'e-commerce-platform',
-  //     featured: true,
-  //   },
-  //   {
-  //     id: 2,
-  //     title: 'Task Management SaaS',
-  //     description: 'Cloud-based project management tool with team collaboration, real-time updates, and analytics.',
-  //     image: '/images/project2.jpg',
-  //     technologies: ['Next.js', 'Node.js', 'MongoDB', 'Socket.io'],
-  //     slug: 'task-management-saas',
-  //     featured: true,
-  //   },
-  //   {
-  //     id: 3,
-  //     title: 'Social Media Dashboard',
-  //     description: 'Analytics dashboard for managing multiple social media accounts with automated posting and insights.',
-  //     image: '/images/project3.jpg',
-  //     technologies: ['Vue.js', 'Python', 'PostgreSQL', 'Redis'],
-  //     slug: 'social-media-dashboard',
-  //     featured: true,
-  //   },
-  // ];
-
-  // const skills = [
-  //   { name: 'React/Next.js', level: 95 },
-  //   { name: 'Laravel/PHP', level: 90 },
-  //   { name: 'Node.js', level: 85 },
-  //   { name: 'TypeScript', level: 88 },
-  //   { name: 'MySQL/PostgreSQL', level: 87 },
-  //   { name: 'AWS/Docker', level: 80 },
-  // ];
-
-  // const testimonials = [
-  //   {
-  //     name: 'Sarah Johnson',
-  //     role: 'CEO, TechStart Inc.',
-  //     content: 'Outstanding work! Delivered our project on time with exceptional quality. Highly recommend!',
-  //     avatar: '/images/avatar1.jpg',
-  //   },
-  //   {
-  //     name: 'Michael Chen',
-  //     role: 'Product Manager, InnovateCo',
-  //     content: 'Professional, skilled, and great communicator. Made our vision come to life perfectly.',
-  //     avatar: '/images/avatar2.jpg',
-  //   },
-  // ];
-
-  // const services = [
-  //   {
-  //     title: 'Frontend Development',
-  //     description: 'Creating responsive, modern user interfaces with React, Next.js, Vue.js, and cutting-edge CSS frameworks.',
-  //     features: ['Responsive Design', 'Performance Optimization', 'Cross-browser Compatibility']
-  //   },
-  //   {
-  //     title: 'Backend Development',
-  //     description: 'Building robust server-side applications and APIs with Laravel, Node.js, and efficient database design.',
-  //     features: ['RESTful API Development', 'Database Architecture', 'Authentication & Security']
-  //   },
-  //   {
-  //     title: 'Full Stack Solutions',
-  //     description: 'End-to-end web application development, from concept to deployment and maintenance.',
-  //     features: ['Cloud Deployment (AWS, Vercel)', 'CI/CD Pipeline Setup', 'Performance Monitoring']
-  //   }
-  // ];
-
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">
-      <div className="text-xl">Loading...</div>
-    </div>;
-  }
+  const [featuredProjects, skills, testimonials, services] = await Promise.all([
+    projectsService.getAll({ featured: true, per_page: 3 }),
+    skillsService.getAll(),
+    testimonialsService.getAll(),
+    servicesService.getAll(),
+  ]);
   
   return (
     <div className="min-h-screen">
@@ -305,7 +172,7 @@ export default function Home() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
-            {featuredProjects.map((project) => (
+            {featuredProjects?.map((project) => (
               <div
                 key={project.id}
                 className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2"
