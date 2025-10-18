@@ -27,6 +27,7 @@ class ProjectsController extends Controller
 
         $projects = $query->paginate($request->get('per_page', 12));
 
+        // $projects->dump();
         return response()->json([
             'success' => true,
             'data' => $projects,
@@ -93,6 +94,7 @@ class ProjectsController extends Controller
             ->published()
             ->firstOrFail();
 
+        // $projects->dump();
         return response()->json([
             'success' => true,
             'data' => $projects,

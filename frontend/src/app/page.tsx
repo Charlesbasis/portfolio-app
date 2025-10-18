@@ -1,12 +1,11 @@
+'use server';
 import { ArrowRight, Briefcase, CheckCircle, Code, ExternalLink, Github, Linkedin, Mail, Star, Twitter } from 'lucide-react';
 import Link from 'next/link';
-import { use, useEffect, useState } from 'react';
-import { projectsService } from '../services/projects.service';
-import { skillsService } from '../services/skills.service';
-import { Project, Service, Skill, Testimonial } from '../types';
-import { testimonialsService } from '../services/testimonials.service';
-import { servicesService } from '../services/services.service';
 import ContactForm from '../components/forms/ContactForm';
+import { projectsService } from '../services/projects.service';
+import { servicesService } from '../services/services.service';
+import { skillsService } from '../services/skills.service';
+import { testimonialsService } from '../services/testimonials.service';
 
 export default async function Home() {
 
@@ -17,6 +16,8 @@ export default async function Home() {
     servicesService.getAll(),
   ]);
   
+  // console.log('projects', featuredProjects);
+  // console.log('skills', skills);
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -175,6 +176,7 @@ export default async function Home() {
             {featuredProjects?.map((project) => (
               <div
                 key={project.id}
+                // key={index}
                 className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2"
               >
                 <div className="relative h-48 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 overflow-hidden group">
@@ -194,7 +196,7 @@ export default async function Home() {
                   <p className="text-gray-600 mb-4 line-clamp-2">{project.description}</p>
                   
                   <div className="flex flex-wrap gap-2 mb-4">
-                    {project.technologies.slice(0, 3).map((tech) => (
+                    {project.technologies.slice(0, 3)?.map((tech) => (
                       <span
                         key={tech}
                         className="px-3 py-1 bg-blue-100 text-blue-800 text-xs rounded-full font-medium"

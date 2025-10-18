@@ -15,30 +15,30 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL('https://yourportfolio.com'),
   title: {
-    default: 'John Doe - Full Stack Web Developer Portfolio',
-    template: '%s | John Doe'
+    default: 'CVHowlader - Full Stack Web Developer Portfolio',
+    template: '%s | CVHowlader'
   },
   description: 'Experienced Full Stack Developer with 5+ years building modern web applications using React, Next.js, Laravel, and Node.js',
   keywords: ['full stack developer', 'web developer', 'react', 'nextjs', 'laravel', 'nodejs', 'portfolio'],
-  authors: [{ name: 'John Doe' }],
-  creator: 'John Doe',
+  authors: [{ name: 'CVHowlader' }],
+  creator: 'CVHowlader',
   openGraph: {
     type: 'website',
     locale: 'en_US',
     url: 'https://yourportfolio.com',
-    title: 'John Doe - Full Stack Web Developer',
+    title: 'CVHowlader - Full Stack Web Developer',
     description: 'Professional portfolio showcasing 50+ web development projects',
-    siteName: 'John Doe Portfolio',
+    siteName: 'CVHowlader Portfolio',
     images: [{
       url: '/og-image.jpg',
       width: 1200,
       height: 630,
-      alt: 'John Doe Portfolio',
+      alt: 'CVHowlader Portfolio',
     }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'John Doe - Full Stack Web Developer',
+    title: 'CVHowlader - Full Stack Web Developer',
     description: 'Professional portfolio showcasing web development expertise',
     creator: '@yourusername',
     images: ['/og-image.jpg'],
