@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "../styles/globals.css";
+import { PersonSchema } from "../components/seo/StructuredData";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,7 +26,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://yourportfolio.com',
+    url: 'https://localhost:3000.com',
     title: 'CVHowlader - Full Stack Web Developer',
     description: 'Professional portfolio showcasing 50+ web development projects',
     siteName: 'CVHowlader Portfolio',
@@ -40,7 +41,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'CVHowlader - Full Stack Web Developer',
     description: 'Professional portfolio showcasing web development expertise',
-    creator: '@yourusername',
+    creator: '@localhost:3000',
     images: ['/og-image.jpg'],
   },
   robots: {
@@ -63,6 +64,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <PersonSchema />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
