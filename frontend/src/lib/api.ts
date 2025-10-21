@@ -1,8 +1,8 @@
-import axios from 'axios';
-import { Project, Service, Skill, Testimonial } from '../types';
+import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
+  timeout: 10000, // 10 second timeout
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -10,80 +10,60 @@ const api = axios.create({
   withCredentials: true,
 });
 
-// Request interceptor for adding auth token
+const tokenManager = {
+  get: () => typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null,
+  set: (token: string) => typeof window !== 'undefined' && localStorage.setItem('auth_token', token),
+  remove: () => typeof window !== 'undefined' && localStorage.removeItem('auth_token'),
+};
+
 api.interceptors.request.use(
-  (config) => {
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('auth_token');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
+  (config: InternalAxiosRequestConfig) => {
+    const token = tokenManager.get();
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error: AxiosError) => Promise.reject(error)
 );
 
-// Response interceptor for handling errors
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if ( typeof window !== 'undefined' && error.response?.status === 401) {
-      localStorage.removeItem('auth_token');
-      window.location.href = '/login';
+  (error: AxiosError) => {
+    if (error.response?.status === 401 && typeof window !== 'undefined') {
+      tokenManager.remove();
+      
+      if (!window.location.pathname.startsWith('/auth')) {
+        window.location.href = '/auth/login';
+      }
     }
+
+    if (!error.response) {
+      console.error('Network error:', error.message);
+    }
+
     return Promise.reject(error);
   }
 );
 
+async function handleApiRequest<T>(
+  requestFn: () => Promise<any>,
+  fallbackValue: T
+): Promise<T> {
+  try {
+    const { data } = await requestFn();
+    return data?.data ?? fallbackValue;
+  } catch (error) {
+    if (error instanceof AxiosError) {
+      console.error('API Error:', {
+        status: error.response?.status,
+        message: error.message,
+        data: error.response?.data,
+      });
+    }
+    return fallbackValue;
+  }
+}
+
 export default api;
-
-export const projectsApi = {
-  getAll: async () => {
-    const { data } = await api.get<{ data: Project[] }>('/projects');
-    return data.data;
-  },
-  
-  getBySlug: async (slug: string) => {
-    const { data } = await api.get<{ data: Project }>(`/projects/${slug}`);
-    return data.data;
-  },
-  
-  getFeatured: async () => {
-    const { data } = await api.get<{ data: Project[] }>('/projects?featured=1');
-    return data.data;
-  },
-};
-
-export const skillsApi = {
-  getAll: async () => {
-    const { data } = await api.get<{ data: Skill[] }>('/skills');
-    return data.data;
-  },
-  
-  getByCategory: async (category: string) => {
-    const { data } = await api.get<{ data: Skill[] }>(`/skills?category=${category}`);
-    return data.data;
-  },
-};
-
-export const testimonialsApi = {
-  getAll: async () => {
-    const { data } = await api.get<{ data: Testimonial[] }>('/testimonials');
-    return data.data;
-  },
-}
-
-export const servicesApi = {
-  getAll: async () => {
-    const { data } = await api.get<{ data: Service[] }>('/services');
-    return data.data;
-  },
-}
-
-// export const contactApi = {
-//   submit: async (formData: ContactSubmission) => {
-//     const { data } = await api.post('/contact', formData);
-//     return data;
-//   },
-// };
+export { tokenManager, handleApiRequest };
