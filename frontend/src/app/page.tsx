@@ -1,11 +1,16 @@
 'use server';
+
 import { ArrowRight, Briefcase, CheckCircle, Code, ExternalLink, Github, Linkedin, Mail, Star, Twitter } from 'lucide-react';
 import Link from 'next/link';
 import ContactForm from '../components/forms/ContactForm';
-import { projectsService } from '../services/projects.service';
-import { servicesService } from '../services/services.service';
-import { skillsService } from '../services/skills.service';
-import { testimonialsService } from '../services/testimonials.service';
+import { 
+  projectsService, 
+  skillsService, 
+  testimonialsService,
+  servicesService,
+  contactService,
+  authService
+} from '../services/api.service';
 
 export default async function Home() {
 

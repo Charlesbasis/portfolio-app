@@ -1,7 +1,8 @@
-import { useQuery, useMutation, useQueryClient, UseQueryOptions } from '@tanstack/react-query';
+import { useQuery, useMutation, UseQueryOptions } from '@tanstack/react-query';
 import { projectsService, skillsService, testimonialsService, servicesService, contactService } from '../services/api.service';
 import { Project, Skill, Testimonial, Service } from '../types';
 
+// ============= Query Keys =============
 export const queryKeys = {
   projects: {
     all: ['projects'] as const,
@@ -96,8 +97,6 @@ export function useServices() {
 
 // ============= Contact Mutation =============
 export function useContactSubmit() {
-  const queryClient = useQueryClient();
-  
   return useMutation({
     mutationFn: contactService.submit,
     onSuccess: () => {

@@ -2,10 +2,9 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-// import api from '@/lib/api';
-// import { User } from '@/types';
-import api from '../lib/api';
+import { tokenManager } from '../lib/api';
 import { User } from '../types';
+import { authService } from '../services/api.service';
 
 interface AuthState {
   user: User | null;
@@ -25,18 +24,16 @@ export const useAuth = create()(
       isAuthenticated: false,
 
       login: async (email: string, password: string) => {
-        const response = await api.post('/login', { email, password });
-        const { user, token } = response.data.data;
-        
-        localStorage.setItem('auth_token', token);
+        const { user, token } = await authService.login({ email, password });
+        tokenManager.set(token);
         set({ user, token, isAuthenticated: true });
       },
 
       logout: async () => {
         try {
-          await api.post('/logout');
+          await authService.logout();
         } finally {
-          localStorage.removeItem('auth_token');
+          tokenManager.remove();
           set({ user: null, token: null, isAuthenticated: false });
         }
       },

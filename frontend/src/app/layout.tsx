@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "../styles/globals.css";
 import { PersonSchema } from "../components/seo/StructuredData";
+import QueryProvider from "../providers/QueryProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://yourportfolio.com'),
+  metadataBase: new URL('https://localhost:3000'),
   title: {
     default: 'CVHowlader - Full Stack Web Developer Portfolio',
     template: '%s | CVHowlader'
@@ -26,7 +27,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://localhost:3000.com',
+    url: 'https://localhost:3000',
     title: 'CVHowlader - Full Stack Web Developer',
     description: 'Professional portfolio showcasing 50+ web development projects',
     siteName: 'CVHowlader Portfolio',
@@ -70,7 +71,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <QueryProvider>
+          {children}
+        </QueryProvider>
       </body>
     </html>
   );
