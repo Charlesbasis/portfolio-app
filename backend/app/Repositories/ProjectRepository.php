@@ -3,103 +3,57 @@
 namespace App\Repositories;
 
 use App\Models\Projects;
-use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Builder;
 
 class ProjectRepository
 {
-    /**
-     * Get all published projects with filters.
-     */
-    public function getPublished(array $filters = [], int $perPage = 12): LengthAwarePaginator
-    {
-        $query = Projects::query()->published()->orderBy('order')->orderBy('created_at', 'desc');
+    public function __construct(
+        protected Projects $model
+    ) {}
 
-        if (isset($filters['featured'])) {
-            $query->featured();
+    public function query(): Builder
+    {
+        return $this->model->newQuery();
+    }
+
+    public function published(): Builder
+    {
+        return $this->query()->where('status', 'published');
+    }
+
+    public function featured(): Builder
+    {
+        return $this->published()
+            ->where('featured', true)
+            ->orderBy('order');
+    }
+
+    public function findBySlug(string $slug): ?Projects
+    {
+        return $this->published()
+            ->where('slug', $slug)
+            ->first();
+    }
+
+    public function findBySlugOrFail(string $slug): Projects
+    {
+        return $this->published()
+            ->where('slug', $slug)
+            ->firstOrFail();
+    }
+
+    public function getAll(array $filters = [])
+    {
+        $query = $this->published();
+
+        if (!empty($filters['featured'])) {
+            $query->where('featured', true);
         }
 
-        if (isset($filters['technology'])) {
+        if (!empty($filters['technology'])) {
             $query->whereJsonContains('technologies', $filters['technology']);
         }
 
-        if (isset($filters['search'])) {
-            $search = $filters['search'];
-            $query->where(function ($q) use ($search) {
-                $q->where('title', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
-            });
-        }
-
-        return $query->paginate($perPage);
-    }
-
-    /**
-     * Get featured projects.
-     */
-    public function getFeatured(int $limit = 6): Collection
-    {
-        return Projects::published()
-            ->featured()
-            ->orderBy('order')
-            ->limit($limit)
-            ->get();
-    }
-
-    /**
-     * Find project by slug.
-     */
-    public function findBySlug(string $slug): ?Projects
-    {
-        return Projects::where('slug', $slug)->published()->first();
-    }
-
-    /**
-     * Create a new project.
-     */
-    public function create(array $data): Projects
-    {
-        return Projects::create($data);
-    }
-
-    /**
-     * Update a project.
-     */
-    public function update(Projects $project, array $data): bool
-    {
-        return $project->update($data);
-    }
-
-    /**
-     * Delete a project.
-     */
-    public function delete(Projects $project): bool
-    {
-        return $project->delete();
-    }
-
-    /**
-     * Get all technologies used across projects.
-     */
-    public function getAllTechnologies(): array
-    {
-        return Projects::published()
-            ->get()
-            ->flatMap(fn($project) => $project->technologies ?? [])
-            ->unique()
-            ->sort()
-            ->values()
-            ->toArray();
-    }
-
-    /**
-     * Get projects by user.
-     */
-    public function getByUser(int $userId): Collection
-    {
-        return Projects::where('user_id', $userId)
-            ->orderBy('order')
-            ->orderBy('created_at', 'desc')
-            ->get();
+        return $query->orderBy('order')->orderByDesc('created_at');
     }
 }
