@@ -4,16 +4,27 @@ namespace App\Http\Controllers\API\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Skills;
+use App\Repositories\SkillRepository;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class SkillsController extends Controller
 {
+    public function __construct(
+        private SkillRepository $repository
+    ) {}
+    
     /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
     {
+        Log::info('SkillsController@index called', [
+            'params' => $request->all(),
+            'ip' => $request->ip()
+        ]);
+        
         $query = Skills::query()->orderBy('order')->orderBy('name');
 
         if ($request->has('category')) {
@@ -35,6 +46,10 @@ class SkillsController extends Controller
         }
 
         $skills = $query->get();
+
+        Log::info('SkillsController: Retrieved skills', [
+            'count' => $skills->count()
+        ]);
 
         return response()->json([
             'success' => true,
