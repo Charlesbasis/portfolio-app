@@ -1,39 +1,45 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\API\V1;
 
+use App\Http\Controllers\Controller;
+use App\Http\Resources\ServiceResource;
 use App\Models\Service;
+use App\Repositories\ServiceRepository;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class ServiceController extends Controller
 {
+    public function __construct(
+        private ServiceRepository $repository
+    ) {}
     /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
     {
-        $query = Service::query();
-
-        if ($request->has('category')) {
-            $query->byCategory($request->category);
-        }
-
-        if ($request->has('grouped') && $request->grouped === 'true') {
-            $service = $query->get()->groupBy('category');
-
-            return response()->json([
-                'success' => true,
-                'data' => $service,
-            ]);
-        }
-
-        $service = $query->get();
-
-        return response()->json([
-            'success' => true,
-            'data' => $service,
+        Log::info('ServiceController@index called', [
+            'params' => $request->all(),
+            'ip' => $request->ip()
         ]);
+
+        $cacheKey = 'services:' . md5(json_encode($request->all()));
+
+        $services = Cache::remember($cacheKey, 3600, function () use ($request) {
+            $query = $this->repository->getAll();
+
+            return $query->paginate($request->get('per_page', 12));
+        });
+
+        Log::info('ServiceController: Retrieved services', [
+            'count' => $services->count(),
+            'total' => $services->total()
+        ]);
+
+        return ServiceResource::collection($services);
     }
 
     /**
@@ -71,7 +77,7 @@ class ServiceController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Service created successfully',
-            'data' => $service,
+            'data' => new ServiceResource($service),
         ], 201);
     }
 
@@ -82,7 +88,7 @@ class ServiceController extends Controller
     {
         return response()->json([
             'success' => true,
-            'data' => $service,
+            'data' => new ServiceResource($service),
         ]);
     }
 
@@ -118,7 +124,7 @@ class ServiceController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Service created successfully',
-            'data' => $service,
+            'data' => new ServiceResource($service),
         ], 201);
     }
 

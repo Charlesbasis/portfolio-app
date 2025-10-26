@@ -30,12 +30,11 @@ class SkillsController extends Controller
         $cacheKey = 'skills:' . md5(json_encode($request->all()));
 
         $skills = Cache::remember($cacheKey, 3600, function () use ($request) {
-            // Group by category if requested
+
             if ($request->has('grouped') && $request->grouped === 'true') {
                 return $this->repository->getGroupedByCategory();
             }
 
-            // Get filtered skills
             $filters = $request->only(['category', 'user_id']);
             $query = $this->repository->getAll($filters);
 
@@ -50,7 +49,6 @@ class SkillsController extends Controller
             'count' => is_countable($skills) ? count($skills) : $skills->count()
         ]);
 
-        // Return grouped response
         if ($request->has('grouped') && $request->grouped === 'true') {
             return response()->json([
                 'success' => true,
@@ -58,7 +56,6 @@ class SkillsController extends Controller
             ]);
         }
 
-        // Return collection with resource transformation
         return SkillResource::collection($skills);
     }
 
@@ -97,7 +94,6 @@ class SkillsController extends Controller
 
         $skill = Skills::create($data);
 
-        // Clear cache after creating
         Cache::forget('skills:*');
 
         Log::info('SkillsController@store success', [
@@ -161,7 +157,6 @@ class SkillsController extends Controller
 
         $skill->update($validator->validated());
 
-        // Clear cache after updating
         Cache::forget('skills:*');
 
         Log::info('SkillsController@update success', [
@@ -189,7 +184,6 @@ class SkillsController extends Controller
 
         $skill->delete();
 
-        // Clear cache after deleting
         Cache::forget('skills:*');
 
         Log::info('SkillsController@destroy success', [

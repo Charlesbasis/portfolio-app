@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Models\Projects;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Log;
 
 class ProjectRepository
 {
@@ -13,16 +14,19 @@ class ProjectRepository
 
     public function query(): Builder
     {
+        Log::info('ProjectRepository: Creating query');
         return $this->model->newQuery();
     }
 
     public function published(): Builder
     {
+        Log::info('ProjectRepository: Filtering published projects');
         return $this->query()->where('status', 'published');
     }
 
     public function featured(): Builder
     {
+        Log::info('ProjectRepository: Filtering featured projects');
         return $this->published()
             ->where('featured', true)
             ->orderBy('order');
@@ -30,6 +34,7 @@ class ProjectRepository
 
     public function findBySlug(string $slug): ?Projects
     {
+        Log::info('ProjectRepository: Finding project by slug', ['slug' => $slug]);
         return $this->published()
             ->where('slug', $slug)
             ->first();
@@ -37,13 +42,16 @@ class ProjectRepository
 
     public function findBySlugOrFail(string $slug): Projects
     {
+        Log::info('ProjectRepository: Finding project by slug or failing', ['slug' => $slug]);
         return $this->published()
             ->where('slug', $slug)
             ->firstOrFail();
     }
 
-    public function getAll(array $filters = [])
+    public function getAll(array $filters = []): Builder
     {
+        Log::info('ProjectRepository: Building query', ['filters' => $filters]);
+
         $query = $this->published();
 
         if (!empty($filters['featured'])) {
