@@ -1,4 +1,3 @@
-// frontend/src/services/api.service.ts
 import api, { handleApiRequest } from '../lib/api';
 import { 
   Project, 
@@ -19,7 +18,7 @@ export const projectsService = {
     return handleApiRequest(
       () => api.get<PaginatedResponse<Project>>('/projects', { params }),
       []
-    ).then(data => Array.isArray(data?.data) ? data.data : []);
+    ).then(data => Array.isArray(data?.data) ? data?.data : []);
   },
 
   getBySlug: async (slug: string): Promise<Project | null> => {

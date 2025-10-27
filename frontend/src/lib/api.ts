@@ -37,7 +37,6 @@ api.interceptors.response.use(
         window.location.href = '/auth/login';
       }
     }
-
     if (!error.response) {
       console.error('Network error:', error.message);
     }
@@ -52,7 +51,14 @@ async function handleApiRequest<T>(
 ): Promise<T> {
   try {
     const { data } = await requestFn();
-    return data?.data ?? fallbackValue;
+    
+    console.log('API Response structure:', {
+      hasData: !!data,
+      keys: data ? Object.keys(data) : [],
+      dataType: Array.isArray(data?.data) ? 'array' : typeof data?.data
+    });
+    
+    return data ?? fallbackValue;
   } catch (error) {
     if (error instanceof AxiosError) {
       console.error('API Error:', {
