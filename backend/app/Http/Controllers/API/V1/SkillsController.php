@@ -22,10 +22,10 @@ class SkillsController extends Controller
      */
     public function index(Request $request)
     {
-        Log::info('SkillsController@index called', [
-            'params' => $request->all(),
-            'ip' => $request->ip()
-        ]);
+        // Log::info('SkillsController@index called', [
+        //     'params' => $request->all(),
+        //     'ip' => $request->ip()
+        // ]);
 
         $cacheKey = 'skills:list:' . request('grouped', 'true');
 
@@ -45,9 +45,9 @@ class SkillsController extends Controller
             return $query->get();
         });
 
-        Log::info('SkillsController: Retrieved skills', [
-            'count' => is_countable($skills) ? count($skills) : $skills->count()
-        ]);
+        // Log::info('SkillsController: Retrieved skills', [
+        //     'count' => is_countable($skills) ? count($skills) : $skills->count()
+        // ]);
 
         if ($request->has('grouped') && $request->grouped === 'true') {
             return response()->json([
@@ -67,9 +67,9 @@ class SkillsController extends Controller
      */
     public function store(Request $request)
     {
-        Log::info('SkillsController@store called', [
-            'user_id' => $request->user()->id
-        ]);
+        // Log::info('SkillsController@store called', [
+        //     'user_id' => $request->user()->id
+        // ]);
 
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
@@ -99,9 +99,9 @@ class SkillsController extends Controller
 
         Cache::forget('skills:*');
 
-        Log::info('SkillsController@store success', [
-            'skill_id' => $skill->id
-        ]);
+        // Log::info('SkillsController@store success', [
+        //     'skill_id' => $skill->id
+        // ]);
 
         return response()->json([
             'success' => true,
@@ -115,9 +115,9 @@ class SkillsController extends Controller
      */
     public function show(Skills $skill)
     {
-        Log::info('SkillsController@show called', [
-            'skill_id' => $skill->id
-        ]);
+        // Log::info('SkillsController@show called', [
+        //     'skill_id' => $skill->id
+        // ]);
 
         return response()->json([
             'success' => true,
@@ -130,10 +130,10 @@ class SkillsController extends Controller
      */
     public function update(Request $request, Skills $skill)
     {
-        Log::info('SkillsController@update called', [
-            'skill_id' => $skill->id,
-            'user_id' => $request->user()->id
-        ]);
+        // Log::info('SkillsController@update called', [
+        //     'skill_id' => $skill->id,
+        //     'user_id' => $request->user()->id
+        // ]);
 
         // $this->authorize('update', $skill);
 
@@ -162,9 +162,9 @@ class SkillsController extends Controller
 
         Cache::forget('skills:*');
 
-        Log::info('SkillsController@update success', [
-            'skill_id' => $skill->id
-        ]);
+        // Log::info('SkillsController@update success', [
+        //     'skill_id' => $skill->id
+        // ]);
 
         return response()->json([
             'success' => true,
@@ -178,10 +178,10 @@ class SkillsController extends Controller
      */
     public function destroy(Skills $skill)
     {
-        Log::info('SkillsController@destroy called', [
-            'skill_id' => $skill->id,
-            'user_id' => auth()->id()
-        ]);
+        // Log::info('SkillsController@destroy called', [
+        //     'skill_id' => $skill->id,
+        //     'user_id' => auth()->id()
+        // ]);
 
         // $this->authorize('delete', $skill);
 
@@ -189,9 +189,9 @@ class SkillsController extends Controller
 
         Cache::forget('skills:*');
 
-        Log::info('SkillsController@destroy success', [
-            'skill_id' => $skill->id
-        ]);
+        // Log::info('SkillsController@destroy success', [
+        //     'skill_id' => $skill->id
+        // ]);
 
         return response()->json([
             'success' => true,

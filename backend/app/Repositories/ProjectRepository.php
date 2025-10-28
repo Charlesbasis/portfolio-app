@@ -10,19 +10,19 @@ class ProjectRepository
 {
     public function query(): Builder
     {
-        Log::info('ProjectRepository: Creating query');
+        // Log::info('ProjectRepository: Creating query');
         return Projects::query();
     }
 
     public function published(): Builder
     {
-        Log::info('ProjectRepository: Filtering published projects');
+        // Log::info('ProjectRepository: Filtering published projects');
         return $this->query()->where('status', 'published');
     }
 
     public function featured(): Builder
     {
-        Log::info('ProjectRepository: Filtering featured projects');
+        // Log::info('ProjectRepository: Filtering featured projects');
         return $this->published()
             ->where('featured', true)
             ->orderBy('order');
@@ -30,7 +30,7 @@ class ProjectRepository
 
     public function findBySlug(string $slug): ?Projects
     {
-        Log::info('ProjectRepository: Finding project by slug', ['slug' => $slug]);
+        // Log::info('ProjectRepository: Finding project by slug', ['slug' => $slug]);
         return $this->published()
             ->where('slug', $slug)
             ->first();
@@ -38,7 +38,7 @@ class ProjectRepository
 
     public function findBySlugOrFail(string $slug): Projects
     {
-        Log::info('ProjectRepository: Finding project by slug or failing', ['slug' => $slug]);
+        // Log::info('ProjectRepository: Finding project by slug or failing', ['slug' => $slug]);
         return $this->published()
             ->where('slug', $slug)
             ->firstOrFail();
@@ -46,7 +46,7 @@ class ProjectRepository
 
     public function getAll(array $filters = []): Builder
     {
-        Log::info('ProjectRepository: Building query', ['filters' => $filters]);
+        // Log::info('ProjectRepository: Building query', ['filters' => $filters]);
 
         $query = $this->published();
 

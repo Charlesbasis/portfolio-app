@@ -20,7 +20,7 @@ class EmailService
                     ->replyTo($contact->email, $contact->name);
             });
 
-            Log::info('Contact notification email sent', ['contact_id' => $contact->id]);
+            // Log::info('Contact notification email sent', ['contact_id' => $contact->id]);
         } catch (\Exception $e) {
             Log::error('Failed to send contact notification email', [
                 'contact_id' => $contact->id,
@@ -42,7 +42,7 @@ class EmailService
                     ->subject('Welcome to ' . config('app.name'));
             });
 
-            Log::info('Welcome email sent', ['user_id' => $user->id]);
+            // Log::info('Welcome email sent', ['user_id' => $user->id]);
         } catch (\Exception $e) {
             Log::error('Failed to send welcome email', [
                 'user_id' => $user->id,
@@ -62,7 +62,7 @@ class EmailService
                     ->subject('Thank you for contacting us');
             });
 
-            Log::info('Contact auto-reply sent', ['contact_id' => $contact->id]);
+            // Log::info('Contact auto-reply sent', ['contact_id' => $contact->id]);
         } catch (\Exception $e) {
             Log::error('Failed to send contact auto-reply', [
                 'contact_id' => $contact->id,

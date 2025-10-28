@@ -23,8 +23,8 @@ export default function Card({
   const hoverClass = hover ? 'hover:shadow-xl transition-shadow duration-300' : '';
 
   return (
-    
+    <div className={`bg-white rounded-lg shadow-md ${paddingClasses[padding]} ${hoverClass} ${className}`}>
       {children}
-    
+    </div>
   );
 }

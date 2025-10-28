@@ -21,10 +21,10 @@ class TestimonialController extends Controller
      */
     public function index(Request $request)
     {
-        Log::info('TestimonialController@index called', [
-            'params' => $request->all(),
-            'ip' => $request->ip()
-        ]);
+        // Log::info('TestimonialController@index called', [
+        //     'params' => $request->all(),
+        //     'ip' => $request->ip()
+        // ]);
 
         $cacheKey = 'testimonials:' . md5(json_encode($request->all()));
 
@@ -34,10 +34,10 @@ class TestimonialController extends Controller
             return $query->paginate($request->get('per_page', 12));
         });
 
-        Log::info('TestimonialController: Retrieved testimonials', [
-            'count' => $testimonials->count(),
-            'total' => $testimonials->total()
-        ]);
+        // Log::info('TestimonialController: Retrieved testimonials', [
+        //     'count' => $testimonials->count(),
+        //     'total' => $testimonials->total()
+        // ]);
 
         return TestimonialResource::collection($testimonials);
     }

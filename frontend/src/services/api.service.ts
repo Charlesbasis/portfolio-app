@@ -267,7 +267,8 @@ export interface RegisterData extends LoginCredentials {
 
 export const authService = {
   login: async (credentials: LoginCredentials): Promise<{ user: User; token: string }> => {
-    const { data } = await api.post('/auth/login', credentials);
+    // const { data } = await api.post('/auth/login', credentials);
+    const { data } = await api.post('/login', credentials);
     
     if (data.success && data.data?.token) {
       if (typeof window !== 'undefined') {

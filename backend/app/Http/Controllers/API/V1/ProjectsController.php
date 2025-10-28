@@ -23,10 +23,10 @@ class ProjectsController extends Controller
      */
     public function index(Request $request)
     {
-        Log::info('ProjectsController@index called', [
-            'params' => $request->all(),
-            'ip' => $request->ip()
-        ]);
+        // Log::info('ProjectsController@index called', [
+        //     'params' => $request->all(),
+        //     'ip' => $request->ip()
+        // ]);
 
         $cacheKey = 'projects:list:' . request('featured', 'all') . ':' . request('page', 1);
         
@@ -37,10 +37,10 @@ class ProjectsController extends Controller
             return $query->paginate($request->get('per_page', 12));
         });
 
-        Log::info('ProjectsController: Retrieved projects', [
-            'count' => $projects->count(),
-            'total' => $projects->total()
-        ]);
+        // Log::info('ProjectsController: Retrieved projects', [
+        //     'count' => $projects->count(),
+        //     'total' => $projects->total()
+        // ]);
 
         return response()->json([
             'success' => true,
@@ -59,9 +59,9 @@ class ProjectsController extends Controller
      */
     public function store(Request $request)
     {
-        Log::info('ProjectsController@store called', [
-            'user_id' => $request->user()->id
-        ]);
+        // Log::info('ProjectsController@store called', [
+        //     'user_id' => $request->user()->id
+        // ]);
 
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
@@ -95,19 +95,19 @@ class ProjectsController extends Controller
             $path = $request->file('image')->store('projects', 'public');
             $data['image_url'] = $path; 
             
-            Log::info('ProjectsController@store image uploaded', [
-                'path' => $path
-            ]);
+            // Log::info('ProjectsController@store image uploaded', [
+            //     'path' => $path
+            // ]);
         }
 
         $project = Projects::create($data);
 
         Cache::tags('projects')->flush();
 
-        Log::info('ProjectsController@store success', [
-            'project_id' => $project->id,
-            'slug' => $project->slug
-        ]);
+        // Log::info('ProjectsController@store success', [
+        //     'project_id' => $project->id,
+        //     'slug' => $project->slug
+        // ]);
 
         return response()->json([
             'success' => true,
@@ -121,9 +121,9 @@ class ProjectsController extends Controller
      */
     public function show($slug)
     {
-        Log::info('ProjectsController@show called', [
-            'slug' => $slug
-        ]);
+        // Log::info('ProjectsController@show called', [
+        //     'slug' => $slug
+        // ]);
 
         $cacheKey = 'projects:list:' . request('featured', 'all') . ':' . request('page', 1);
         
@@ -131,10 +131,10 @@ class ProjectsController extends Controller
             return $this->repository->findBySlugOrFail($slug);
         });
 
-        Log::info('ProjectsController@show success', [
-            'project_id' => $project->id,
-            'title' => $project->title
-        ]);
+        // Log::info('ProjectsController@show success', [
+        //     'project_id' => $project->id,
+        //     'title' => $project->title
+        // ]);
 
         return response()->json([
             'success' => true,
@@ -147,10 +147,10 @@ class ProjectsController extends Controller
      */
     public function update(Request $request, Projects $project)
     {
-        Log::info('ProjectsController@update called', [
-            'project_id' => $project->id,
-            'user_id' => $request->user()->id
-        ]);
+        // Log::info('ProjectsController@update called', [
+        //     'project_id' => $project->id,
+        //     'user_id' => $request->user()->id
+        // ]);
 
         // $this->authorize('update', $project);
 
@@ -184,17 +184,17 @@ class ProjectsController extends Controller
         if ($request->hasFile('image')) {
             if ($project->image_url) {
                 Storage::disk('public')->delete($project->image_url);
-                Log::info('ProjectsController@update old image deleted', [
-                    'path' => $project->image_url
-                ]);
+                // Log::info('ProjectsController@update old image deleted', [
+                //     'path' => $project->image_url
+                // ]);
             }
             
             $path = $request->file('image')->store('projects', 'public');
             $data['image_url'] = $path; 
             
-            Log::info('ProjectsController@update new image uploaded', [
-                'path' => $path
-            ]);
+            // Log::info('ProjectsController@update new image uploaded', [
+            //     'path' => $path
+            // ]);
         }
 
         $project->update($data);
@@ -202,10 +202,10 @@ class ProjectsController extends Controller
         Cache::tags('projects')->flush();
         Cache::forget("project:{$project->slug}");
 
-        Log::info('ProjectsController@update success', [
-            'project_id' => $project->id,
-            'slug' => $project->slug
-        ]);
+        // Log::info('ProjectsController@update success', [
+        //     'project_id' => $project->id,
+        //     'slug' => $project->slug
+        // ]);
 
         return response()->json([
             'success' => true,
@@ -219,19 +219,19 @@ class ProjectsController extends Controller
      */
     public function destroy(Projects $project)
     {
-        Log::info('ProjectsController@destroy called', [
-            'project_id' => $project->id,
-            'user_id' => auth()->id()
-        ]);
+        // Log::info('ProjectsController@destroy called', [
+        //     'project_id' => $project->id,
+        //     'user_id' => auth()->id()
+        // ]);
 
         // $this->authorize('delete', $project);
 
         if ($project->image_url) {
             Storage::disk('public')->delete($project->image_url);
             
-            Log::info('ProjectsController@destroy image deleted', [
-                'path' => $project->image_url
-            ]);
+            // Log::info('ProjectsController@destroy image deleted', [
+            //     'path' => $project->image_url
+            // ]);
         }
 
         $slug = $project->slug;
@@ -240,9 +240,9 @@ class ProjectsController extends Controller
         Cache::tags('projects')->flush();
         Cache::forget("project:{$slug}");
 
-        Log::info('ProjectsController@destroy success', [
-            'project_id' => $project->id
-        ]);
+        // Log::info('ProjectsController@destroy success', [
+        //     'project_id' => $project->id
+        // ]);
 
         return response()->json([
             'success' => true,

@@ -14,13 +14,13 @@ class TestimonialRepository
 
     public function query(): Builder
     {
-        Log::info('TestimonialRepository: Creating query');
+        // Log::info('TestimonialRepository: Creating query');
         return $this->model->newQuery();
     }
 
     public function getAll(): Builder
     {
-        Log::info('TestimonialRepository: Building query');
+        // Log::info('TestimonialRepository: Building query');
         return $this->query()
             // ->orderBy('order')
             ->orderByDesc('created_at');
@@ -28,7 +28,7 @@ class TestimonialRepository
 
     public function getFeatured(): Builder
     {
-        Log::info('TestimonialRepository: Filtering featured testimonials');
+        // Log::info('TestimonialRepository: Filtering featured testimonials');
         return $this->query()
             ->where('featured', true);
             // ->orderBy('order');

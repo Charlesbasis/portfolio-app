@@ -14,13 +14,13 @@ class ServiceRepository
 
     public function query(): Builder
     {
-        Log::info('ServiceRepository: Creating query');
+        // Log::info('ServiceRepository: Creating query');
         return $this->model->newQuery();
     }
 
     public function getAll(): Builder
     {
-        Log::info('ServiceRepository: Building query');
+        // Log::info('ServiceRepository: Building query');
         return $this->query();
             // ->orderBy('order')
             // ->orderBy('title');
@@ -28,7 +28,7 @@ class ServiceRepository
 
     public function findBySlug(string $slug): ?Service
     {
-        Log::info('ServiceRepository: Finding service by slug', ['slug' => $slug]);
+        // Log::info('ServiceRepository: Finding service by slug', ['slug' => $slug]);
         return $this->query()
             ->where('slug', $slug)
             ->first();

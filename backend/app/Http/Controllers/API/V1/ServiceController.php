@@ -21,10 +21,10 @@ class ServiceController extends Controller
      */
     public function index(Request $request)
     {
-        Log::info('ServiceController@index called', [
-            'params' => $request->all(),
-            'ip' => $request->ip()
-        ]);
+        // Log::info('ServiceController@index called', [
+        //     'params' => $request->all(),
+        //     'ip' => $request->ip()
+        // ]);
 
         $cacheKey = 'services:' . md5(json_encode($request->all()));
 
@@ -34,10 +34,10 @@ class ServiceController extends Controller
             return $query->paginate($request->get('per_page', 12));
         });
 
-        Log::info('ServiceController: Retrieved services', [
-            'count' => $services->count(),
-            'total' => $services->total()
-        ]);
+        // Log::info('ServiceController: Retrieved services', [
+        //     'count' => $services->count(),
+        //     'total' => $services->total()
+        // ]);
 
         return ServiceResource::collection($services);
     }

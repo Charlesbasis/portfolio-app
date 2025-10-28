@@ -6,6 +6,7 @@ use App\Http\Controllers\API\V1\SkillsController;
 use App\Http\Controllers\API\V1\ContactController;
 use App\Http\Controllers\API\V1\ServiceController;
 use App\Http\Controllers\API\V1\TestimonialController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -27,11 +28,20 @@ Route::prefix('v1')->group(function () {
     // Auth routes
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
+
+    Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])
+        ->middleware(['signed'])
+        ->name('verification.verify');
     
     // Protected routes
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/user', [AuthController::class, 'user']);
+
+        // Resend verification email
+        Route::post('/email/resend', [AuthController::class, 'resendVerificationEmail'])
+            ->middleware(['throttle:6,1'])
+            ->name('verification.send');
         
         // Admin project management
         Route::apiResource('admin/projects', ProjectsController::class)
@@ -42,3 +52,8 @@ Route::prefix('v1')->group(function () {
             ->except(['index']);
     });
 });
+
+// Route::post('/email/verification-notification', function (Request $request) {
+//     $request->user()->sendEmailVerificationNotification();
+//     return response()->json(['message' => 'Verification link sent!']);
+// })->middleware(['auth:sanctum', 'throttle:6,1']);
