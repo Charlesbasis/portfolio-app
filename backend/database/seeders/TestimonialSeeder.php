@@ -20,7 +20,6 @@ class TestimonialSeeder extends Seeder
             'user_id' => $user->id,
             'name' => 'John Doe',
             'role' => 'CEO',
-            'category' => 'client',
             'content' => 'Outstanding work! Delivered our project on time with exceptional quality. Highly recommend!',
             'avatar_url' => 'https://via.placeholder.com/150',
         ]);

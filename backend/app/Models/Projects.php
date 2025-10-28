@@ -11,7 +11,7 @@ class Projects extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = [
+    protected $guarded = [
         'user_id',
         'title',
         'slug',

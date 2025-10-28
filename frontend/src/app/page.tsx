@@ -14,15 +14,33 @@ import {
 
 export default async function Home() {
 
-  const [featuredProjects, skills, testimonials, services] = await Promise.all([
+  // Fetch all data with Promise.allSettled for better error handling
+  const results = await Promise.allSettled([
     projectsService.getAll({ featured: true, per_page: 3 }),
     skillsService.getAll(),
     testimonialsService.getAll(),
     servicesService.getAll(),
   ]);
+
+  // Extract data with fallbacks
+  const featuredProjects = results[0].status === 'fulfilled' ? results[0].value : [];
+  const skills = results[1].status === 'fulfilled' ? results[1].value : [];
+  const testimonials = results[2].status === 'fulfilled' ? results[2].value : [];
+  const services = results[3].status === 'fulfilled' ? results[3].value : [];
+
+  // Log errors in development
+  const isDevelopment = process.env.NODE_ENV !== 'production';
+  if (isDevelopment) {
+    results.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        const names = ['Projects', 'Skills', 'Testimonials', 'Services'];
+        console.error(`Failed to fetch ${names[index]}:`, result.reason);
+      }
+    });
+  }
   
-  console.log('projects', featuredProjects);
-  // console.log('skills', skills);
+  // console.log('projects', featuredProjects);
+  console.log('skills', skills);
   return (
     <div className="min-h-screen">
       {/* Hero Section */}

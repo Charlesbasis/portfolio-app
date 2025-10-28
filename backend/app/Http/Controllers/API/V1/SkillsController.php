@@ -27,7 +27,7 @@ class SkillsController extends Controller
             'ip' => $request->ip()
         ]);
 
-        $cacheKey = 'skills:' . md5(json_encode($request->all()));
+        $cacheKey = 'skills:list:' . request('grouped', 'true');
 
         $skills = Cache::remember($cacheKey, 3600, function () use ($request) {
 
@@ -56,7 +56,10 @@ class SkillsController extends Controller
             ]);
         }
 
-        return SkillResource::collection($skills);
+        return response()->json([
+            'success' => true,
+            'data' => SkillResource::collection($skills),
+        ]);
     }
 
     /**

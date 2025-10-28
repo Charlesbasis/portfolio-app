@@ -17,9 +17,11 @@ return new class extends Migration
             $table->string('title');
             $table->text('description');
             $table->json('features');
-            $table->index(['user_id', 'category']);
-            $table->string('category');
+            $table->index(['user_id', 'slug']);
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->string('slug')->unique();
+            $table->string('icon')->nullable();
+            $table->integer('order')->default(0);
         });
     }
 

@@ -16,10 +16,13 @@ return new class extends Migration
             $table->timestamps();
             $table->string('name');
             $table->string('role');
+            $table->string('company')->nullable();
             $table->text('content');
             $table->string('avatar_url')->nullable();
-            $table->index(['user_id', 'category']);
-            $table->string('category');
+            $table->integer('rating')->default(5);
+            $table->boolean('featured')->default(false);
+            $table->integer('order')->default(0);
+            $table->index(['user_id', 'featured']);
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
         });
     }

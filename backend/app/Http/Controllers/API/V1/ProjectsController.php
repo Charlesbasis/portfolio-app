@@ -28,7 +28,7 @@ class ProjectsController extends Controller
             'ip' => $request->ip()
         ]);
 
-        $cacheKey = 'projects:' . md5(json_encode($request->all()));
+        $cacheKey = 'projects:list:' . request('featured', 'all') . ':' . request('page', 1);
         
         $projects = Cache::remember($cacheKey, 3600, function () use ($request) {
             $filters = $request->only(['featured', 'technology']);
@@ -42,7 +42,16 @@ class ProjectsController extends Controller
             'total' => $projects->total()
         ]);
 
-        return ProjectResource::collection($projects);
+        return response()->json([
+            'success' => true,
+            'data' => ProjectResource::collection($projects->items()),
+            'meta' => [
+                'current_page' => $projects->currentPage(),
+                'last_page' => $projects->lastPage(),
+                'per_page' => $projects->perPage(),
+                'total' => $projects->total(),
+            ]
+        ]);
     }
 
     /**
@@ -116,7 +125,7 @@ class ProjectsController extends Controller
             'slug' => $slug
         ]);
 
-        $cacheKey = "project:{$slug}";
+        $cacheKey = 'projects:list:' . request('featured', 'all') . ':' . request('page', 1);
         
         $project = Cache::remember($cacheKey, 3600, function () use ($slug) {
             return $this->repository->findBySlugOrFail($slug);

@@ -8,14 +8,10 @@ use Illuminate\Support\Facades\Log;
 
 class ProjectRepository
 {
-    public function __construct(
-        protected Projects $model
-    ) {}
-
     public function query(): Builder
     {
         Log::info('ProjectRepository: Creating query');
-        return $this->model->newQuery();
+        return Projects::query();
     }
 
     public function published(): Builder
