@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import Card from '@/components/ui/Card';
-import Button from '@/components/ui/Button';
+import Card from '@/src/components/ui/Card';
+import Button from '@/src/components/ui/Button';
 import { Plus, Edit2, Trash2, Star, TrendingUp } from 'lucide-react';
 
 export default function SkillsPage() {

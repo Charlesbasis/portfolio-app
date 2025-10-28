@@ -1,6 +1,6 @@
 // frontend/src/services/api.service.ts
-import api, { handleApiRequest } from '../lib/api';
-import { extractData } from '../lib/utils';
+import api, { handleApiRequest, tokenManager } from '../lib/api';
+import { extractData, extractNestedData } from '../lib/utils';
 import { 
   Project, 
   Skill, 
@@ -279,6 +279,22 @@ export const authService = {
     return data.data;
   },
 
+  // debug: async (): Promise<void> => {
+  //   console.log('🔍 Auth Debug Info:');
+  //   console.log('📝 Stored Token:', tokenManager.get() ? 'Present' : 'Missing');
+  //   console.log('🌐 API Base URL:', api.defaults.baseURL);
+
+  //   try {
+  //     const testResponse = await api.get('/auth/user');
+  //     console.log('✅ Auth test response:', testResponse.data);
+  //   } catch (error) {
+  //     console.log('❌ Auth test failed:', {
+  //       // status: getErrorStatus(error),
+  //       // message: getErrorMessage(error)
+  //     });
+  //   }
+  // },
+
   register: async (userData: RegisterData): Promise<{ user: User; token: string }> => {
     const { data } = await api.post('/auth/register', userData);
     
@@ -300,13 +316,31 @@ export const authService = {
   },
 
   getCurrentUser: async (): Promise<User | null> => {
-    const response = await handleApiRequest(
-      () => api.get('/auth/user'),
-      null
-    );
-    
-    if (!response) return null;
-    return extractData<User>(response);
+    try {
+      const response = await handleApiRequest(
+        // () => api.get('/auth/user'),
+        () => api.get('/user'),
+        null
+      );
+      console.log('🔍 Raw API Response from getCurrentUser:', response);
+      
+      // Try different extraction methods
+      const userData = extractNestedData<User>(response, 'data.user') ||
+        extractData<User>(response) ||
+        response;
+
+      if (userData && userData.id) {
+        return userData;
+      }
+
+      return null;
+      
+      // if (!response) return null;
+      // return extractData<User>(response);      
+    } catch (error) {
+      console.error('❌ getCurrentUser error:', error);
+      return null;
+    }
   },
 };
 

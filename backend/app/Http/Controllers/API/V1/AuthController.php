@@ -89,6 +89,10 @@ class AuthController extends Controller
             'email' => $user->email,
         ]);
 
+        Log::info('User data', [
+            'data' => $user,
+        ]);
+
         return response()->json([
             'success' => true,
             'message' => 'Login successful',

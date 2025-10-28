@@ -19,6 +19,12 @@ class DatabaseSeeder extends Seeder
         //     'password' => bcrypt('password'), // or Hash::make('password')
         // ]);
 
+        // User::factory()->create([
+        //     'name' => 'Admin User 2',
+        //     'email' => 'admin2@example.com',
+        //     'password' => 'password',
+        // ]);
+
         $this->call([
             // ProjectSeeder::class,
             // SkillSeeder::class,
