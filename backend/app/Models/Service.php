@@ -7,7 +7,7 @@ use Illuminate\Support\Str;
 
 class Service extends Model
 {
-    protected $guarded = [
+    protected $fillable = [
         'title',
         'description',
         'features',

@@ -1,5 +1,13 @@
-import { useQuery, useMutation, UseQueryOptions } from '@tanstack/react-query';
-import { projectsService, skillsService, testimonialsService, servicesService, contactService } from '../services/api.service';
+import { useQuery, useMutation, useQueryClient, UseQueryOptions } from '@tanstack/react-query';
+import { 
+  projectsService, 
+  skillsService, 
+  testimonialsService, 
+  servicesService, 
+  contactService,
+  experienceService,
+  ContactFormData
+} from '../services/api.service';
 import { Project, Skill, Testimonial, Service } from '../types';
 
 // ============= Query Keys =============
@@ -16,14 +24,24 @@ export const queryKeys = {
     lists: () => [...queryKeys.skills.all, 'list'] as const,
     list: (filters?: Record<string, any>) => [...queryKeys.skills.lists(), filters] as const,
   },
-  testimonials: ['testimonials'] as const,
-  services: ['services'] as const,
+  testimonials: {
+    all: ['testimonials'] as const,
+    list: (filters?: Record<string, any>) => [...queryKeys.testimonials.all, filters] as const,
+  },
+  services: {
+    all: ['services'] as const,
+    list: (filters?: Record<string, any>) => [...queryKeys.services.all, filters] as const,
+  },
+  experiences: {
+    all: ['experiences'] as const,
+    list: (filters?: Record<string, any>) => [...queryKeys.experiences.all, filters] as const,
+  },
 };
 
 // ============= Default Query Options =============
 const defaultQueryOptions = {
   staleTime: 5 * 60 * 1000, // 5 minutes
-  cacheTime: 30 * 60 * 1000, // 30 minutes
+  gcTime: 30 * 60 * 1000, // 30 minutes (formerly cacheTime in v4)
   refetchOnWindowFocus: false,
   retry: 1,
 };
@@ -32,6 +50,7 @@ const defaultQueryOptions = {
 export function useProjects(params?: { 
   featured?: boolean; 
   per_page?: number;
+  page?: number;
   technology?: string;
 }) {
   return useQuery({
@@ -48,7 +67,7 @@ export function useProject(slug: string, options?: Partial<UseQueryOptions<Proje
     ...defaultQueryOptions,
     enabled: !!slug,
     ...options,
-  });
+  } as any);
 }
 
 export function useFeaturedProjects(limit?: number) {
@@ -60,7 +79,11 @@ export function useFeaturedProjects(limit?: number) {
 }
 
 // ============= Skills Hooks =============
-export function useSkills(params?: { category?: string; grouped?: boolean }) {
+export function useSkills(params?: { 
+  category?: string; 
+  grouped?: boolean;
+  user_id?: number;
+}) {
   return useQuery({
     queryKey: queryKeys.skills.list(params),
     queryFn: () => skillsService.getAll(params),
@@ -77,31 +100,49 @@ export function useSkillsByCategory(category: string) {
   });
 }
 
-// ============= Testimonials Hook =============
-export function useTestimonials() {
+export function useGroupedSkills() {
   return useQuery({
-    queryKey: queryKeys.testimonials,
-    queryFn: testimonialsService.getAll,
+    queryKey: queryKeys.skills.list({ grouped: true }),
+    queryFn: () => skillsService.getGrouped(),
+    ...defaultQueryOptions,
+  });
+}
+
+// ============= Testimonials Hook =============
+export function useTestimonials(params?: { per_page?: number; page?: number }) {
+  return useQuery({
+    queryKey: queryKeys.testimonials.list(params),
+    queryFn: () => testimonialsService.getAll(params),
     ...defaultQueryOptions,
   });
 }
 
 // ============= Services Hook =============
-export function useServices() {
+export function useServices(params?: { per_page?: number; page?: number }) {
   return useQuery({
-    queryKey: queryKeys.services,
-    queryFn: servicesService.getAll,
+    queryKey: queryKeys.services.list(params),
+    queryFn: () => servicesService.getAll(params),
     ...defaultQueryOptions,
   });
 }
 
-// ============= Contact Mutation =============
+// ============= Experiences Hook =============
+export function useExperiences(params?: { user_id?: number; current?: boolean }) {
+  return useQuery({
+    queryKey: queryKeys.experiences.list(params),
+    queryFn: () => experienceService.getAll(params),
+    ...defaultQueryOptions,
+  });
+}
+
+// ============= Mutation Hooks =============
+
+// Contact form submission
 export function useContactSubmit() {
   return useMutation({
-    mutationFn: contactService.submit,
-    onSuccess: () => {
-      // Optionally invalidate or refetch related queries
-      console.log('Contact form submitted successfully');
+    mutationFn: (data: ContactFormData) => contactService.submit(data),
+    onSuccess: (data) => {
+      console.log('Contact form submitted successfully:', data);
     },
     onError: (error) => {
       console.error('Contact form submission failed:', error);
@@ -109,19 +150,103 @@ export function useContactSubmit() {
   });
 }
 
+// Project mutations
+export function useCreateProject() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (formData: FormData) => projectsService.create(formData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.all });
+    },
+  });
+}
+
+export function useUpdateProject() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ id, formData }: { id: number; formData: FormData }) => 
+      projectsService.update(id, formData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.all });
+    },
+  });
+}
+
+export function useDeleteProject() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (id: number) => projectsService.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.all });
+    },
+  });
+}
+
+// Skill mutations
+export function useCreateSkill() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (data: Partial<Skill>) => skillsService.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.skills.all });
+    },
+  });
+}
+
+export function useUpdateSkill() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<Skill> }) => 
+      skillsService.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.skills.all });
+    },
+  });
+}
+
+export function useDeleteSkill() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (id: number) => skillsService.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.skills.all });
+    },
+  });
+}
+
 // ============= Prefetch Utilities =============
 export const prefetchQueries = {
-  projects: (queryClient: ReturnType<typeof useQueryClient>) => {
+  projects: async (queryClient: ReturnType<typeof useQueryClient>, params?: any) => {
     return queryClient.prefetchQuery({
-      queryKey: queryKeys.projects.lists(),
-      queryFn: projectsService.getAll,
+      queryKey: queryKeys.projects.list(params),
+      queryFn: () => projectsService.getAll(params),
     });
   },
   
-  skills: (queryClient: ReturnType<typeof useQueryClient>) => {
+  skills: async (queryClient: ReturnType<typeof useQueryClient>, params?: any) => {
     return queryClient.prefetchQuery({
-      queryKey: queryKeys.skills.lists(),
-      queryFn: skillsService.getAll,
+      queryKey: queryKeys.skills.list(params),
+      queryFn: () => skillsService.getAll(params),
+    });
+  },
+
+  testimonials: async (queryClient: ReturnType<typeof useQueryClient>, params?: any) => {
+    return queryClient.prefetchQuery({
+      queryKey: queryKeys.testimonials.list(params),
+      queryFn: () => testimonialsService.getAll(params),
+    });
+  },
+
+  services: async (queryClient: ReturnType<typeof useQueryClient>, params?: any) => {
+    return queryClient.prefetchQuery({
+      queryKey: queryKeys.services.list(params),
+      queryFn: () => servicesService.getAll(params),
     });
   },
 };
