@@ -40,7 +40,7 @@ export default async function Home() {
   }
   
   // console.log('projects', featuredProjects);
-  console.log('skills', skills);
+  // console.log('skills', skills);
   return (
     <div className="min-h-screen">
       {/* Hero Section */}

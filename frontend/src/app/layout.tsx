@@ -3,6 +3,9 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "../styles/globals.css";
 import { PersonSchema } from "../components/seo/StructuredData";
 import QueryProvider from "../providers/QueryProvider";
+import Header from "@/src/components/layout/Header";
+import AuthProvider from "../providers/AuthProvider";
+// import Footer from "../components/layout/Footer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -72,7 +75,11 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <QueryProvider>
-          {children}
+          <AuthProvider>
+            <Header />
+            <main className="pt-16">{children}</main>
+            {/* <Footer /> */}
+          </AuthProvider>
         </QueryProvider>
       </body>
     </html>
