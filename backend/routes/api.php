@@ -4,6 +4,7 @@ use App\Http\Controllers\API\V1\AuthController;
 use App\Http\Controllers\API\V1\ProjectsController;
 use App\Http\Controllers\API\V1\SkillsController;
 use App\Http\Controllers\API\V1\ContactController;
+use App\Http\Controllers\API\V1\DashboardController;
 use App\Http\Controllers\API\V1\ServiceController;
 use App\Http\Controllers\API\V1\TestimonialController;
 use Illuminate\Http\Request;
@@ -43,7 +44,17 @@ Route::prefix('v1')->group(function () {
             ->middleware(['throttle:6,1'])
             ->name('verification.send');
         
-        // Admin project management
+        // Dashboard routes
+        Route::prefix('dashboard')->group(function () {
+            Route::get('/stats', [DashboardController::class, 'stats']);
+            Route::get('/recent-projects', [DashboardController::class, 'recentProjects']);
+            Route::get('/recent-messages', [DashboardController::class, 'recentMessages']);
+            Route::get('/activity', [DashboardController::class, 'activity']);
+            Route::get('/analytics', [DashboardController::class, 'analytics']);
+            Route::get('/summary', [DashboardController::class, 'summary']);
+        });
+        
+            // Admin project management
         Route::apiResource('admin/projects', ProjectsController::class)
             ->except(['index', 'show']);
         
@@ -52,8 +63,3 @@ Route::prefix('v1')->group(function () {
             ->except(['index']);
     });
 });
-
-// Route::post('/email/verification-notification', function (Request $request) {
-//     $request->user()->sendEmailVerificationNotification();
-//     return response()->json(['message' => 'Verification link sent!']);
-// })->middleware(['auth:sanctum', 'throttle:6,1']);

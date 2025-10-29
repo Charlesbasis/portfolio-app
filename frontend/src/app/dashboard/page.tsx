@@ -1,102 +1,97 @@
 'use client';
 
 import { useAuth } from '../../hooks/useAuth';
+import {
+  useDashboardStats,
+  useRecentProjects,
+  useRecentMessages,
+} from '../../hooks/useDashboard';
 import Card from '../../components/ui/Card';
-import { 
-  FolderKanban, 
-  Award, 
-  Mail, 
+import Button from '../../components/ui/Button';
+import {
+  FolderKanban,
+  Award,
+  Mail,
   TrendingUp,
-  Users,
   Eye,
-  Heart
+  Heart,
+  Loader2,
+  AlertCircle,
+  Briefcase,
+  MessageSquare,
+  Server,
 } from 'lucide-react';
+import { formatDistanceToNow } from '@/src/lib/utils';
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const { data: stats, isLoading: statsLoading, error: statsError } = useDashboardStats();
+  const { data: recentProjects, isLoading: projectsLoading } = useRecentProjects(5);
+  const { data: recentMessages, isLoading: messagesLoading } = useRecentMessages(5);
 
-  const stats = [
-    { 
+  // Loading state
+  if (statsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <Loader2 className="animate-spin text-blue-600 mx-auto mb-4" size={48} />
+          <p className="text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (statsError) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Card padding="lg" className="max-w-md">
+          <div className="text-center">
+            <AlertCircle className="text-red-600 mx-auto mb-4" size={48} />
+            <h2 className="text-xl font-bold text-gray-900 mb-2">
+              Failed to load dashboard
+            </h2>
+            <p className="text-gray-600 mb-4">
+              {statsError instanceof Error ? statsError.message : 'An error occurred'}
+            </p>
+            <Button onClick={() => window.location.reload()}>
+              Try Again
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  const statCards = [
+    {
       label: 'Total Projects',
-      value: '24',
+      value: stats?.projects.total || 0,
       icon: FolderKanban,
       color: 'blue',
-      trend: '+12%'
+      detail: `${stats?.projects.published || 0} published, ${stats?.projects.draft || 0} draft`,
     },
-    { 
+    {
       label: 'Total Skills',
-      value: '18',
+      value: stats?.skills.total || 0,
       icon: Award,
       color: 'green',
-      trend: '+5%'
+      detail: Object.keys(stats?.skills.by_category || {}).length + ' categories',
     },
-    { 
+    {
       label: 'Messages',
-      value: '47',
+      value: stats?.messages.total || 0,
       icon: Mail,
       color: 'purple',
-      trend: '+23%'
+      detail: `${stats?.messages.unread || 0} unread`,
+      badge: stats?.messages.unread,
     },
-    { 
-      label: 'Total Views',
-      value: '12.5k',
-      icon: Eye,
+    {
+      label: 'Experiences',
+      value: stats?.experiences.total || 0,
+      icon: Briefcase,
       color: 'orange',
-      trend: '+18%'
-    },
-  ];
-
-  const recentProjects = [
-    {
-      id: 1,
-      title: 'E-Commerce Platform',
-      status: 'published',
-      views: 2543,
-      likes: 145,
-      date: '2024-10-01'
-    },
-    {
-      id: 2,
-      title: 'Task Management SaaS',
-      status: 'published',
-      views: 1876,
-      likes: 98,
-      date: '2024-09-28'
-    },
-    {
-      id: 3,
-      title: 'Social Media Dashboard',
-      status: 'draft',
-      views: 0,
-      likes: 0,
-      date: '2024-10-05'
-    },
-  ];
-
-  const recentMessages = [
-    {
-      id: 1,
-      name: 'Sarah Johnson',
-      email: 'sarah@example.com',
-      subject: 'Project Inquiry',
-      date: '2024-10-08',
-      read: false
-    },
-    {
-      id: 2,
-      name: 'Michael Chen',
-      email: 'michael@example.com',
-      subject: 'Collaboration Opportunity',
-      date: '2024-10-07',
-      read: false
-    },
-    {
-      id: 3,
-      name: 'Emily Davis',
-      email: 'emily@example.com',
-      subject: 'Question about Services',
-      date: '2024-10-06',
-      read: true
+      detail: `${stats?.experiences.current || 0} current`,
     },
   ];
 
@@ -108,31 +103,44 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="p-8">
+    <div className="space-y-8">
+      {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
           Welcome back, {user?.name || 'Admin'}!
         </h1>
-        <p className="text-gray-600">Here's what's happening with your portfolio today.</p>
+        <p className="text-gray-600">
+          Here's what's happening with your portfolio today.
+        </p>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {stats.map((stat, index) => {
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {statCards.map((stat, index) => {
           const Icon = stat.icon;
           return (
             <Card key={index} hover>
               <div className="flex items-center justify-between">
-                <div>
+                <div className="flex-1">
                   <p className="text-gray-600 text-sm mb-1">{stat.label}</p>
-                  <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
-                  <p className="text-green-600 text-sm mt-1 flex items-center">
-                    <TrendingUp size={14} className="mr-1" />
-                    {stat.trend} from last month
+                  <p className="text-3xl font-bold text-gray-900 mb-1">
+                    {stat.value}
                   </p>
+                  <p className="text-gray-500 text-xs">{stat.detail}</p>
                 </div>
-                <div className={`w-14 h-14 rounded-full ${colorClasses[stat.color as keyof typeof colorClasses]} flex items-center justify-center`}>
-                  <Icon size={28} />
+                <div className="relative">
+                  <div
+                    className={`w-14 h-14 rounded-full ${
+                      colorClasses[stat.color as keyof typeof colorClasses]
+                    } flex items-center justify-center`}
+                  >
+                    <Icon size={28} />
+                  </div>
+                  {stat.badge !== undefined && stat.badge > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                      {stat.badge}
+                    </span>
+                  )}
                 </div>
               </div>
             </Card>
@@ -140,72 +148,168 @@ export default function DashboardPage() {
         })}
       </div>
 
+      {/* Additional Stats */}
+      <div className="grid md:grid-cols-3 gap-6">
+        <Card padding="md">
+          <div className="flex items-center gap-3">
+            <div className="bg-indigo-100 p-3 rounded-lg">
+              <MessageSquare size={24} className="text-indigo-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-900">
+                {stats?.testimonials.total || 0}
+              </p>
+              <p className="text-sm text-gray-600">Testimonials</p>
+            </div>
+          </div>
+        </Card>
+
+        <Card padding="md">
+          <div className="flex items-center gap-3">
+            <div className="bg-pink-100 p-3 rounded-lg">
+              <Server size={24} className="text-pink-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-900">
+                {stats?.services.total || 0}
+              </p>
+              <p className="text-sm text-gray-600">Services</p>
+            </div>
+          </div>
+        </Card>
+
+        <Card padding="md">
+          <div className="flex items-center gap-3">
+            <div className="bg-yellow-100 p-3 rounded-lg">
+              <TrendingUp size={24} className="text-yellow-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-900">
+                {stats?.projects.featured || 0}
+              </p>
+              <p className="text-sm text-gray-600">Featured Projects</p>
+            </div>
+          </div>
+        </Card>
+      </div>
+
       <div className="grid lg:grid-cols-2 gap-8">
         {/* Recent Projects */}
         <Card>
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-gray-900">Recent Projects</h2>
-            <a href="/dashboard/projects" className="text-blue-600 hover:text-blue-800 text-sm font-semibold">
+            <a
+              href="/dashboard/projects"
+              className="text-blue-600 hover:text-blue-800 text-sm font-semibold"
+            >
               View All
             </a>
           </div>
-          <div className="space-y-4">
-            {recentProjects.map((project) => (
-              <div key={project.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900">{project.title}</h3>
-                  <div className="flex items-center gap-4 mt-1 text-sm text-gray-600">
-                    <span className="flex items-center gap-1">
-                      <Eye size={14} />
-                      {project.views}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Heart size={14} />
-                      {project.likes}
-                    </span>
+
+          {projectsLoading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="animate-spin text-gray-400" size={32} />
+            </div>
+          ) : recentProjects && recentProjects.length > 0 ? (
+            <div className="space-y-4">
+              {recentProjects.map((project) => (
+                <div
+                  key={project.id}
+                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-gray-900">
+                      {project.title}
+                    </h3>
+                    <div className="flex items-center gap-2 mt-1 text-sm text-gray-600">
+                      <span>
+                        {formatDistanceToNow(new Date(project.created_at))} ago
+                      </span>
+                      {project.featured && (
+                        <span className="flex items-center gap-1 text-yellow-600">
+                          <Award size={14} />
+                          Featured
+                        </span>
+                      )}
+                    </div>
                   </div>
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                      project.status === 'published'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-yellow-100 text-yellow-800'
+                    }`}
+                  >
+                    {project.status}
+                  </span>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                  project.status === 'published' 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-yellow-100 text-yellow-800'
-                }`}>
-                  {project.status}
-                </span>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <FolderKanban className="text-gray-300 mx-auto mb-2" size={48} />
+              <p className="text-gray-600">No projects yet</p>
+            </div>
+          )}
         </Card>
 
         {/* Recent Messages */}
         <Card>
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-gray-900">Recent Messages</h2>
-            <a href="/dashboard/messages" className="text-blue-600 hover:text-blue-800 text-sm font-semibold">
+            <a
+              href="/dashboard/messages"
+              className="text-blue-600 hover:text-blue-800 text-sm font-semibold"
+            >
               View All
             </a>
           </div>
-          <div className="space-y-4">
-            {recentMessages.map((message) => (
-              <div key={message.id} className={`p-4 rounded-lg border ${
-                message.read ? 'bg-white border-gray-200' : 'bg-blue-50 border-blue-200'
-              }`}>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-gray-900">{message.name}</h3>
-                      {!message.read && (
-                        <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
-                      )}
+
+          {messagesLoading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="animate-spin text-gray-400" size={32} />
+            </div>
+          ) : recentMessages && recentMessages.length > 0 ? (
+            <div className="space-y-4">
+              {recentMessages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`p-4 rounded-lg border ${
+                    message.status === 'unread'
+                      ? 'bg-blue-50 border-blue-200'
+                      : 'bg-white border-gray-200'
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-gray-900">
+                          {message.name}
+                        </h3>
+                        {message.status === 'unread' && (
+                          <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600 mt-1">
+                        {message.subject}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {message.email}
+                      </p>
                     </div>
-                    <p className="text-sm text-gray-600 mt-1">{message.subject}</p>
-                    <p className="text-xs text-gray-500 mt-1">{message.email}</p>
+                    <span className="text-xs text-gray-500">
+                      {formatDistanceToNow(new Date(message.created_at))} ago
+                    </span>
                   </div>
-                  <span className="text-xs text-gray-500">{message.date}</span>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <Mail className="text-gray-300 mx-auto mb-2" size={48} />
+              <p className="text-gray-600">No messages yet</p>
+            </div>
+          )}
         </Card>
       </div>
 
