@@ -21,10 +21,10 @@ return new class extends Migration
             $table->string('ip_address')->nullable();
             $table->text('user_agent')->nullable();
             $table->timestamps();
-            
             $table->index('status');
             $table->index('created_at');
             $table->index('email');
+            $table->string('slug')->unique();
         });
     }
 

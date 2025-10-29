@@ -22,6 +22,7 @@ class TestimonialSeeder extends Seeder
             'role' => 'CEO',
             'content' => 'Outstanding work! Delivered our project on time with exceptional quality. Highly recommend!',
             'avatar_url' => 'https://via.placeholder.com/150',
+            'slug' => 'john-doe',
         ]);
     }
 }

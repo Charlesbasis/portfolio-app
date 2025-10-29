@@ -41,10 +41,10 @@ class AuthController extends Controller
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        Log::info('User registered successfully', [
-            'user_id' => $user->id,
-            'email' => $user->email,
-        ]);
+        // Log::info('User registered successfully', [
+        //     'user_id' => $user->id,
+        //     'email' => $user->email,
+        // ]);
 
         return response()->json([
             'success' => true,
@@ -142,10 +142,10 @@ class AuthController extends Controller
 
         $request->user()->sendEmailVerificationNotification();
 
-        Log::info('Verification email resent', [
-            'user_id' => $request->user()->id,
-            'email' => $request->user()->email,
-        ]);
+        // Log::info('Verification email resent', [
+        //     'user_id' => $request->user()->id,
+        //     'email' => $request->user()->email,
+        // ]);
 
         return response()->json([
             'success' => true,
@@ -180,10 +180,10 @@ class AuthController extends Controller
 
         $user->markEmailAsVerified();
 
-        Log::info('Email verified successfully', [
-            'user_id' => $user->id,
-            'email' => $user->email,
-        ]);
+        // Log::info('Email verified successfully', [
+        //     'user_id' => $user->id,
+        //     'email' => $user->email,
+        // ]);
 
         return response()->json([
             'success' => true,

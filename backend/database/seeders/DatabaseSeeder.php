@@ -30,6 +30,7 @@ class DatabaseSeeder extends Seeder
             // SkillSeeder::class,
             // TestimonialSeeder::class,
             // ServiceSeeder::class,
+            UserDataSeeder::class,
             // Add more seeders here as needed
         ]);
 

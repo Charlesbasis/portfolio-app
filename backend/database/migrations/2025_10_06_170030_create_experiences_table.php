@@ -25,10 +25,9 @@ return new class extends Migration
             $table->json('technologies')->nullable();
             $table->integer('order')->default(0);
             $table->timestamps();
-            
             $table->index(['user_id', 'start_date']);
             $table->index('is_current');
-
+            $table->string('slug')->unique();
         });
     }
 

@@ -21,6 +21,7 @@ class SkillSeeder extends Seeder
             'name' => 'Laravel',
             'category' => 'backend',
             'proficiency' => 90,
+            'slug' => 'laravel',
         ]);
     }
 }

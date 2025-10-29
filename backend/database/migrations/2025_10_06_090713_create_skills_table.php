@@ -20,8 +20,9 @@ return new class extends Migration
             $table->integer('proficiency')->default(50); // 0-100
             $table->string('icon_url')->nullable();
             $table->integer('years_of_experience')->nullable();
-            $table->integer('order')->default(0);            
+            $table->integer('order')->default(0);
             $table->index(['user_id', 'category']);
+            $table->string('slug')->unique();
         });
     }
 

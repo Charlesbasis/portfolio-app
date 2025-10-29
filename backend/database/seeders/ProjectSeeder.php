@@ -19,6 +19,7 @@ class ProjectSeeder extends Seeder
         Projects::create([
             'user_id' => $user->id,
             'title' => 'E-Commerce Platform',
+            'slug' => 'ecommerce-platform',
             'description' => 'A full-featured online shopping platform',
             'technologies' => ['Laravel', 'React', 'MySQL'],
             'featured' => true,

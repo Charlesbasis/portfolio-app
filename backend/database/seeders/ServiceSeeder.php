@@ -19,6 +19,7 @@ class ServiceSeeder extends Seeder
         Service::create([
             'user_id' => $user->id,
             'title' => 'Frontend Development',
+            'slug' => 'frontend-development',
             'description' => 'Creating responsive, modern user interfaces with React, Next.js, Vue.js, and cutting-edge CSS frameworks.',
             'features' => ['Responsive Design', 'Performance Optimization', 'Cross-browser Compatibility'],
         ]);
