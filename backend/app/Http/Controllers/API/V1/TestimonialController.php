@@ -1,44 +1,45 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\API\V1;
 
+use App\Http\Controllers\Controller;
+use App\Http\Resources\TestimonialResource;
 use App\Models\Testimonial;
+use App\Repositories\TestimonialRepository;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class TestimonialController extends Controller
 {
+    public function __construct(
+        private TestimonialRepository $repository
+    ) {}
     /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
     {
-        $query = Testimonial::query()->orderBy('name');
+        // Log::info('TestimonialController@index called', [
+        //     'params' => $request->all(),
+        //     'ip' => $request->ip()
+        // ]);
 
-        if ($request->has('category')) {
-            $query->byCategory($request->category);
-        }
+        $cacheKey = 'testimonials:' . md5(json_encode($request->all()));
 
-        if ($request->has('user_id')) {
-            $query->where('user_id', $request->user_id);
-        }
+        $testimonials = Cache::remember($cacheKey, 3600, function () use ($request) {
+            $query = $this->repository->getAll();
 
-        // Group by category if requested
-        if ($request->has('grouped') && $request->grouped === 'true') {
-            $testimonial = $query->get()->groupBy('category');
+            return $query->paginate($request->get('per_page', 12));
+        });
 
-            return response()->json([
-                'success' => true,
-                'data' => $testimonial,
-            ]);
-        }
+        // Log::info('TestimonialController: Retrieved testimonials', [
+        //     'count' => $testimonials->count(),
+        //     'total' => $testimonials->total()
+        // ]);
 
-        $testimonial = $query->get();
-
-        return response()->json([
-            'success' => true,
-            'data' => $testimonial,
-        ]);
+        return TestimonialResource::collection($testimonials);
     }
 
     /**
@@ -76,7 +77,7 @@ class TestimonialController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Testimonial created successfully',
-            'data' => $testimonial,
+            'data' => new TestimonialResource($testimonial),
         ], 201);
     }
 
@@ -87,7 +88,7 @@ class TestimonialController extends Controller
     {
         return response()->json([
             'success' => true,
-            'data' => $testimonial,
+            'data' => new TestimonialResource($testimonial),
         ]);
     }
 
@@ -123,7 +124,7 @@ class TestimonialController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Testimonial updated successfully',
-            'data' => $testimonial,
+            'data' => new TestimonialResource($testimonial),
         ]);
     }
 

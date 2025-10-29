@@ -1,5 +1,5 @@
 import { MetadataRoute } from 'next';
-import { projectsService } from '../services/projects.service';
+import { projectsService } from '../services/api.service';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const projects = await projectsService.getAll();

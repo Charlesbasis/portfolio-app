@@ -26,7 +26,7 @@ return new class extends Migration
             $table->boolean('featured')->default(false);
             $table->integer('order')->default(0);
             $table->enum('status', ['draft', 'published'])->default('published');
-            $table->softDeletes();            
+            $table->softDeletes();
             $table->index(['user_id', 'status']);
             $table->index('featured');
 

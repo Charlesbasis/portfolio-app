@@ -1,20 +1,43 @@
 'use server';
-import { ArrowRight, Briefcase, CheckCircle, Code, ExternalLink, Github, Linkedin, Mail, Star, Twitter } from 'lucide-react';
+
+import { ArrowRight, Briefcase, CheckCircle, Code, ExternalLink, Mail, Star } from 'lucide-react';
 import Link from 'next/link';
 import ContactForm from '../components/forms/ContactForm';
-import { projectsService } from '../services/projects.service';
-import { servicesService } from '../services/services.service';
-import { skillsService } from '../services/skills.service';
-import { testimonialsService } from '../services/testimonials.service';
+import { 
+  projectsService, 
+  skillsService, 
+  testimonialsService,
+  servicesService,
+  contactService,
+  authService
+} from '../services/api.service';
 
 export default async function Home() {
 
-  const [featuredProjects, skills, testimonials, services] = await Promise.all([
+  // Fetch all data with Promise.allSettled for better error handling
+  const results = await Promise.allSettled([
     projectsService.getAll({ featured: true, per_page: 3 }),
     skillsService.getAll(),
     testimonialsService.getAll(),
     servicesService.getAll(),
   ]);
+
+  // Extract data with fallbacks
+  const featuredProjects = results[0].status === 'fulfilled' ? results[0].value : [];
+  const skills = results[1].status === 'fulfilled' ? results[1].value : [];
+  const testimonials = results[2].status === 'fulfilled' ? results[2].value : [];
+  const services = results[3].status === 'fulfilled' ? results[3].value : [];
+
+  // Log errors in development
+  const isDevelopment = process.env.NODE_ENV !== 'production';
+  if (isDevelopment) {
+    results.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        const names = ['Projects', 'Skills', 'Testimonials', 'Services'];
+        console.error(`Failed to fetch ${names[index]}:`, result.reason);
+      }
+    });
+  }
   
   // console.log('projects', featuredProjects);
   // console.log('skills', skills);
@@ -69,28 +92,30 @@ export default async function Home() {
 
               <div className="flex gap-4 mt-8 justify-center lg:justify-start">
                 <a
-                  href="https://github.com"
+                  href="https://github.com/charlesbasis"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="bg-white bg-opacity-10 backdrop-blur-sm p-3 rounded-full hover:bg-opacity-20 transition-all"
+                  className="bg-opacity-10 backdrop-blur-sm p-3 rounded-full hover:bg-opacity-20 transition-all"
                 >
-                  <Github size={24} />
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-github-icon lucide-github"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>
                 </a>
                 <a
-                  href="https://linkedin.com"
+                  href="https://www.linkedin.com/in/charles-valerio-howlader/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="bg-white bg-opacity-10 backdrop-blur-sm p-3 rounded-full hover:bg-opacity-20 transition-all"
+                  className="bg-opacity-10 backdrop-blur-sm p-3 rounded-full hover:bg-opacity-20 transition-all"
                 >
-                  <Linkedin size={24} />
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-linkedin-icon lucide-linkedin"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg>
                 </a>
                 <a
                   href="https://twitter.com"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="bg-white bg-opacity-10 backdrop-blur-sm p-3 rounded-full hover:bg-opacity-20 transition-all"
+                  className="bg-opacity-10 backdrop-blur-sm p-3 rounded-full hover:bg-opacity-20 transition-all"
                 >
-                  <Twitter size={24} />
+                  <svg width="24" height="24" viewBox="0 0 1200 1227" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M714.163 519.284L1160.89 0H1055.03L667.137 450.887L357.328 0H0L468.492 681.821L0 1226.37H105.866L515.491 750.218L842.672 1226.37H1200L714.137 519.284H714.163ZM569.165 687.828L521.697 619.934L144.011 79.6944H306.615L611.412 515.685L658.88 583.579L1055.08 1150.3H892.476L569.165 687.854V687.828Z" fill="white" />
+                  </svg>
                 </a>
               </div>
             </div>
@@ -192,11 +217,11 @@ export default async function Home() {
                 </div>
                 
                 <div className="p-6">
-                  <h3 className="text-xl font-bold mb-2 text-gray-900">{project.title}</h3>
-                  <p className="text-gray-600 mb-4 line-clamp-2">{project.description}</p>
+                  <h3 className="text-xl font-bold mb-2 text-gray-900">{project?.title}</h3>
+                  <p className="text-gray-600 mb-4 line-clamp-2">{project?.description}</p>
                   
                   <div className="flex flex-wrap gap-2 mb-4">
-                    {project.technologies.slice(0, 3)?.map((tech) => (
+                    {project?.technologies?.slice(0, 3)?.map((tech) => (
                       <span
                         key={tech}
                         className="px-3 py-1 bg-blue-100 text-blue-800 text-xs rounded-full font-medium"
@@ -207,7 +232,7 @@ export default async function Home() {
                   </div>
                   
                   <Link
-                    href={`/projects/${project.slug}`}
+                    href={`/projects/${project?.slug}`}
                     className="inline-flex items-center text-blue-600 hover:text-blue-800 font-semibold group"
                   >
                     View Details
@@ -281,15 +306,15 @@ export default async function Home() {
                   ))}
                 </div>
                 <p className="text-gray-700 text-lg mb-6 leading-relaxed italic">
-                  "{testimonial.content}"
+                  "{testimonial?.content}"
                 </p>
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                    {testimonial.name.charAt(0)}
+                    {testimonial?.name?.charAt(0)}
                   </div>
                   <div>
-                    <div className="font-bold text-gray-900">{testimonial.name}</div>
-                    <div className="text-gray-600 text-sm">{testimonial.role}</div>
+                    <div className="font-bold text-gray-900">{testimonial?.name}</div>
+                    <div className="text-gray-600 text-sm">{testimonial?.role}</div>
                   </div>
                 </div>
               </div>

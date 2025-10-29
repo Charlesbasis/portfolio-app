@@ -3,51 +3,63 @@
 namespace App\Http\Controllers\API\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\SkillResource;
 use App\Models\Skills;
+use App\Repositories\SkillRepository;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class SkillsController extends Controller
 {
+    public function __construct(
+        private SkillRepository $repository
+    ) {}
+    
     /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
     {
-        $query = Skills::query()->orderBy('order')->orderBy('name');
+        // Log::info('SkillsController@index called', [
+        //     'params' => $request->all(),
+        //     'ip' => $request->ip()
+        // ]);
 
-        if ($request->has('category')) {
-            $query->byCategory($request->category);
-        }
+        $cacheKey = 'skills:list:' . request('grouped', 'true');
 
-        if ($request->has('user_id')) {
-            $query->where('user_id', $request->user_id);
-        }
+        $skills = Cache::remember($cacheKey, 3600, function () use ($request) {
 
-        // Group by category if requested
+            if ($request->has('grouped') && $request->grouped === 'true') {
+                return $this->repository->getGroupedByCategory();
+            }
+
+            $filters = $request->only(['category', 'user_id']);
+            $query = $this->repository->getAll($filters);
+
+            if ($request->has('user_id')) {
+                $query->where('user_id', $request->user_id);
+            }
+
+            return $query->get();
+        });
+
+        // Log::info('SkillsController: Retrieved skills', [
+        //     'count' => is_countable($skills) ? count($skills) : $skills->count()
+        // ]);
+
         if ($request->has('grouped') && $request->grouped === 'true') {
-            $skills = $query->get()->groupBy('category');
-
             return response()->json([
                 'success' => true,
                 'data' => $skills,
             ]);
         }
 
-        $skills = $query->get();
-
         return response()->json([
             'success' => true,
-            'data' => $skills,
+            'data' => SkillResource::collection($skills),
         ]);
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
     }
 
     /**
@@ -55,6 +67,10 @@ class SkillsController extends Controller
      */
     public function store(Request $request)
     {
+        // Log::info('SkillsController@store called', [
+        //     'user_id' => $request->user()->id
+        // ]);
+
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'category' => 'required|in:frontend,backend,database,tools,devops,other',
@@ -65,8 +81,13 @@ class SkillsController extends Controller
         ]);
 
         if ($validator->fails()) {
+            Log::warning('SkillsController@store validation failed', [
+                'errors' => $validator->errors()
+            ]);
+
             return response()->json([
                 'success' => false,
+                'message' => 'Validation failed',
                 'errors' => $validator->errors(),
             ], 422);
         }
@@ -76,38 +97,45 @@ class SkillsController extends Controller
 
         $skill = Skills::create($data);
 
+        Cache::forget('skills:*');
+
+        // Log::info('SkillsController@store success', [
+        //     'skill_id' => $skill->id
+        // ]);
+
         return response()->json([
             'success' => true,
             'message' => 'Skill created successfully',
-            'data' => $skill,
+            'data' => new SkillResource($skill),
         ], 201);
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(Skills $skills)
+    public function show(Skills $skill)
     {
+        // Log::info('SkillsController@show called', [
+        //     'skill_id' => $skill->id
+        // ]);
+
         return response()->json([
             'success' => true,
-            'data' => $skills,
+            'data' => new SkillResource($skill),
         ]);
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Skills $skills)
-    {
-        //
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Skills $skills)
+    public function update(Request $request, Skills $skill)
     {
-        // $this->authorize('update', $skills);
+        // Log::info('SkillsController@update called', [
+        //     'skill_id' => $skill->id,
+        //     'user_id' => $request->user()->id
+        // ]);
+
+        // $this->authorize('update', $skill);
 
         $validator = Validator::make($request->all(), [
             'name' => 'string|max:255',
@@ -119,29 +147,51 @@ class SkillsController extends Controller
         ]);
 
         if ($validator->fails()) {
+            Log::warning('SkillsController@update validation failed', [
+                'errors' => $validator->errors()
+            ]);
+
             return response()->json([
                 'success' => false,
+                'message' => 'Validation failed',
                 'errors' => $validator->errors(),
             ], 422);
         }
 
-        $skills->update($validator->validated());
+        $skill->update($validator->validated());
+
+        Cache::forget('skills:*');
+
+        // Log::info('SkillsController@update success', [
+        //     'skill_id' => $skill->id
+        // ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Skill updated successfully',
-            'data' => $skills,
+            'data' => new SkillResource($skill),
         ]);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Skills $skills)
+    public function destroy(Skills $skill)
     {
-        // $this->authorize('delete', $skills);
+        // Log::info('SkillsController@destroy called', [
+        //     'skill_id' => $skill->id,
+        //     'user_id' => auth()->id()
+        // ]);
 
-        $skills->delete();
+        // $this->authorize('delete', $skill);
+
+        $skill->delete();
+
+        Cache::forget('skills:*');
+
+        // Log::info('SkillsController@destroy success', [
+        //     'skill_id' => $skill->id
+        // ]);
 
         return response()->json([
             'success' => true,

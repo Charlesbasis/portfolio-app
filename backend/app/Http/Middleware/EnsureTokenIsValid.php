@@ -43,12 +43,12 @@ class EnsureTokenIsValid
         }
 
         // Log token usage for security auditing
-        Log::info('API Token used', [
-            'user_id' => $user->id,
-            'email' => $user->email,
-            'ip' => $request->ip(),
-            'endpoint' => $request->path(),
-        ]);
+        // Log::info('API Token used', [
+        //     'user_id' => $user->id,
+        //     'email' => $user->email,
+        //     'ip' => $request->ip(),
+        //     'endpoint' => $request->path(),
+        // ]);
 
         return $next($request);
     }

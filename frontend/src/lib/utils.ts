@@ -45,3 +45,37 @@ export function getInitials(name: string): string {
     .toUpperCase()
     .slice(0, 2);
 }
+
+export function extractData<T>(response: any): T | null {
+  if (!response) return null;
+  
+  // Case 1: Standard API response { success: true, data: T }
+  if (response.success && response.data !== undefined) {
+    return response.data;
+  }
+  
+  // Case 2: Direct data { data: T }
+  if (response.data !== undefined) {
+    return response.data;
+  }
+  
+  // Case 3: Direct object (the data itself)
+  return response;
+}
+
+export function extractNestedData<T>(response: any, path: string): T | null {
+  if (!response) return null;
+  
+  const keys = path.split('.');
+  let current = response;
+  
+  for (const key of keys) {
+    if (current && typeof current === 'object' && key in current) {
+      current = current[key];
+    } else {
+      return null;
+    }
+  }
+  
+  return current as T;
+}
