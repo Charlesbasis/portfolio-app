@@ -46,27 +46,6 @@ export function getInitials(name: string): string {
     .slice(0, 2);
 }
 
-// export function extractData<T>(response: any): T {
-//   // Handle paginated responses with meta
-//   if (response?.data && response?.meta) {
-//     return response.data as T;
-//   }
-  
-//   // Handle simple success wrapper { success: true, data: [...] }
-//   if (response?.success && response?.data !== undefined) {
-//     return response.data as T;
-//   }
-  
-//   // Handle direct data response (already unwrapped by handleApiRequest)
-//   if (response?.data !== undefined) {
-//     return response.data as T;
-//   }
-  
-//   // Return as-is if it's already the right structure
-//   return response as T;
-// }
-
-// Add this to your api.ts
 export function extractData<T>(response: any): T | null {
   if (!response) return null;
   

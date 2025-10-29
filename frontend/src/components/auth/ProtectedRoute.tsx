@@ -10,22 +10,20 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
   const pathname = usePathname();
   const { isAuthenticated, isLoading, checkAuth } = useAuth();
   const [isChecking, setIsChecking] = useState(true);
-
+  
   useEffect(() => {
     const verifyAuth = async () => {
       if (!isAuthenticated) {
-        // Store the intended destination
         const returnUrl = encodeURIComponent(pathname || '/dashboard');
         router.push(`/auth/login?returnUrl=${returnUrl}`);
       } else {
-        // Verify the token is still valid
         await checkAuth();
         setIsChecking(false);
       }
     };
 
     verifyAuth();
-  }, [isAuthenticated, pathname, router, checkAuth]);
+  }, []);
 
   if (isLoading || isChecking) {
     return (

@@ -81,11 +81,11 @@ export default function Header() {
               <div className="flex items-center gap-4">
                 <div
                   className={`flex items-center gap-2 ${
-                    isScrolled ? 'text-gray-700' : 'text-white'
+                    isScrolled ? 'text-gray-700 hover:text-blue-600' : 'text-blue-300 hover:text-blue-600'
                   }`}
                 >
                   <User size={20} />
-                  <span className="font-medium">{user?.name}</span>
+                  <span className="font-semibold">{user?.name}</span>
                 </div>
                 <Link
                   href="/dashboard"
@@ -100,10 +100,10 @@ export default function Header() {
                 </Link>
                 <button
                   onClick={handleLogout}
-                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all ${
+                  className={`cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all ${
                     isScrolled
-                      ? 'border-2 border-gray-300 text-gray-700 hover:bg-gray-100'
-                      : 'border-2 border-white text-white hover:bg-white hover:text-blue-600'
+                      ? 'border-2 border-gray-600 text-gray-700 hover:bg-blue-50'
+                      : 'border-2 border-gray-300 text-gray-300 hover:bg-blue-50 hover:text-red-600'
                   }`}
                 >
                   <LogOut size={18} />
