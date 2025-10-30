@@ -163,3 +163,122 @@ export interface DashboardSummary {
     } | null;
   };
 }
+
+export interface UserProfile {
+  id: number;
+  user_id: number;
+  username: string;
+  full_name: string;
+  tagline?: string;
+  bio?: string;
+  location?: string;
+  website?: string;
+  avatar_url?: string;
+  cover_image_url?: string;
+  
+  // Social Links
+  github_url?: string;
+  linkedin_url?: string;
+  twitter_url?: string;
+  
+  // Contact Info
+  email: string;
+  phone?: string;
+  
+  // Professional Info
+  job_title?: string;
+  company?: string;
+  years_experience?: number;
+  availability_status?: 'available' | 'busy' | 'not_available';
+  
+  // Stats
+  total_projects?: number;
+  total_skills?: number;
+  profile_views?: number;
+  
+  // Settings
+  is_public: boolean;
+  show_email: boolean;
+  show_phone: boolean;
+  
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Experience {
+  id: number;
+  user_id: number;
+  company: string;
+  position: string;
+  description?: string;
+  start_date: string;
+  end_date?: string | null;
+  is_current: boolean;
+  location?: string;
+  company_url?: string;
+  technologies?: string[];
+  order?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Education {
+  id: number;
+  user_id: number;
+  institution: string;
+  degree: string;
+  field_of_study: string;
+  start_date: string;
+  end_date?: string | null;
+  is_current: boolean;
+  description?: string;
+  grade?: string;
+  location?: string;
+  order?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Certification {
+  id: number;
+  user_id: number;
+  name: string;
+  issuing_organization: string;
+  issue_date: string;
+  expiry_date?: string | null;
+  credential_id?: string;
+  credential_url?: string;
+  description?: string;
+  order?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SocialStats {
+  total_projects: number;
+  total_skills: number;
+  years_experience: number;
+  happy_clients: number;
+  profile_views: number;
+}
+
+export interface UserWithProfile {
+  id: number;
+  name: string;
+  email: string;
+  created_at: string;
+  profile?: UserProfile;
+}
+
+export interface PortfolioPageProps {
+  params: Promise<{ username: string }>;
+}
+
+export interface ExperienceTimelineProps {
+  experiences: Experience[];
+  isLoading?: boolean;
+}
+
+export interface AboutSectionProps {
+  profile: UserProfile;
+}

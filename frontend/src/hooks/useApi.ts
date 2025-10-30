@@ -52,6 +52,7 @@ export function useProjects(params?: {
   per_page?: number;
   page?: number;
   technology?: string;
+  user_id?: number;
 }) {
   return useQuery({
     queryKey: queryKeys.projects.list(params),

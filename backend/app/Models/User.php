@@ -10,40 +10,72 @@ use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasApiTokens;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
     protected $fillable = [
         'name',
         'email',
         'password',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Get the user's profile.
+     */
+    public function profile()
+    {
+        return $this->hasOne(UserProfile::class);
+    }
+
+    /**
+     * Get the user's projects.
+     */
+    public function projects()
+    {
+        return $this->hasMany(Projects::class);
+    }
+
+    /**
+     * Get the user's skills.
+     */
+    public function skills()
+    {
+        return $this->hasMany(Skills::class);
+    }
+
+    /**
+     * Get the user's experiences.
+     */
+    public function experiences()
+    {
+        return $this->hasMany(Experience::class);
+    }
+
+    /**
+     * Get the user's education.
+     */
+    public function education()
+    {
+        return $this->hasMany(Education::class);
+    }
+
+    /**
+     * Get the user's certifications.
+     */
+    public function certifications()
+    {
+        return $this->hasMany(Certification::class);
     }
 }

@@ -3,46 +3,54 @@
 namespace App\Http\Controllers\API\V1;
 
 use App\Http\Controllers\Controller;
-
-use App\Models\Experience;
+use App\Models\Education;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
-class ExperienceController extends Controller
+class EducationController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
     {
-        $query = Experience::query()
+        $query = Education::where('user_id', $request->user()->id)
             ->orderBy('start_date', 'desc')
             ->orderBy('order');
-
-        if ($request->has('user_id')) {
-            $query->where('user_id', $request->user_id);
-        }
 
         if ($request->has('current') && $request->current === 'true') {
             $query->current();
         }
 
-        $experiences = $query->get();
+        $education = $query->get();
 
         return response()->json([
             'success' => true,
-            'data' => $experiences,
+            'data' => $education,
         ]);
-
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Get user's education (public).
      */
-    public function create()
+    public function userEducation($username)
     {
-        //
+        $user = User::where('email', $username)
+            ->orWhereHas('profile', function($query) use ($username) {
+                $query->where('username', $username);
+            })
+            ->firstOrFail();
+
+        $education = Education::where('user_id', $user->id)
+            ->orderBy('start_date', 'desc')
+            ->orderBy('order')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $education,
+        ]);
     }
 
     /**
@@ -51,15 +59,15 @@ class ExperienceController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'company' => 'required|string|max:255',
-            'position' => 'required|string|max:255',
-            'description' => 'required|string',
+            'institution' => 'required|string|max:255',
+            'degree' => 'required|string|max:255',
+            'field_of_study' => 'required|string|max:255',
             'start_date' => 'required|date',
             'end_date' => 'nullable|date|after:start_date',
             'is_current' => 'boolean',
+            'description' => 'nullable|string',
+            'grade' => 'nullable|string|max:50',
             'location' => 'nullable|string|max:255',
-            'company_url' => 'nullable|url|max:500',
-            'technologies' => 'nullable|array',
             'order' => 'nullable|integer',
         ]);
 
@@ -78,53 +86,41 @@ class ExperienceController extends Controller
             $data['end_date'] = null;
         }
 
-        $experience = Experience::create($data);
+        $education = Education::create($data);
 
         return response()->json([
             'success' => true,
-            'message' => 'Experience created successfully',
-            'data' => $experience,
+            'message' => 'Education created successfully',
+            'data' => $education,
         ], 201);
-
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(Experience $experience)
+    public function show(Education $education)
     {
         return response()->json([
             'success' => true,
-            'data' => $experience,
+            'data' => $education,
         ]);
-
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Experience $experience)
-    {
-        //
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Experience $experience)
+    public function update(Request $request, Education $education)
     {
-        // $this->authorize('update', $experience);
-
         $validator = Validator::make($request->all(), [
-            'company' => 'string|max:255',
-            'position' => 'string|max:255',
-            'description' => 'string',
+            'institution' => 'string|max:255',
+            'degree' => 'string|max:255',
+            'field_of_study' => 'string|max:255',
             'start_date' => 'date',
             'end_date' => 'nullable|date|after:start_date',
             'is_current' => 'boolean',
+            'description' => 'nullable|string',
+            'grade' => 'nullable|string|max:50',
             'location' => 'nullable|string|max:255',
-            'company_url' => 'nullable|url|max:500',
-            'technologies' => 'nullable|array',
             'order' => 'nullable|integer',
         ]);
 
@@ -142,51 +138,25 @@ class ExperienceController extends Controller
             $data['end_date'] = null;
         }
 
-        $experience->update($data);
+        $education->update($data);
 
         return response()->json([
             'success' => true,
-            'message' => 'Experience updated successfully',
-            'data' => $experience,
+            'message' => 'Education updated successfully',
+            'data' => $education,
         ]);
-
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Experience $experience)
+    public function destroy(Education $education)
     {
-        // $this->authorize('delete', $experience);
-
-        $experience->delete();
+        $education->delete();
 
         return response()->json([
             'success' => true,
-            'message' => 'Experience deleted successfully',
-        ]);
-
-    }
-
-    /**
- * Get user's experiences (public).
- */
-    public function userExperiences($username)
-    {
-        $user = User::where('email', $username)
-            ->orWhereHas('profile', function ($query) use ($username) {
-                $query->where('username', $username);
-            })
-            ->firstOrFail();
-
-        $experiences = Experience::where('user_id', $user->id)
-            ->orderBy('start_date', 'desc')
-            ->orderBy('order')
-            ->get();
-
-        return response()->json([
-            'success' => true,
-            'data' => $experiences,
+            'message' => 'Education deleted successfully',
         ]);
     }
 }

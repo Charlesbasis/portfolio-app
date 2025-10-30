@@ -1,10 +1,14 @@
 <?php
 
 use App\Http\Controllers\API\V1\AuthController;
+use App\Http\Controllers\API\V1\CertificationController;
 use App\Http\Controllers\API\V1\ProjectsController;
 use App\Http\Controllers\API\V1\SkillsController;
 use App\Http\Controllers\API\V1\ContactController;
 use App\Http\Controllers\API\V1\DashboardController;
+use App\Http\Controllers\API\V1\EducationController;
+use App\Http\Controllers\API\V1\ExperienceController;
+use App\Http\Controllers\API\V1\ProfileController;
 use App\Http\Controllers\API\V1\ServiceController;
 use App\Http\Controllers\API\V1\TestimonialController;
 use Illuminate\Http\Request;
@@ -26,6 +30,17 @@ Route::prefix('v1')->group(function () {
     Route::get('/testimonials', [TestimonialController::class, 'index']);
     Route::get('/services', [ServiceController::class, 'index']);
     
+    // Public Profile Routes (no auth required)
+    Route::prefix('users/{username}')->group(function () {
+        Route::get('/profile', [ProfileController::class, 'showPublic']);
+        Route::get('/stats', [ProfileController::class, 'publicStats']);
+        Route::get('/projects', [ProjectsController::class, 'userProjects']);
+        Route::get('/skills', [SkillsController::class, 'index']);
+        Route::get('/experiences', [ExperienceController::class, 'userExperiences']);
+        Route::get('/education', [EducationController::class, 'userEducation']);
+        Route::get('/certifications', [CertificationController::class, 'userCertifications']);
+    });
+    
     // Auth routes
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
@@ -44,6 +59,12 @@ Route::prefix('v1')->group(function () {
             ->middleware(['throttle:6,1'])
             ->name('verification.send');
         
+        // Current user profile
+        Route::get('/profile', [ProfileController::class, 'show']);
+        Route::put('/profile', [ProfileController::class, 'update']);
+        Route::post('/profile/avatar', [ProfileController::class, 'uploadAvatar']);
+        Route::post('/profile/cover-image', [ProfileController::class, 'uploadCoverImage']);
+        
         // Dashboard routes
         Route::prefix('dashboard')->group(function () {
             Route::get('/stats', [DashboardController::class, 'stats']);
@@ -54,12 +75,37 @@ Route::prefix('v1')->group(function () {
             Route::get('/summary', [DashboardController::class, 'summary']);
         });
         
-            // Admin project management
+        // Admin project management
         Route::apiResource('admin/projects', ProjectsController::class)
             ->except(['index', 'show']);
         
         // Admin skill management
         Route::apiResource('admin/skills', SkillsController::class)
             ->except(['index']);
+
+        // Experiences
+        Route::apiResource('experiences', ExperienceController::class);
+        
+        // Education
+        Route::apiResource('education', EducationController::class);
+        
+        // Certifications
+        Route::apiResource('certifications', CertificationController::class);
+        
+        // Admin Contact management
+        Route::prefix('admin')->group(function () {
+            Route::get('/contacts', [ContactController::class, 'index']);
+            Route::put('/contacts/{contact}', [ContactController::class, 'update']);
+            Route::delete('/contacts/{contact}', [ContactController::class, 'destroy']);
+        });
+        
+        // Admin Service management
+        Route::apiResource('admin/services', ServiceController::class)
+            ->except(['index', 'show']);
+        
+        // Admin Testimonial management
+        Route::apiResource('admin/testimonials', TestimonialController::class)
+            ->except(['index']);
+
     });
 });
