@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import {
   useDashboardStats,
@@ -13,23 +14,63 @@ import {
   Award,
   Mail,
   TrendingUp,
-  Eye,
-  Heart,
   Loader2,
   AlertCircle,
   Briefcase,
   MessageSquare,
   Server,
+  RefreshCw,
+  Clock,
 } from 'lucide-react';
 import { formatDistanceToNow } from '@/src/lib/utils';
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const { data: stats, isLoading: statsLoading, error: statsError } = useDashboardStats();
-  const { data: recentProjects, isLoading: projectsLoading } = useRecentProjects(5);
-  const { data: recentMessages, isLoading: messagesLoading } = useRecentMessages(5);
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  
+  const { 
+    data: stats, 
+    isLoading: statsLoading, 
+    error: statsError,
+    refetch: refetchStats 
+  } = useDashboardStats();
+  
+  const { 
+    data: recentProjects, 
+    isLoading: projectsLoading,
+    refetch: refetchProjects 
+  } = useRecentProjects(5);
+  
+  const { 
+    data: recentMessages, 
+    isLoading: messagesLoading,
+    refetch: refetchMessages 
+  } = useRecentMessages(5);
 
-  // Loading state
+  const handleManualRefresh = async () => {
+    setLastRefresh(new Date());
+    await Promise.all([
+      refetchStats(),
+      refetchProjects(),
+      refetchMessages()
+    ]);
+  };
+
+  useEffect(() => {
+    if (!autoRefresh) return;
+
+    const interval = setInterval(() => {
+      console.log('🔄 Auto-refreshing dashboard data...');
+      setLastRefresh(new Date());
+      refetchStats();
+      refetchProjects();
+      refetchMessages();
+    }, 1 * 60 * 1000); // 1 minute
+
+    return () => clearInterval(interval);
+  }, [autoRefresh, refetchStats, refetchProjects, refetchMessages]);
+
   if (statsLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -41,7 +82,6 @@ export default function DashboardPage() {
     );
   }
 
-  // Error state
   if (statsError) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -54,7 +94,7 @@ export default function DashboardPage() {
             <p className="text-gray-600 mb-4">
               {statsError instanceof Error ? statsError.message : 'An error occurred'}
             </p>
-            <Button onClick={() => window.location.reload()}>
+            <Button onClick={handleManualRefresh}>
               Try Again
             </Button>
           </div>
@@ -104,14 +144,53 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Welcome back, {user?.name || 'Admin'}!
-        </h1>
-        <p className="text-gray-600">
-          Here's what's happening with your portfolio today.
-        </p>
+      {/* Header with Refresh Controls */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Welcome back, {user?.name || 'Admin'}!
+          </h1>
+          <p className="text-gray-600">
+            Here's what's happening with your portfolio today.
+          </p>
+        </div>
+
+        {/* Refresh Controls */}
+        <div className="flex items-center gap-3">
+          {/* Last Refresh Time */}
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <Clock size={16} />
+            <span>
+              Updated {formatDistanceToNow(lastRefresh)} ago
+            </span>
+          </div>
+
+          {/* Auto-refresh Toggle */}
+          <button
+            onClick={() => setAutoRefresh(!autoRefresh)}
+            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              autoRefresh
+                ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+            title={autoRefresh ? 'Auto-refresh enabled (every 1 min)' : 'Auto-refresh disabled'}
+          >
+            <div className="flex items-center gap-2">
+              <RefreshCw size={16} className={autoRefresh ? 'animate-pulse' : ''} />
+              {autoRefresh ? 'Auto' : 'Manual'}
+            </div>
+          </button>
+
+          {/* Manual Refresh Button */}
+          <Button
+            onClick={handleManualRefresh}
+            variant="outline"
+            size="sm"
+          >
+            <RefreshCw size={16} className="mr-2" />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Stats Grid */}

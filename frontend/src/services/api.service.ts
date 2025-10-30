@@ -1,4 +1,3 @@
-// frontend/src/services/api.service.ts
 import api, { handleApiRequest, tokenManager } from '../lib/api';
 import { extractData, extractNestedData } from '../lib/utils';
 import { 
@@ -406,5 +405,7 @@ export const experienceService = {
     return data;
   },
 };
+
+export { dashboardApi } from './dashboardApi.service';
 
 export default api;
