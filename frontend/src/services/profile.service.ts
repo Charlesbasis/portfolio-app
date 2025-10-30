@@ -59,6 +59,11 @@ export const profileService = {
     return data;
   },
 
+  deleteAvatar: async (): Promise<ApiResponse<void>> => {
+    const { data } = await api.delete('/profile/avatar');
+    return data;
+  },
+
   /**
    * Upload cover image
    */
@@ -69,6 +74,11 @@ export const profileService = {
     const { data } = await api.post('/profile/cover-image', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
+    return data;
+  },
+
+  deleteCoverImage: async (file: File): Promise<ApiResponse<void>> => {
+    const { data } = await api.delete('/profile/cover-image');
     return data;
   },
 

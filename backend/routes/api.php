@@ -10,6 +10,7 @@ use App\Http\Controllers\API\V1\EducationController;
 use App\Http\Controllers\API\V1\ExperienceController;
 use App\Http\Controllers\API\V1\ProfileController;
 use App\Http\Controllers\API\V1\ServiceController;
+use App\Http\Controllers\API\V1\SettingsController;
 use App\Http\Controllers\API\V1\TestimonialController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -106,6 +107,18 @@ Route::prefix('v1')->group(function () {
         // Admin Testimonial management
         Route::apiResource('admin/testimonials', TestimonialController::class)
             ->except(['index']);
+
+        // Settings routes
+        Route::prefix('settings')->group(function () {
+            Route::get('/', [SettingsController::class, 'index']);
+            Route::put('/account', [SettingsController::class, 'updateAccount']);
+            Route::put('/password', [SettingsController::class, 'updatePassword']);
+            Route::put('/privacy', [SettingsController::class, 'updatePrivacy']);
+            Route::delete('/avatar', [SettingsController::class, 'deleteAvatar']);
+            Route::delete('/cover-image', [SettingsController::class, 'deleteCoverImage']);
+            Route::delete('/account', [SettingsController::class, 'deleteAccount']);
+            Route::get('/activity', [SettingsController::class, 'activityLog']);
+        });
 
     });
 });

@@ -282,3 +282,39 @@ export interface ExperienceTimelineProps {
 export interface AboutSectionProps {
   profile: UserProfile;
 }
+
+export interface SettingsData {
+  user: User;
+  profile: UserProfile | null;
+  stats: {
+    projects: number;
+    skills: number;
+    experiences: number;
+    education: number;
+    certifications: number;
+  };
+}
+
+export interface AccountUpdateData {
+  name?: string;
+  email?: string;
+}
+
+export interface PasswordUpdateData {
+  current_password: string;
+  new_password: string;
+  new_password_confirmation: string;
+}
+
+export interface PrivacySettings {
+  is_public?: boolean;
+  show_email?: boolean;
+  show_phone?: boolean;
+}
+
+export interface ActivityLog {
+  type: string;
+  action: string;
+  title: string;
+  timestamp: string;
+}

@@ -128,6 +128,34 @@ export function useUploadCoverImage() {
   });
 }
 
+/**
+ * Delete avatar
+ */
+export function useDeleteAvatar() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => profileService.deleteAvatar(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: profileQueryKeys.current() });
+    },
+  });
+}
+
+/**
+ * Delete cover image
+ */
+export function useDeleteCoverImage() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (file: File) => profileService.deleteCoverImage(file),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: profileQueryKeys.current() });
+    },
+  });
+}
+
 // ============= Experience Hooks =============
 
 /**
