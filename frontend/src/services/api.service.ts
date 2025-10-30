@@ -84,7 +84,7 @@ export const skillsService = {
     // If grouped, return as-is (it's already an object)
     if (params?.grouped) {
       const extracted = extractData<Record<string, Skill[]>>(response);
-      return extracted;
+      return extracted ?? {};
     }
     
     // Otherwise, ensure it's an array

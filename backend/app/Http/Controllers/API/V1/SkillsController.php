@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\SkillResource;
 use App\Models\Skills;
 use App\Repositories\SkillRepository;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -13,6 +14,8 @@ use Illuminate\Support\Facades\Validator;
 
 class SkillsController extends Controller
 {
+    use AuthorizesRequests;
+    
     public function __construct(
         private SkillRepository $repository
     ) {}
@@ -135,7 +138,7 @@ class SkillsController extends Controller
         //     'user_id' => $request->user()->id
         // ]);
 
-        // $this->authorize('update', $skill);
+        $this->authorize('update', $skill);
 
         $validator = Validator::make($request->all(), [
             'name' => 'string|max:255',
@@ -183,7 +186,7 @@ class SkillsController extends Controller
         //     'user_id' => auth()->id()
         // ]);
 
-        // $this->authorize('delete', $skill);
+        $this->authorize('delete', $skill);
 
         $skill->delete();
 

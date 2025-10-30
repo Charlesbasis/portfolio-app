@@ -6,11 +6,13 @@ use App\Http\Controllers\Controller;
 
 use App\Models\Experience;
 use App\Models\User;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class ExperienceController extends Controller
 {
+    use AuthorizesRequests;
     /**
      * Display a listing of the resource.
      */
@@ -113,7 +115,7 @@ class ExperienceController extends Controller
      */
     public function update(Request $request, Experience $experience)
     {
-        // $this->authorize('update', $experience);
+        $this->authorize('update', $experience);
 
         $validator = Validator::make($request->all(), [
             'company' => 'string|max:255',
@@ -157,7 +159,7 @@ class ExperienceController extends Controller
      */
     public function destroy(Experience $experience)
     {
-        // $this->authorize('delete', $experience);
+        $this->authorize('delete', $experience);
 
         $experience->delete();
 

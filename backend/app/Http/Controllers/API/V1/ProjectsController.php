@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\ProjectResource;
 use App\Models\Projects;
 use App\Repositories\ProjectRepository;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -14,6 +15,8 @@ use Illuminate\Support\Facades\Validator;
 
 class ProjectsController extends Controller
 {
+    use AuthorizesRequests;
+
     public function __construct(
         private ProjectRepository $repository
     ) {}
@@ -152,7 +155,7 @@ class ProjectsController extends Controller
         //     'user_id' => $request->user()->id
         // ]);
 
-        // $this->authorize('update', $project);
+        $this->authorize('update', $project);
 
         $validator = Validator::make($request->all(), [
             'title' => 'string|max:255',
@@ -224,7 +227,7 @@ class ProjectsController extends Controller
         //     'user_id' => auth()->id()
         // ]);
 
-        // $this->authorize('delete', $project);
+        $this->authorize('delete', $project);
 
         if ($project->image_url) {
             Storage::disk('public')->delete($project->image_url);
