@@ -1,25 +1,29 @@
 'use client';
 
-import { use } from 'react';
-import { usePublicProfile, useUserStats, usePublicExperiences } from '@/src/hooks/useProfile';
+import AboutSection from '@/src/components/portfolio/AboutSection';
+import EducationCertifications from '@/src/components/portfolio/EducationCertifications';
+import ExperienceTimeline from '@/src/components/portfolio/ExperienceTimeline';
+import SkillsDisplay from '@/src/components/portfolio/SkillsDisplay';
+import ProjectsGrid from '@/src/components/projects/ProjectsGrid';
 import { useProjects, useSkills } from '@/src/hooks/useApi';
-import { 
-  Github, 
-  Linkedin, 
-  Twitter, 
-  Mail, 
-  MapPin, 
+import { usePublicCertifications, usePublicEducation, usePublicExperiences, usePublicProfile, useUserStats } from '@/src/hooks/useProfile';
+import { PortfolioPageProps } from '@/src/types';
+import {
+  AlertCircle,
   Briefcase,
   Calendar,
-  Globe,
   Download,
-  ExternalLink,
-  AlertCircle,
-  Loader2
+  Github,
+  Globe,
+  Linkedin,
+  Loader2,
+  Mail,
+  MapPin,
+  Twitter
 } from 'lucide-react';
-import Link from 'next/link';
 import Image from 'next/image';
-import { PortfolioPageProps } from '@/src/types';
+import Link from 'next/link';
+import { use } from 'react';
 
 export default function PortfolioPage({ params }: PortfolioPageProps) {
   const { username } = use(params);
@@ -27,8 +31,10 @@ export default function PortfolioPage({ params }: PortfolioPageProps) {
   const { data: profile, isLoading: profileLoading, isError: profileError } = usePublicProfile(username);
   const { data: stats, isLoading: statsLoading } = useUserStats(username);
   const { data: experiences, isLoading: experiencesLoading } = usePublicExperiences(username);
+  const { data: education, isLoading: educationLoading } = usePublicEducation(username);
+  const { data: certifications, isLoading: certificationsLoading } = usePublicCertifications(username);
   const { data: projects, isLoading: projectsLoading } = useProjects({ user_id: profile?.user_id });
-  const { data: skills, isLoading: skillsLoading } = useSkills({ user_id: profile?.user_id });
+  const { data: skills, isLoading: skillsLoading } = useSkills({ user_id: profile?.user_id }) as any;
 
   // Loading State
   if (profileLoading) {
@@ -302,12 +308,57 @@ export default function PortfolioPage({ params }: PortfolioPageProps) {
         </section>
       )}
 
-      {/* Rest of the content will continue in next sections */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <p className="text-center text-gray-500">
-          {/* Additional sections (About, Projects, Skills, Experience) will be rendered here... */}
-        </p>
-      </div>
+      {/* About Section */}
+      <AboutSection profile={profile} />
+
+      {/* Projects Grid */}
+      <ProjectsGrid 
+        projects={projects || []} 
+        isLoading={projectsLoading} 
+      />
+
+      {/* Skills Display */}
+      <SkillsDisplay 
+        skills={skills || []} 
+        isLoading={skillsLoading} 
+      />
+
+      {/* Experience Timeline */}
+      <ExperienceTimeline 
+        experiences={experiences || []} 
+        isLoading={experiencesLoading} 
+      />
+
+      {/* Education & Certifications */}
+      <EducationCertifications
+        education={education || []}
+        certifications={certifications || []}
+        isLoadingEducation={educationLoading}
+        isLoadingCertifications={certificationsLoading}
+      />
+
+      {/* CTA Section */}
+      <section className="py-16 bg-gradient-to-r from-blue-600 to-blue-800 text-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-4xl font-bold mb-4">Let's Work Together</h2>
+          <p className="text-xl mb-8 text-blue-100">
+            Have a project in mind? I'd love to hear about it and see how I can help.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <a
+              href={`mailto:${profile.email}`}
+              className="inline-flex items-center justify-center bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold hover:bg-blue-50 transition-colors transform hover:scale-105 shadow-lg"
+            >
+              <Mail className="mr-2" size={20} />
+              Get In Touch
+            </a>
+            <button className="inline-flex items-center justify-center border-2 border-white text-white px-8 py-4 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors transform hover:scale-105">
+              <Download className="mr-2" size={20} />
+              Download Resume
+            </button>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

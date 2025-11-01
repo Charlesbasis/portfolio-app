@@ -1,5 +1,3 @@
-// frontend/src/hooks/useProfile.ts
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   profileService,
@@ -14,6 +12,7 @@ import {
   Certification,
   SocialStats,
 } from '@/src/types';
+import api from '../lib/api';
 
 // ============= Query Keys =============
 export const profileQueryKeys = {
@@ -142,16 +141,17 @@ export function useDeleteAvatar() {
   });
 }
 
-/**
- * Delete cover image
- */
+// Delete Cover Image Hook
 export function useDeleteCoverImage() {
   const queryClient = useQueryClient();
-
+  
   return useMutation({
-    mutationFn: (file: File) => profileService.deleteCoverImage(file),
+    mutationFn: async () => {
+      const response = await api.delete('/v1/settings/cover-image');
+      return response.data;
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: profileQueryKeys.current() });
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
   });
 }
@@ -226,71 +226,133 @@ export function useDeleteExperience() {
 
 // ============= Education Hooks =============
 
-/**
- * Get education by username (public)
- */
+// Public Education Hook
 export function usePublicEducation(username: string) {
   return useQuery({
-    queryKey: profileQueryKeys.education.byUsername(username),
-    queryFn: () => educationService.getByUsername(username),
-    ...defaultQueryOptions,
+    queryKey: ['education', 'public', username],
+    queryFn: async () => {
+      const response = await api.get(`/v1/users/${username}/education`);
+      return response.data as Education[];
+    },
     enabled: !!username,
   });
 }
 
-/**
- * Get current user's education
- */
+// Education Hooks
 export function useEducation() {
   return useQuery({
-    queryKey: profileQueryKeys.education.current(),
-    queryFn: () => educationService.getAll(),
-    ...defaultQueryOptions,
+    queryKey: ['education'],
+    queryFn: async () => {
+      const response = await api.get('/v1/education');
+      return response.data as Education[];
+    },
   });
 }
 
-// Similar CRUD mutations for education...
 export function useCreateEducation() {
   const queryClient = useQueryClient();
+  
   return useMutation({
-    mutationFn: (data: Partial<Education>) => educationService.create(data),
+    mutationFn: async (data: Partial<Education>) => {
+      const response = await api.post('/v1/education', data);
+      return response.data;
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: profileQueryKeys.education.current() });
+      queryClient.invalidateQueries({ queryKey: ['education'] });
+    },
+  });
+}
+
+export function useUpdateEducation() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: Partial<Education> }) => {
+      const response = await api.put(`/v1/education/${id}`, data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['education'] });
+    },
+  });
+}
+
+export function useDeleteEducation() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const response = await api.delete(`/v1/education/${id}`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['education'] });
     },
   });
 }
 
 // ============= Certification Hooks =============
 
-/**
- * Get certifications by username (public)
- */
+// Public Certifications Hook
 export function usePublicCertifications(username: string) {
   return useQuery({
-    queryKey: profileQueryKeys.certifications.byUsername(username),
-    queryFn: () => certificationService.getByUsername(username),
-    ...defaultQueryOptions,
+    queryKey: ['certifications', 'public', username],
+    queryFn: async () => {
+      const response = await api.get(`/v1/users/${username}/certifications`);
+      return response.data as Certification[];
+    },
     enabled: !!username,
   });
 }
 
-/**
- * Get current user's certifications
- */
 export function useCertifications() {
   return useQuery({
-    queryKey: profileQueryKeys.certifications.current(),
-    queryFn: () => certificationService.getAll(),
-    ...defaultQueryOptions,
+    queryKey: ['certifications'],
+    queryFn: async () => {
+      const response = await api.get('/v1/certifications');
+      return response.data as Certification[];
+    },
   });
 }
 
 export function useCreateCertification() {
   const queryClient = useQueryClient();
+  
   return useMutation({
-    mutationFn: (data: Partial<Certification>) => certificationService.create(data),
+    mutationFn: async (data: Partial<Certification>) => {
+      const response = await api.post('/v1/certifications', data);
+      return response.data;
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: profileQueryKeys.certifications.current() });
+      queryClient.invalidateQueries({ queryKey: ['certifications'] });
+    },
+  });
+}
+
+export function useUpdateCertification() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: Partial<Certification> }) => {
+      const response = await api.put(`/v1/certifications/${id}`, data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['certifications'] });
+    },
+  });
+}
+
+export function useDeleteCertification() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const response = await api.delete(`/v1/certifications/${id}`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['certifications'] });
     },
   });
 }

@@ -11,6 +11,7 @@ import {
   contactService,
   authService
 } from '../services/api.service';
+import { Skill } from '../types';
 
 export default async function Home() {
 
@@ -24,7 +25,7 @@ export default async function Home() {
 
   // Extract data with fallbacks
   const featuredProjects = results[0].status === 'fulfilled' ? results[0].value : [];
-  const skills = results[1].status === 'fulfilled' ? results[1].value : [];
+  const skills = (results[1].status === 'fulfilled' ? results[1].value : []) as Skill[];
   const testimonials = results[2].status === 'fulfilled' ? results[2].value : [];
   const services = results[3].status === 'fulfilled' ? results[3].value : [];
 
@@ -162,7 +163,7 @@ export default async function Home() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {skills.map((skill, index) => (
+            {skills?.map((skill, index) => (
               <div key={index} className="bg-gray-50 rounded-xl p-6 hover:shadow-lg transition-shadow">
                 <div className="flex items-center justify-between mb-3">
                   <span className="font-semibold text-gray-900">{skill.name}</span>

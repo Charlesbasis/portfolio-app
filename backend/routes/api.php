@@ -8,6 +8,7 @@ use App\Http\Controllers\API\V1\ContactController;
 use App\Http\Controllers\API\V1\DashboardController;
 use App\Http\Controllers\API\V1\EducationController;
 use App\Http\Controllers\API\V1\ExperienceController;
+use App\Http\Controllers\API\V1\OnboardingController;
 use App\Http\Controllers\API\V1\ProfileController;
 use App\Http\Controllers\API\V1\ServiceController;
 use App\Http\Controllers\API\V1\SettingsController;
@@ -118,6 +119,12 @@ Route::prefix('v1')->group(function () {
             Route::delete('/cover-image', [SettingsController::class, 'deleteCoverImage']);
             Route::delete('/account', [SettingsController::class, 'deleteAccount']);
             Route::get('/activity', [SettingsController::class, 'activityLog']);
+        });
+
+        Route::prefix('onboarding')->group(function () {
+            Route::post('/complete', [OnboardingController::class, 'complete']);
+            Route::get('/check-username/{username}', [OnboardingController::class, 'checkUsername']);
+            Route::get('/status', [OnboardingController::class, 'status']);
         });
 
     });

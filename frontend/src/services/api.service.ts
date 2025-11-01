@@ -7,7 +7,11 @@ import {
   Service, 
   User,
   PaginatedResponse,
-  ApiResponse 
+  ApiResponse, 
+  ContactFormData,
+  LoginCredentials,
+  RegisterData,
+  Experience
 } from '../types';
 
 
@@ -205,13 +209,6 @@ export const servicesService = {
 };
 
 // ============= Contact Service =============
-export interface ContactFormData {
-  name: string;
-  email: string;
-  subject: string;
-  message: string;
-}
-
 export const contactService = {
   submit: async (formData: ContactFormData): Promise<{ success: boolean; message: string }> => {
     try {
@@ -254,16 +251,6 @@ export const contactService = {
 };
 
 // ============= Auth Service =============
-export interface LoginCredentials {
-  email: string;
-  password: string;
-}
-
-export interface RegisterData extends LoginCredentials {
-  name: string;
-  password_confirmation: string;
-}
-
 export const authService = {
   login: async (credentials: LoginCredentials): Promise<{ user: User; token: string }> => {
     // const { data } = await api.post('/auth/login', credentials);
@@ -344,23 +331,6 @@ export const authService = {
 };
 
 // ============= Experience Service =============
-export interface Experience {
-  id: number;
-  company: string;
-  position: string;
-  description: string;
-  start_date: string;
-  end_date?: string | null;
-  is_current: boolean;
-  location?: string;
-  company_url?: string;
-  technologies?: string[];
-  order?: number;
-  user_id: number;
-  created_at: string;
-  updated_at: string;
-}
-
 export const experienceService = {
   getAll: async (params?: { 
     user_id?: number; 

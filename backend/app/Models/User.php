@@ -16,6 +16,15 @@ class User extends Authenticatable implements MustVerifyEmail
         'name',
         'email',
         'password',
+        'onboarding_completed',
+        'onboarding_completed_at',
+        'onboarding_data',
+    ];
+
+    protected $casts = [
+        'onboarding_completed' => 'boolean',
+        'onboarding_data' => 'array',
+        'onboarding_completed_at' => 'datetime',
     ];
 
     protected $hidden = [
@@ -78,4 +87,18 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(Certification::class);
     }
+
+    public function completedOnboarding()
+    {
+        $this->update([
+            'onboarding_completed' => true,
+            'onboarding_completed_at' => now()
+        ]);
+    }
+
+    public function getOnboardingStepAttribute($value)
+    {
+        return $this->onboarding_data['current_step'] ?? [];
+    }
+    
 }

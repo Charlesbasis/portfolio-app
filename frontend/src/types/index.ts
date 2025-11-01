@@ -12,6 +12,10 @@ export interface Project {
   status: 'draft' | 'published';
   created_at: string;
   updated_at: string;
+  is_featured: boolean;
+  category?: string;
+  completed_at?: string;
+  short_description?: string;
 }
 
 export interface Skill {
@@ -42,7 +46,10 @@ export interface User {
   id: number;
   name: string;
   email: string;
+  email_verified_at: string | null;
   created_at: string;
+  updated_at: string;
+  onboarding_completed: boolean;
 }
 
 export interface AuthResponse {
@@ -317,4 +324,71 @@ export interface ActivityLog {
   action: string;
   title: string;
   timestamp: string;
+}
+
+export interface ContactFormData {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+}
+
+export interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+export interface RegisterData extends LoginCredentials {
+  name: string;
+  password_confirmation: string;
+}
+
+export interface Experience {
+  id: number;
+  company: string;
+  position: string;
+  description?: string;
+  start_date: string;
+  end_date?: string | null;
+  is_current: boolean;
+  location?: string;
+  company_url?: string;
+  technologies?: string[];
+  order?: number;
+  user_id: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProjectsGridProps {
+  projects: Project[];
+  isLoading?: boolean;
+}
+
+export interface SkillsDisplayProps {
+  skills: Skill[];
+  isLoading?: boolean;
+}
+
+export interface EducationCertificationsProps {
+  education: Education[];
+  certifications: Certification[];
+  isLoadingEducation?: boolean;
+  isLoadingCertifications?: boolean;
+}
+
+export interface OnboardingData {
+  full_name: string;
+  username: string;
+  job_title?: string;
+  company?: string;
+  location?: string;
+  tagline?: string;
+  bio?: string;
+  first_project?: {
+    title: string;
+    description: string;
+    technologies: string[];
+  };
+  skills: string[];
 }
