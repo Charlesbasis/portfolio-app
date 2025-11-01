@@ -1,5 +1,3 @@
-// frontend/src/services/profile.service.ts
-
 import api, { handleApiRequest } from '../lib/api';
 import { extractData } from '../lib/utils';
 import {
@@ -16,6 +14,7 @@ export const profileService = {
    * Get user profile by username (public)
    */
   getByUsername: async (username: string): Promise<UserProfile | null> => {
+    // console.log('getByUsername called with:', username);
     const response = await handleApiRequest(
       () => api.get(`/users/${username}/profile`),
       null

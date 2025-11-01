@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\UserProfile;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
@@ -16,24 +17,32 @@ class ProfileController extends Controller
      */
     public function showPublic($username)
     {
-        $user = User::where('email', $username)
-            ->orWhereHas('profile', function($query) use ($username) {
-                $query->where('username', $username);
-            })
-            ->firstOrFail();
-            
+        // Log::debug('Searching for username:', ['username' => $username]);
+
+        $user = User::whereHas('profile', function ($query) use ($username) {
+            $query->where('username', $username);
+        })->first();
+
+        if (!$user) {
+            abort(404, 'User not found');
+        }
+
         $profile = UserProfile::where('user_id', $user->id)->first();
-        
+
         if (!$profile || !$profile->is_public) {
             return response()->json([
                 'success' => false,
                 'message' => 'Profile not found or is private',
             ], 404);
         }
-        
-        // Increment profile views
+
         $profile->incrementViews();
-        
+
+        // Log::info('Profile viewed by user', [
+        //     'requested_username' => $username,
+        //     'profile_username' => $profile->username,
+        // ]);
+
         return response()->json([
             'success' => true,
             'data' => $profile,
@@ -51,7 +60,7 @@ class ProfileController extends Controller
             // Create default profile if doesn't exist
             $profile = UserProfile::create([
                 'user_id' => $request->user()->id,
-                'username' => $request->user()->email ?? 'user' . $request->user()->id,
+                'username' => $request->user()->name ?? 'user' . $request->user()->id,
                 'full_name' => $request->user()->name,
                 'email' => $request->user()->email,
                 'is_public' => false,
@@ -73,6 +82,11 @@ class ProfileController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'username' => 'sometimes|string|max:255|unique:user_profiles,username,' . $request->user()->id . ',user_id',
+            function ($attribute, $value, $fail) {
+                if (User::where('email', $value)->exists()) {
+                    $fail('This username is not available.');
+                }
+            },
             'full_name' => 'sometimes|string|max:255',
             'tagline' => 'nullable|string|max:500',
             'bio' => 'nullable|string',
@@ -179,27 +193,25 @@ class ProfileController extends Controller
             'message' => 'Cover image uploaded successfully',
         ]);
     }
-    
+
     /**
      * Get public stats
      */
     public function publicStats($username)
     {
-        $user = User::where('email', $username)
-            ->orWhereHas('profile', function($query) use ($username) {
-                $query->where('username', $username);
-            })
-            ->firstOrFail();
-            
+        $user = User::whereHas('profile', function ($query) use ($username) {
+            $query->where('username', $username);
+        })->firstOrFail();
+
         $profile = UserProfile::where('user_id', $user->id)->firstOrFail();
-        
+
         if (!$profile->is_public) {
             return response()->json([
                 'success' => false,
                 'message' => 'Profile is private',
             ], 403);
         }
-        
+
         $stats = [
             'total_projects' => $user->projects()->where('status', 'published')->count(),
             'total_skills' => $user->skills()->count(),
@@ -207,7 +219,7 @@ class ProfileController extends Controller
             'total_experiences' => $user->experiences()->count(),
             'profile_views' => $profile->profile_views ?? 0,
         ];
-        
+
         return response()->json([
             'success' => true,
             'data' => $stats,

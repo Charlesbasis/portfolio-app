@@ -1,25 +1,79 @@
-import { useMutation } from '@tanstack/react-query';
-import api from '@/src/lib/api';
-import { OnboardingData } from '../types';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useCompleteOnboarding, useCheckUsername } from './useApi';
+import { OnboardingData } from '@/src/types';
+import { getErrorMessage } from '@/src/lib/api';
 
-export function useCompleteOnboarding() {
-  return useMutation({
-    mutationFn: async (data: OnboardingData) => {
-      const response = await api.post('/v1/onboarding/complete', data);
-      return response.data;
-    },
-    onSuccess: () => {
-      // Redirect to dashboard
-      window.location.href = '/dashboard';
-    }
-  });
+interface UsernameCheckState {
+  checking: boolean;
+  available: boolean | null;
+  message: string;
 }
 
-export function useCheckUsername() {
-  return useMutation({
-    mutationFn: async (username: string) => {
-      const response = await api.get(`/v1/onboarding/check-username/${username}`);
-      return response.data;
+export const useOnboarding = () => {
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [debouncedUsername, setDebouncedUsername] = useState('');
+  
+  const completeOnboardingMutation = useCompleteOnboarding();
+
+  // Use the React Query hook for username checking
+  const { 
+    data: usernameData, 
+    isLoading: isCheckingUsername,
+    error: usernameError 
+  } = useCheckUsername(debouncedUsername, debouncedUsername.length >= 3);
+
+  // Debounce username input
+  const checkUsername = (username: string) => {
+    setDebouncedUsername(username);
+  };
+
+  // Format username check state
+  const usernameCheck: UsernameCheckState = {
+    checking: isCheckingUsername,
+    available: usernameData?.available ?? null,
+    message: usernameError 
+      ? 'Error checking username'
+      : usernameData?.available 
+        ? 'Username is available!' 
+        : usernameData?.available === false
+          ? 'Username is already taken'
+          : ''
+  };
+
+  /**
+   * Complete onboarding
+   */
+  const completeOnboarding = async (data: OnboardingData) => {
+    setError(null);
+
+    try {
+      // Validate required fields
+      if (!data.full_name || !data.username) {
+        throw new Error('Full name and username are required');
+      }
+
+      const response = await completeOnboardingMutation.mutateAsync(data);
+
+      // Redirect to dashboard or portfolio
+      if (response.success) {
+        router.push('/dashboard');
+      }
+
+      return response;
+    } catch (err: any) {
+      const errorMessage = getErrorMessage(err);
+      setError(errorMessage);
+      throw err;
     }
-  });
-}
+  };
+
+  return {
+    isSubmitting: completeOnboardingMutation.isPending,
+    error,
+    usernameCheck,
+    checkUsername,
+    completeOnboarding,
+  };
+};

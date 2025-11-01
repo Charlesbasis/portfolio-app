@@ -11,7 +11,9 @@ import {
   ContactFormData,
   LoginCredentials,
   RegisterData,
-  Experience
+  Experience,
+  OnboardingData,
+  UserProfile
 } from '../types';
 
 
@@ -373,6 +375,72 @@ export const experienceService = {
   delete: async (id: number): Promise<ApiResponse<void>> => {
     const { data } = await api.delete(`/experiences/${id}`);
     return data;
+  },
+};
+
+// ============= Onboarding Service =============
+export const onboardingService = {
+  /**
+   * Check if a username is available
+   */
+  checkUsername: async (username: string): Promise<{ available: boolean; username: string }> => {
+    const response = await handleApiRequest(
+      () => api.get(`/onboarding/check-username/${username}`),
+      { available: false, username }
+    );
+    return response;
+  },
+
+  /**
+   * Get onboarding status
+   */
+  getStatus: async (): Promise<{
+    completed: boolean;
+    has_profile: boolean;
+    has_username: boolean;
+    has_projects: boolean;
+    has_skills: boolean;
+  }> => {
+    const response = await handleApiRequest(
+      () => api.get('/onboarding/status'),
+      {
+        completed: false,
+        has_profile: false,
+        has_username: false,
+        has_projects: false,
+        has_skills: false,
+      }
+    );
+    return response;
+  },
+
+  /**
+   * Complete onboarding process
+   */
+  complete: async (data: OnboardingData): Promise<{
+    success: boolean;
+    message: string;
+    profile: UserProfile;
+    project?: any;
+    portfolio_url: string;
+  }> => {
+    const { data: responseData } = await api.post('/onboarding/complete', data);
+    
+    // Update user in localStorage if successful
+    if (responseData.success && typeof window !== 'undefined') {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        try {
+          const userData = JSON.parse(storedUser);
+          userData.onboarding_completed = true;
+          localStorage.setItem('user', JSON.stringify(userData));
+        } catch (e) {
+          console.error('Failed to update user in localStorage:', e);
+        }
+      }
+    }
+    
+    return responseData;
   },
 };
 

@@ -2,8 +2,6 @@ import api, { handleApiRequest } from '../lib/api';
 import { extractData } from '../lib/utils';
 import { AccountUpdateData, ActivityLog, ApiResponse, PasswordUpdateData, PrivacySettings, SettingsData, User, UserProfile } from '../types';
 
-
-
 export const settingsService = {
   /**
    * Get all settings data

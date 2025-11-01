@@ -6,9 +6,9 @@ import {
   servicesService, 
   contactService,
   experienceService,
-  ContactFormData
+  onboardingService,
 } from '../services/api.service';
-import { Project, Skill, Testimonial, Service } from '../types';
+import { Project, Skill, Testimonial, Service, ContactFormData, OnboardingData } from '../types';
 
 // ============= Query Keys =============
 export const queryKeys = {
@@ -35,6 +35,11 @@ export const queryKeys = {
   experiences: {
     all: ['experiences'] as const,
     list: (filters?: Record<string, any>) => [...queryKeys.experiences.all, filters] as const,
+  },
+  onboarding: {
+    all: ['onboarding'] as const,
+    status: () => [...queryKeys.onboarding.all, 'status'] as const,
+    checkUsername: (username: string) => [...queryKeys.onboarding.all, 'username', username] as const,
   },
 };
 
@@ -251,3 +256,51 @@ export const prefetchQueries = {
     });
   },
 };
+
+// ============= Onboarding Hooks =============
+
+/**
+ * Get onboarding status
+ */
+export function useOnboardingStatus() {
+  return useQuery({
+    queryKey: queryKeys.onboarding.status(),
+    queryFn: () => onboardingService.getStatus(),
+    staleTime: 0, // Always fetch fresh
+    gcTime: 0, // Don't cache
+  });
+}
+
+/**
+ * Check username availability
+ */
+export function useCheckUsername(username: string, enabled: boolean = true) {
+  return useQuery({
+    queryKey: queryKeys.onboarding.checkUsername(username),
+    queryFn: () => onboardingService.checkUsername(username),
+    enabled: enabled && !!username && username.length >= 3,
+    staleTime: 30 * 1000, // Cache for 30 seconds
+    retry: false,
+  });
+}
+
+/**
+ * Complete onboarding mutation
+ */
+export function useCompleteOnboarding() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (data: OnboardingData) => onboardingService.complete(data),
+    onSuccess: (data) => {
+      // Invalidate relevant queries
+      queryClient.invalidateQueries({ queryKey: queryKeys.onboarding.all });
+      queryClient.invalidateQueries({ queryKey: ['user'] }); // Assuming you have a user query
+      
+      console.log('✅ Onboarding completed successfully:', data);
+    },
+    onError: (error) => {
+      console.error('❌ Onboarding failed:', error);
+    },
+  });
+}

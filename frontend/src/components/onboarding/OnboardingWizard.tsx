@@ -1,10 +1,22 @@
-import { useState } from 'react';
-import { Check, ChevronRight, Sparkles, Briefcase, Code, Rocket, User, Building, MapPin, Award } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { 
+  Check, ChevronRight, Sparkles, Briefcase, Code, Rocket, 
+  User, Building, MapPin, Award, Loader2, AlertCircle 
+} from 'lucide-react';
+import { useOnboarding } from '@/src/hooks/useOnboarding';
+import { OnboardingData } from '@/src/types';
 
-// Simulated state management - replace with actual API calls
 const OnboardingWizard = () => {
+  const { 
+    isSubmitting, 
+    error, 
+    usernameCheck, 
+    checkUsername, 
+    completeOnboarding 
+  } = useOnboarding();
+
   const [currentStep, setCurrentStep] = useState(0);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<OnboardingData>({
     full_name: '',
     username: '',
     job_title: '',
@@ -12,10 +24,14 @@ const OnboardingWizard = () => {
     location: '',
     tagline: '',
     bio: '',
-    project_title: '',
-    project_description: '',
-    project_technologies: [],
+    first_project: undefined,
     skills: []
+  });
+
+  const [projectData, setProjectData] = useState({
+    title: '',
+    description: '',
+    technologies: [] as string[]
   });
 
   const steps = [
@@ -26,7 +42,27 @@ const OnboardingWizard = () => {
     { id: 4, title: 'Launch', icon: Rocket }
   ];
 
+  // Debounced username check
+  useEffect(() => {
+    if (formData.username && formData.username.length >= 3) {
+      const timer = setTimeout(() => {
+        checkUsername(formData.username);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [formData.username, checkUsername]);
+
   const handleNext = () => {
+    // Validate current step before moving forward
+    if (currentStep === 1) {
+      if (!formData.full_name || !formData.username) {
+        return;
+      }
+      if (!usernameCheck.available) {
+        return;
+      }
+    }
+
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     }
@@ -39,17 +75,35 @@ const OnboardingWizard = () => {
   };
 
   const handleSkip = () => {
-    // Skip to final step
     setCurrentStep(steps.length - 1);
   };
 
-  const handleComplete = () => {
-    alert('Onboarding completed! Redirecting to dashboard...');
-    // In real app: save data and redirect
+  const handleComplete = async () => {
+    try {
+      // Prepare final data with project if provided
+      const finalData: OnboardingData = {
+        ...formData,
+        first_project: projectData.title && projectData.description
+          ? {
+              title: projectData.title,
+              description: projectData.description,
+              technologies: projectData.technologies
+            }
+          : undefined
+      };
+
+      await completeOnboarding(finalData);
+    } catch (err) {
+      console.error('Onboarding error:', err);
+    }
   };
 
-  const updateFormData = (field, value) => {
+  const updateFormData = (field: keyof OnboardingData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const updateProjectData = (field: string, value: any) => {
+    setProjectData(prev => ({ ...prev, [field]: value }));
   };
 
   const commonSkills = [
@@ -63,6 +117,9 @@ const OnboardingWizard = () => {
     'React', 'Next.js', 'Vue.js', 'Angular', 'Node.js',
     'TypeScript', 'Python', 'Laravel', 'Django', 'PostgreSQL'
   ];
+
+  // Validation helpers
+  const isStep1Valid = formData.full_name && formData.username && usernameCheck.available;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
@@ -105,6 +162,14 @@ const OnboardingWizard = () => {
             })}
           </div>
         </div>
+
+        {/* Error Display */}
+        {error && (
+          <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-2">
+            <AlertCircle className="text-red-600 flex-shrink-0 mt-0.5" size={20} />
+            <p className="text-red-800 text-sm">{error}</p>
+          </div>
+        )}
 
         {/* Content Card */}
         <div className="bg-white rounded-2xl shadow-2xl p-8 md:p-12">
@@ -175,6 +240,7 @@ const OnboardingWizard = () => {
                       onChange={(e) => updateFormData('full_name', e.target.value)}
                       placeholder="John Doe"
                       className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
                     />
                   </div>
                 </div>
@@ -192,11 +258,30 @@ const OnboardingWizard = () => {
                       value={formData.username}
                       onChange={(e) => updateFormData('username', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
                       placeholder="johndoe"
-                      className="w-full pl-8 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className={`w-full pl-8 pr-10 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                        usernameCheck.available === false ? 'border-red-300' : 
+                        usernameCheck.available === true ? 'border-green-300' : 
+                        'border-gray-300'
+                      }`}
+                      required
                     />
+                    {usernameCheck.checking && (
+                      <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 animate-spin" size={20} />
+                    )}
+                    {!usernameCheck.checking && usernameCheck.available !== null && (
+                      <div className={`absolute right-3 top-1/2 transform -translate-y-1/2 ${
+                        usernameCheck.available ? 'text-green-500' : 'text-red-500'
+                      }`}>
+                        {usernameCheck.available ? '✓' : '✗'}
+                      </div>
+                    )}
                   </div>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Your portfolio will be at: yoursite.com/portfolio/{formData.username || 'username'}
+                  <p className={`text-sm mt-1 ${
+                    usernameCheck.available === false ? 'text-red-600' : 
+                    usernameCheck.available === true ? 'text-green-600' : 
+                    'text-gray-500'
+                  }`}>
+                    {usernameCheck.message || `Your portfolio will be at: yoursite.com/portfolio/${formData.username || 'username'}`}
                   </p>
                 </div>
 
@@ -262,7 +347,7 @@ const OnboardingWizard = () => {
                     maxLength={100}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
-                  <p className="text-sm text-gray-500 mt-1">{formData.tagline.length}/100</p>
+                  <p className="text-sm text-gray-500 mt-1">{formData.tagline?.length || 0}/100</p>
                 </div>
 
                 <div>
@@ -296,12 +381,12 @@ const OnboardingWizard = () => {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Project Title *
+                    Project Title
                   </label>
                   <input
                     type="text"
-                    value={formData.project_title}
-                    onChange={(e) => updateFormData('project_title', e.target.value)}
+                    value={projectData.title}
+                    onChange={(e) => updateProjectData('title', e.target.value)}
                     placeholder="E-commerce Platform"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
@@ -309,11 +394,11 @@ const OnboardingWizard = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Description *
+                    Description
                   </label>
                   <textarea
-                    value={formData.project_description}
-                    onChange={(e) => updateFormData('project_description', e.target.value)}
+                    value={projectData.description}
+                    onChange={(e) => updateProjectData('description', e.target.value)}
                     placeholder="Describe what you built, the problem it solves, and your role..."
                     rows={5}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -325,14 +410,14 @@ const OnboardingWizard = () => {
                     Technologies Used
                   </label>
                   <div className="flex flex-wrap gap-2 mb-3">
-                    {formData.project_technologies.map((tech, i) => (
+                    {projectData.technologies.map((tech, i) => (
                       <span
                         key={i}
                         className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium flex items-center gap-1"
                       >
                         {tech}
                         <button
-                          onClick={() => updateFormData('project_technologies', formData.project_technologies.filter((_, idx) => idx !== i))}
+                          onClick={() => updateProjectData('technologies', projectData.technologies.filter((_, idx) => idx !== i))}
                           className="text-blue-600 hover:text-blue-800"
                         >
                           ×
@@ -341,10 +426,10 @@ const OnboardingWizard = () => {
                     ))}
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                    {techOptions.filter(t => !formData.project_technologies.includes(t)).map((tech) => (
+                    {techOptions.filter(t => !projectData.technologies.includes(t)).map((tech) => (
                       <button
                         key={tech}
-                        onClick={() => updateFormData('project_technologies', [...formData.project_technologies, tech])}
+                        onClick={() => updateProjectData('technologies', [...projectData.technologies, tech])}
                         className="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-blue-50 hover:border-blue-300 transition-colors"
                       >
                         + {tech}
@@ -444,7 +529,7 @@ const OnboardingWizard = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Projects:</span>
-                    <span className="font-semibold">{formData.project_title ? '1' : '0'}</span>
+                    <span className="font-semibold">{projectData.title ? '1' : '0'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Skills:</span>
@@ -455,10 +540,20 @@ const OnboardingWizard = () => {
 
               <button
                 onClick={handleComplete}
-                className="mt-8 inline-flex items-center gap-2 bg-gradient-to-r from-green-500 to-blue-600 text-white px-10 py-4 rounded-lg font-bold text-lg hover:shadow-xl transform hover:scale-105 transition-all"
+                disabled={isSubmitting}
+                className="mt-8 inline-flex items-center gap-2 bg-gradient-to-r from-green-500 to-blue-600 text-white px-10 py-4 rounded-lg font-bold text-lg hover:shadow-xl transform hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Check size={24} />
-                Publish My Portfolio
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="animate-spin" size={24} />
+                    Publishing...
+                  </>
+                ) : (
+                  <>
+                    <Check size={24} />
+                    Publish My Portfolio
+                  </>
+                )}
               </button>
 
               <p className="text-sm text-gray-500">
@@ -486,7 +581,8 @@ const OnboardingWizard = () => {
                 </button>
                 <button
                   onClick={handleNext}
-                  className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                  disabled={currentStep === 1 && !isStep1Valid}
+                  className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Continue
                   <ChevronRight size={18} />

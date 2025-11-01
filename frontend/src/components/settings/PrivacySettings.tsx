@@ -63,6 +63,7 @@ export default function PrivacySettings({ profile }: Props) {
     </button>
   );
 
+  // console.log('from privacy settings', profile)
   return (
     <div className="p-6">
       <div className="mb-6">
@@ -91,7 +92,7 @@ export default function PrivacySettings({ profile }: Props) {
               </p>
               {settings.is_public && profile?.username && (
                 <p className="text-sm text-blue-600 mt-2">
-                  Your profile is live at: /portfolio/{profile.username}
+                  Your profile is live at: /portfolio/{profile?.username}
                 </p>
               )}
             </div>

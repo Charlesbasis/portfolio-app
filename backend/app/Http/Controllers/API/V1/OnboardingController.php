@@ -30,7 +30,7 @@ class OnboardingController extends Controller
         DB::beginTransaction();
         
         try {
-            // Update profile
+            // Update or create profile
             $profile = $request->user()->profile()->updateOrCreate(
                 ['user_id' => $request->user()->id],
                 [
@@ -41,50 +41,58 @@ class OnboardingController extends Controller
                     'location' => $validated['location'] ?? null,
                     'tagline' => $validated['tagline'] ?? null,
                     'bio' => $validated['bio'] ?? null,
-                    'is_public' => true, // Make portfolio public by default
+                    'is_public' => true,
                 ]
             );
 
             // Create first project if provided
-            if (isset($validated['first_project'])) {
+            $project = null;
+            if (!empty($validated['first_project'])) {
                 $project = $request->user()->projects()->create([
                     'title' => $validated['first_project']['title'],
                     'slug' => Str::slug($validated['first_project']['title']),
                     'description' => $validated['first_project']['description'],
                     'short_description' => Str::limit($validated['first_project']['description'], 200),
                     'technologies' => $validated['first_project']['technologies'] ?? [],
-                    'is_featured' => true,
+                    'featured' => true,
                     'status' => 'published'
                 ]);
             }
 
             // Add skills if provided
-            if (isset($validated['skills']) && count($validated['skills']) > 0) {
+            if (!empty($validated['skills']) && count($validated['skills']) > 0) {
                 foreach ($validated['skills'] as $skillName) {
                     $request->user()->skills()->create([
                         'name' => $skillName,
                         'category' => $this->guessSkillCategory($skillName),
-                        'proficiency' => 70, // Default proficiency
+                        'proficiency' => 70,
                     ]);
                 }
             }
 
             // Mark onboarding as complete
-            $request->user()->update(['onboarding_completed' => true]);
+            $request->user()->update([
+                'onboarding_completed' => true,
+                'onboarding_completed_at' => now()
+            ]);
 
             DB::commit();
 
             return response()->json([
+                'success' => true,
                 'message' => 'Onboarding completed successfully',
                 'profile' => $profile,
+                'project' => $project,
                 'portfolio_url' => "/portfolio/{$profile->username}"
             ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
+            
             return response()->json([
+                'success' => false,
                 'message' => 'Failed to complete onboarding',
-                'error' => $e->getMessage()
+                'error' => config('app.debug') ? $e->getMessage() : 'An error occurred'
             ], 500);
         }
     }
