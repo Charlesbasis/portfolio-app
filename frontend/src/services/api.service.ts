@@ -1,19 +1,20 @@
-import api, { handleApiRequest, tokenManager } from '../lib/api';
+import api, { handleApiRequest } from '../lib/api';
 import { extractData, extractNestedData } from '../lib/utils';
-import { 
-  Project, 
-  Skill, 
-  Testimonial, 
-  Service, 
-  User,
-  PaginatedResponse,
-  ApiResponse, 
+import {
+  ApiResponse,
   ContactFormData,
-  LoginCredentials,
-  RegisterData,
   Experience,
+  LoginCredentials,
+  OnboardingCompleteResponse,
   OnboardingData,
-  UserProfile
+  OnboardingStatusResponse,
+  Project,
+  RegisterData,
+  Service,
+  Skill,
+  Testimonial,
+  User,
+  UsernameCheckResponse
 } from '../types';
 
 
@@ -381,66 +382,27 @@ export const experienceService = {
 // ============= Onboarding Service =============
 export const onboardingService = {
   /**
-   * Check if a username is available
+   * Check username availability
    */
-  checkUsername: async (username: string): Promise<{ available: boolean; username: string }> => {
-    const response = await handleApiRequest(
-      () => api.get(`/onboarding/check-username/${username}`),
-      { available: false, username }
-    );
-    return response;
+  checkUsername: async (username: string): Promise<UsernameCheckResponse> => {
+    const { data } = await api.get(`/onboarding/check-username/${username}`);
+    return data;
   },
 
   /**
    * Get onboarding status
    */
-  getStatus: async (): Promise<{
-    completed: boolean;
-    has_profile: boolean;
-    has_username: boolean;
-    has_projects: boolean;
-    has_skills: boolean;
-  }> => {
-    const response = await handleApiRequest(
-      () => api.get('/onboarding/status'),
-      {
-        completed: false,
-        has_profile: false,
-        has_username: false,
-        has_projects: false,
-        has_skills: false,
-      }
-    );
-    return response;
+  getStatus: async (): Promise<OnboardingStatusResponse> => {
+    const { data } = await api.get('/onboarding/status');
+    return data;
   },
 
   /**
-   * Complete onboarding process
+   * Complete onboarding
    */
-  complete: async (data: OnboardingData): Promise<{
-    success: boolean;
-    message: string;
-    profile: UserProfile;
-    project?: any;
-    portfolio_url: string;
-  }> => {
-    const { data: responseData } = await api.post('/onboarding/complete', data);
-    
-    // Update user in localStorage if successful
-    if (responseData.success && typeof window !== 'undefined') {
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        try {
-          const userData = JSON.parse(storedUser);
-          userData.onboarding_completed = true;
-          localStorage.setItem('user', JSON.stringify(userData));
-        } catch (e) {
-          console.error('Failed to update user in localStorage:', e);
-        }
-      }
-    }
-    
-    return responseData;
+  complete: async (onboardingData: OnboardingData): Promise<OnboardingCompleteResponse> => {
+    const { data } = await api.post('/onboarding/complete', onboardingData);
+    return data;
   },
 };
 

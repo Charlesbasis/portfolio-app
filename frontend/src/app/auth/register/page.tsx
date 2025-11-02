@@ -43,8 +43,15 @@ export default function Register() {
     setError('');
 
     try {
-      await api.post('/register', data);
-      router.push('/auth/login?registered=true');
+      const response = await api.post('/register', data);
+
+      // Store token
+      if (response.data.data?.token) {
+        localStorage.setItem('auth_token', response.data.data.token);
+      }
+
+      // NEW: Redirect to onboarding instead of login
+      router.push('/onboarding');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Registration failed. Please try again.');
     } finally {
@@ -54,7 +61,8 @@ export default function Register() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      router.push('/dashboard');
+      // Check if user needs onboarding
+      router.push('/onboarding'); // Will auto-redirect if completed
     }
   }, [isAuthenticated, router]);
 

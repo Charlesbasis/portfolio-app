@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Portfolio;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
-class Projects extends Model
+class Project extends Model
 {
     use HasFactory, SoftDeletes;
 
@@ -45,7 +45,7 @@ class Projects extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(\App\Models\User::class);
     }
 
     public function scopeFeatured($query)
@@ -57,5 +57,4 @@ class Projects extends Model
     {
         return $query->where('status', 'published');
     }
-
 }

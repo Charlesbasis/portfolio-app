@@ -3,7 +3,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { tokenManager } from '../lib/api';
-import { User } from '../types';
+import { RegisterData, User } from '../types';
 import { authService } from '../services/api.service';
 
 interface AuthState {
@@ -23,13 +23,6 @@ interface AuthState {
   clearError: () => void;
 }
 
-interface RegisterData {
-  name: string;
-  email: string;
-  password: string;
-  password_confirmation: string;
-}
-
 export const useAuth = create<AuthState>()(
   persist(
     (set, get) => ({
@@ -42,19 +35,24 @@ export const useAuth = create<AuthState>()(
       login: async (email: string, password: string) => {
         set({ isLoading: true, error: null });
         try {
-          const { user, token } = await authService.login({ email, password });
+          const response = await authService.login({ email, password });
+          const { user, token, needs_onboarding } = response;
+
           tokenManager.set(token);
-          set({ 
-            user, 
-            token, 
-            isAuthenticated: true, 
+          set({
+            user,
+            token,
+            isAuthenticated: true,
             isLoading: false,
-            error: null 
+            error: null
           });
+
+          // NEW: Return needs_onboarding flag for routing
+          return { user, needs_onboarding };
         } catch (error: any) {
           const errorMessage = error.response?.data?.message || 'Login failed. Please try again.';
-          set({ 
-            isLoading: false, 
+          set({
+            isLoading: false,
             error: errorMessage,
             isAuthenticated: false,
             user: null,

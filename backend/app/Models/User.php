@@ -41,6 +41,14 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Get the onboarding_completed attribute based on onboarding_completed_at
+     */
+    public function getOnboardingCompletedAttribute(): bool
+    {
+        return $this->onboarding_completed_at !== null;
+    }
+
+    /**
      * Get the user's profile.
      */
     public function profile()
@@ -53,7 +61,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function projects()
     {
-        return $this->hasMany(Projects::class);
+        return $this->hasMany(\App\Models\Portfolio\Project::class);
     }
 
     /**
@@ -61,7 +69,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function skills()
     {
-        return $this->hasMany(Skills::class);
+        return $this->hasMany(Skill::class);
     }
 
     /**
@@ -91,7 +99,6 @@ class User extends Authenticatable implements MustVerifyEmail
     public function completedOnboarding()
     {
         $this->update([
-            'onboarding_completed' => true,
             'onboarding_completed_at' => now()
         ]);
     }
@@ -100,5 +107,4 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->onboarding_data['current_step'] ?? [];
     }
-    
 }

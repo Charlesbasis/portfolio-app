@@ -54,12 +54,22 @@ export default function LoginPage() {
   }, [clearError]);
 
   const onSubmit = async (data: LoginFormData) => {
+    setIsLoading(true);
+    setError('');
+
     try {
-      await login(data.email, data.password);
-      // Router.push will be called by the useEffect above
-    } catch (err) {
-      // Error is already set in the store
-      console.error('Login failed:', err);
+      const result = await login(data.email, data.password);
+
+      // NEW: Check if onboarding is needed
+      if (result.needs_onboarding) {
+        router.push('/onboarding');
+      } else {
+        router.push('/dashboard');
+      }
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 

@@ -13,6 +13,7 @@ use App\Http\Controllers\API\V1\ProfileController;
 use App\Http\Controllers\API\V1\ServiceController;
 use App\Http\Controllers\API\V1\SettingsController;
 use App\Http\Controllers\API\V1\TestimonialController;
+use App\Http\Middleware\EnsureOnboardingCompleted;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -50,8 +51,11 @@ Route::prefix('v1')->group(function () {
     Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])
         ->middleware(['signed'])
         ->name('verification.verify');
+
+    // Check username availability (public)
+    Route::get('/onboarding/check-username/{username}', [OnboardingController::class, 'checkUsername']);
     
-    // Protected routes
+    // Protected routes with auth but NOT onboarding completion
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/user', [AuthController::class, 'user']);
@@ -61,6 +65,15 @@ Route::prefix('v1')->group(function () {
             ->middleware(['throttle:6,1'])
             ->name('verification.send');
         
+        // Onboarding routes (should NOT require onboarding completion)
+        Route::prefix('onboarding')->group(function () {
+            Route::get('/status', [OnboardingController::class, 'status']);
+            Route::post('/complete', [OnboardingController::class, 'complete']);
+        });
+    });
+
+    // Protected routes that require BOTH auth AND onboarding completion
+    Route::middleware(['auth:sanctum', EnsureOnboardingCompleted::class])->group(function () {
         // Current user profile
         Route::get('/profile', [ProfileController::class, 'show']);
         Route::put('/profile', [ProfileController::class, 'update']);
@@ -120,12 +133,5 @@ Route::prefix('v1')->group(function () {
             Route::delete('/account', [SettingsController::class, 'deleteAccount']);
             Route::get('/activity', [SettingsController::class, 'activityLog']);
         });
-
-        Route::prefix('onboarding')->group(function () {
-            Route::post('/complete', [OnboardingController::class, 'complete']);
-            Route::get('/check-username/{username}', [OnboardingController::class, 'checkUsername']);
-            Route::get('/status', [OnboardingController::class, 'status']);
-        });
-
     });
 });

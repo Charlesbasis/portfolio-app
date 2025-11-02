@@ -4,7 +4,7 @@ namespace App\Http\Controllers\API\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\SkillResource;
-use App\Models\Skills;
+use App\Models\Skill;
 use App\Repositories\SkillRepository;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
@@ -98,7 +98,7 @@ class SkillsController extends Controller
         $data = $validator->validated();
         $data['user_id'] = $request->user()->id;
 
-        $skill = Skills::create($data);
+        $skill = Skill::create($data);
 
         Cache::forget('skills:*');
 
@@ -116,7 +116,7 @@ class SkillsController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Skills $skill)
+    public function show(Skill $skill)
     {
         // Log::info('SkillsController@show called', [
         //     'skill_id' => $skill->id
@@ -131,7 +131,7 @@ class SkillsController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Skills $skill)
+    public function update(Request $request, Skill $skill)
     {
         // Log::info('SkillsController@update called', [
         //     'skill_id' => $skill->id,
@@ -179,7 +179,7 @@ class SkillsController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Skills $skill)
+    public function destroy(Skill $skill)
     {
         // Log::info('SkillsController@destroy called', [
         //     'skill_id' => $skill->id,

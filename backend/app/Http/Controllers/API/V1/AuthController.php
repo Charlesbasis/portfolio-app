@@ -34,6 +34,7 @@ class AuthController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'onboarding_completed_at' => null,
         ]);
 
         // Trigger email verification
@@ -52,6 +53,7 @@ class AuthController extends Controller
             'data' => [
                 'user' => $user,
                 'token' => $token,
+                'needs_onboarding' => true,
             ],
         ], 201);
     }
@@ -100,6 +102,7 @@ class AuthController extends Controller
                 'user' => $user,
                 'token' => $token,
                 'email_verified' => $user->hasVerifiedEmail(),
+                'needs_onboarding' => !$user->onboarding_completed,
             ],
         ]);
     }

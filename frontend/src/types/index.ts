@@ -46,10 +46,17 @@ export interface User {
   id: number;
   name: string;
   email: string;
-  email_verified_at: string | null;
+  username?: string;
+  job_title?: string;
+  company?: string;
+  location?: string;
+  tagline?: string;
+  bio?: string;
+  email_verified_at?: string;
+  onboarding_completed_at?: string;
+  onboarding_completed?: boolean; 
   created_at: string;
   updated_at: string;
-  onboarding_completed: boolean;
 }
 
 export interface AuthResponse {
@@ -340,6 +347,8 @@ export interface LoginCredentials {
 
 export interface RegisterData extends LoginCredentials {
   name: string;
+  email: string;
+  password: string;
   password_confirmation: string;
 }
 
@@ -380,15 +389,61 @@ export interface EducationCertificationsProps {
 export interface OnboardingData {
   full_name: string;
   username: string;
-  job_title?: string;
+  job_title: string;
   company?: string;
   location?: string;
   tagline?: string;
   bio?: string;
-  first_project?: {
+  project?: {
     title: string;
     description: string;
     technologies: string[];
   };
   skills: string[];
+}
+
+export interface OnboardingStatusResponse {
+  success: boolean;
+  data: {
+    completed: boolean;
+    completed_at: string | null;
+    has_username: boolean;
+    has_profile: boolean;
+    has_projects: boolean;
+    has_skills: boolean;
+  };
+}
+
+export interface UsernameCheckResponse {
+  available: boolean;
+  message?: string;
+}
+
+export interface OnboardingCompleteResponse {
+  success: boolean;
+  message: string;
+  data: {
+    user: User;
+    redirect_url: string;
+  };
+}
+
+export interface FormData {
+  full_name: string;
+  username: string;
+  job_title: string;
+  company: string;
+  location: string;
+  tagline: string;
+  bio: string;
+  project_title: string;
+  project_description: string;
+  project_technologies: string[];
+  skills: string[];
+}
+
+export interface Step {
+  id: number;
+  title: string;
+  icon: any;
 }
