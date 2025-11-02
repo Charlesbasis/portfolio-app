@@ -6,7 +6,7 @@ import {
   Sparkles, User, Briefcase, Code, Rocket, 
   ArrowRight, ArrowLeft, Check, X 
 } from 'lucide-react';
-import { useCompleteOnboarding, useCheckUsername } from '@/src/hooks/useOnboarding';
+import { useCompleteOnboarding, useCheckUsername } from '@/src/hooks/useApi';
 import { FormData, Step } from '@/src/types';
 
 const OnboardingWizard = () => {

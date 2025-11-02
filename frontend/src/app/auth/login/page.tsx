@@ -54,22 +54,19 @@ export default function LoginPage() {
   }, [clearError]);
 
   const onSubmit = async (data: LoginFormData) => {
-    setIsLoading(true);
-    setError('');
-
     try {
       const result = await login(data.email, data.password);
 
-      // NEW: Check if onboarding is needed
+      // Check if onboarding is needed
       if (result.needs_onboarding) {
         router.push('/onboarding');
       } else {
-        router.push('/dashboard');
+        const returnUrl = searchParams.get('returnUrl');
+        router.push(returnUrl ? decodeURIComponent(returnUrl) : '/dashboard');
       }
     } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
+      // Error is already handled by the useAuth hook
+      console.error('Login failed:', err);
     }
   };
 

@@ -302,30 +302,27 @@ export const authService = {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('auth_token');
     }
-  },
-
+  },  
+  
   getCurrentUser: async (): Promise<User | null> => {
     try {
       const response = await handleApiRequest(
-        // () => api.get('/auth/user'),
         () => api.get('/user'),
         null
       );
-      console.log('🔍 Raw API Response from getCurrentUser:', response);
-      
-      // Try different extraction methods
-      const userData = extractNestedData<User>(response, 'data.user') ||
-        extractData<User>(response) ||
-        response;
 
-      if (userData && userData.id) {
+      console.log('🔍 Raw API Response from getCurrentUser:', response);
+
+      // Try different extraction methods with proper null checks
+      const userData = extractNestedData<User>(response, 'data.user')
+        || extractData<User>(response)
+        || (response && typeof response === 'object' && 'id' in response ? response : null);
+
+      if (userData && (userData as any).id) {
         return userData;
       }
 
       return null;
-      
-      // if (!response) return null;
-      // return extractData<User>(response);      
     } catch (error) {
       console.error('❌ getCurrentUser error:', error);
       return null;
@@ -404,6 +401,31 @@ export const onboardingService = {
     const { data } = await api.post('/onboarding/complete', onboardingData);
     return data;
   },
+};
+
+let requestCount = 0;
+const MAX_REQUESTS_PER_MINUTE = 60;
+
+const retryWithBackoff = async <T>(
+  requestFn: () => Promise<T>,
+  maxRetries: number = 3,
+  baseDelay: number = 1000
+): Promise<T> => {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await requestFn();
+    } catch (error: any) {
+      // If it's a 429 error and we have retries left
+      if (error?.status === 429 && attempt < maxRetries - 1) {
+        const delay = baseDelay * Math.pow(2, attempt); // Exponential backoff
+        console.warn(`Rate limited. Retrying in ${delay}ms... (Attempt ${attempt + 1}/${maxRetries})`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+      throw error; // Re-throw if not a 429 or no retries left
+    }
+  }
+  throw new Error('Max retries exceeded');
 };
 
 export { dashboardApi } from './dashboardApi.service';

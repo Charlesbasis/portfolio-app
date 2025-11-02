@@ -13,8 +13,11 @@ interface AuthState {
   isLoading: boolean;
   error: string | null;
   
-  // Actions
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<{ 
+    user: User; 
+    needs_onboarding: boolean;
+    token: string;
+  }>;
   logout: () => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   setUser: (user: User | null) => void;
@@ -47,8 +50,8 @@ export const useAuth = create<AuthState>()(
             error: null
           });
 
-          // NEW: Return needs_onboarding flag for routing
-          return { user, needs_onboarding };
+          // Return the data for the component to use
+          return { user, needs_onboarding, token };
         } catch (error: any) {
           const errorMessage = error.response?.data?.message || 'Login failed. Please try again.';
           set({
