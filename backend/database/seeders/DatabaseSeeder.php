@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
             // ServiceSeeder::class,
             // UserDataSeeder::class,
             // ProfileSeeder::class,
+            UserTypeSeeder::class,
             // Add more seeders here as needed
         ]);
 

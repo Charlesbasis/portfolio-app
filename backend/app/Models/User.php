@@ -19,6 +19,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'onboarding_completed',
         'onboarding_completed_at',
         'onboarding_data',
+        'user_type_id',
     ];
 
     protected $casts = [
@@ -106,5 +107,21 @@ class User extends Authenticatable implements MustVerifyEmail
     public function getOnboardingStepAttribute($value)
     {
         return $this->onboarding_data['current_step'] ?? [];
+    }
+
+    public function userType()
+    {
+        return $this->belongsTo(UserType::class);
+    }
+
+    // Accessor for user type name
+    public function getUserTypeNameAttribute()
+    {
+        return $this->userType->name ?? null;
+    }
+
+    public function dynamicFieldValues()
+    {
+        return $this->hasMany(UserFieldValue::class);
     }
 }

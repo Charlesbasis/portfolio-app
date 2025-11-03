@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\UserProfile;
+use App\Models\UserType;
+use App\Models\UserTypeField;
+use App\Models\UserFieldValue;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -17,17 +20,17 @@ class ProfileController extends Controller
      */
     public function showPublic($username)
     {
-        // Log::debug('Searching for username:', ['username' => $username]);
-
-        $user = User::whereHas('profile', function ($query) use ($username) {
-            $query->where('username', $username);
-        })->first();
+        $user = User::with(['profile', 'userType', 'userType.fields'])
+            ->whereHas('profile', function ($query) use ($username) {
+                $query->where('username', $username);
+            })
+            ->first();
 
         if (!$user) {
             abort(404, 'User not found');
         }
 
-        $profile = UserProfile::where('user_id', $user->id)->first();
+        $profile = $user->profile;
 
         if (!$profile || !$profile->is_public) {
             return response()->json([
@@ -38,14 +41,15 @@ class ProfileController extends Controller
 
         $profile->incrementViews();
 
-        // Log::info('Profile viewed by user', [
-        //     'requested_username' => $username,
-        //     'profile_username' => $profile->username,
-        // ]);
+        // Get dynamic field values for this user
+        $dynamicFields = $this->getUserDynamicFields($user);
 
         return response()->json([
             'success' => true,
-            'data' => $profile,
+            'data' => array_merge($profile->toArray(), [
+                'user_type' => $user->userType,
+                'dynamic_fields' => $dynamicFields
+            ]),
         ]);
     }
     
@@ -54,24 +58,32 @@ class ProfileController extends Controller
      */
     public function show(Request $request)
     {
-        $profile = UserProfile::where('user_id', $request->user()->id)->first();
+        $user = $request->user()->load(['profile', 'userType', 'userType.fields']);
+        
+        $profile = $user->profile;
         
         if (!$profile) {
             // Create default profile if doesn't exist
             $profile = UserProfile::create([
-                'user_id' => $request->user()->id,
-                'username' => $request->user()->name ?? 'user' . $request->user()->id,
-                'full_name' => $request->user()->name,
-                'email' => $request->user()->email,
+                'user_id' => $user->id,
+                'username' => $user->name ?? 'user' . $user->id,
+                'full_name' => $user->name,
+                'email' => $user->email,
                 'is_public' => false,
                 'show_email' => false,
                 'show_phone' => false,
             ]);
         }
+
+        // Get dynamic field values
+        $dynamicFields = $this->getUserDynamicFields($user);
         
         return response()->json([
             'success' => true,
-            'data' => $profile,
+            'data' => array_merge($profile->toArray(), [
+                'user_type' => $user->userType,
+                'dynamic_fields' => $dynamicFields
+            ]),
         ]);
     }
     
@@ -80,13 +92,21 @@ class ProfileController extends Controller
      */
     public function update(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'username' => 'sometimes|string|max:255|unique:user_profiles,username,' . $request->user()->id . ',user_id',
-            function ($attribute, $value, $fail) {
-                if (User::where('email', $value)->exists()) {
-                    $fail('This username is not available.');
+        $user = $request->user()->load('userType.fields');
+        
+        // Base validation rules
+        $validationRules = [
+            'username' => [
+                'sometimes',
+                'string',
+                'max:255',
+                'unique:user_profiles,username,' . $user->id . ',user_id',
+                function ($attribute, $value, $fail) {
+                    if (User::where('email', $value)->exists()) {
+                        $fail('This username is not available.');
+                    }
                 }
-            },
+            ],
             'full_name' => 'sometimes|string|max:255',
             'tagline' => 'nullable|string|max:500',
             'bio' => 'nullable|string',
@@ -103,7 +123,63 @@ class ProfileController extends Controller
             'is_public' => 'sometimes|boolean',
             'show_email' => 'sometimes|boolean',
             'show_phone' => 'sometimes|boolean',
-        ]);
+            'user_type_id' => 'sometimes|exists:user_types,id',
+        ];
+
+        // Add dynamic field validation rules based on user type
+        $dynamicFieldRules = [];
+        $dynamicFieldData = [];
+
+        if ($user->userType) {
+            foreach ($user->userType->fields as $field) {
+                $rule = [];
+                
+                if ($field->is_required) {
+                    $rule[] = 'required';
+                } else {
+                    $rule[] = 'nullable';
+                }
+
+                // Convert data_type to validation rules
+                switch ($field->data_type) {
+                    case 'string':
+                        $rule[] = 'string';
+                        $rule[] = 'max:255';
+                        break;
+                    case 'text':
+                        $rule[] = 'string';
+                        break;
+                    case 'integer':
+                        $rule[] = 'integer';
+                        break;
+                    case 'boolean':
+                        $rule[] = 'boolean';
+                        break;
+                    case 'email':
+                        $rule[] = 'email';
+                        break;
+                    case 'url':
+                        $rule[] = 'url';
+                        break;
+                    default:
+                        $rule[] = 'string';
+                }
+
+                // Add custom validation rules if defined
+                if ($field->validation_rules) {
+                    $customRules = explode('|', $field->validation_rules);
+                    $rule = array_merge($rule, $customRules);
+                }
+
+                $fieldKey = "dynamic.{$field->field_slug}";
+                $dynamicFieldRules[$fieldKey] = $rule;
+            }
+        }
+
+        // Merge all validation rules
+        $allRules = array_merge($validationRules, $dynamicFieldRules);
+        
+        $validator = Validator::make($request->all(), $allRules);
 
         if ($validator->fails()) {
             return response()->json([
@@ -111,15 +187,37 @@ class ProfileController extends Controller
                 'errors' => $validator->errors(),
             ], 422);
         }
+
+        // Update user type if provided
+        if ($request->has('user_type_id') && $request->user_type_id != $user->user_type_id) {
+            $user->update(['user_type_id' => $request->user_type_id]);
+            $user->refresh()->load('userType.fields');
+        }
+        
+        // Update profile data
+        $profileData = $validator->validated();
+        unset($profileData['user_type_id']); // Remove user_type_id from profile data
         
         $profile = UserProfile::updateOrCreate(
-            ['user_id' => $request->user()->id],
-            $validator->validated()
+            ['user_id' => $user->id],
+            $profileData
         );
+
+        // Handle dynamic fields
+        if ($request->has('dynamic') && $user->userType) {
+            $this->updateDynamicFields($user, $request->input('dynamic'));
+        }
+        
+        // Reload with fresh data
+        $user->refresh()->load(['profile', 'userType.fields']);
+        $dynamicFields = $this->getUserDynamicFields($user);
         
         return response()->json([
             'success' => true,
-            'data' => $profile,
+            'data' => array_merge($profile->toArray(), [
+                'user_type' => $user->userType,
+                'dynamic_fields' => $dynamicFields
+            ]),
             'message' => 'Profile updated successfully',
         ]);
     }
@@ -199,11 +297,13 @@ class ProfileController extends Controller
      */
     public function publicStats($username)
     {
-        $user = User::whereHas('profile', function ($query) use ($username) {
-            $query->where('username', $username);
-        })->firstOrFail();
+        $user = User::with(['profile', 'userType'])
+            ->whereHas('profile', function ($query) use ($username) {
+                $query->where('username', $username);
+            })
+            ->firstOrFail();
 
-        $profile = UserProfile::where('user_id', $user->id)->firstOrFail();
+        $profile = $user->profile;
 
         // if (!$profile->is_public) {
         //     return response()->json([
@@ -218,6 +318,7 @@ class ProfileController extends Controller
             'years_experience' => $profile->years_experience ?? 0,
             'total_experiences' => $user->experiences()->count(),
             'profile_views' => $profile->profile_views ?? 0,
+            'user_type' => $user->userType->name ?? 'Not set',
             // 'happy_clients' => $user->testimonials()->where('slug', 'happy-client')->count(),
         ];
 
@@ -225,5 +326,72 @@ class ProfileController extends Controller
             'success' => true,
             'data' => $stats,
         ]);
+    }
+
+    /**
+     * Get available user types
+     */
+    public function getUserTypes()
+    {
+        $userTypes = UserType::where('is_active', true)
+            ->with('fields')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $userTypes,
+        ]);
+    }
+
+    /**
+     * Get dynamic fields for a user
+     */
+    private function getUserDynamicFields(User $user)
+    {
+        if (!$user->userType) {
+            return [];
+        }
+
+        $dynamicFields = [];
+        $fieldValues = UserFieldValue::where('user_id', $user->id)
+            ->with('field')
+            ->get()
+            ->keyBy('field.field_slug');
+
+        foreach ($user->userType->fields as $field) {
+            $value = $fieldValues->get($field->field_slug);
+            
+            $dynamicFields[] = [
+                'field_slug' => $field->field_slug,
+                'field_name' => $field->field_name,
+                'data_type' => $field->data_type,
+                'value' => $value ? $value->value : null,
+                'is_required' => $field->is_required,
+            ];
+        }
+
+        return $dynamicFields;
+    }
+
+    /**
+     * Update dynamic fields for a user
+     */
+    private function updateDynamicFields(User $user, array $dynamicData)
+    {
+        foreach ($dynamicData as $fieldSlug => $value) {
+            $field = UserTypeField::where('field_slug', $fieldSlug)
+                ->where('user_type_id', $user->user_type_id)
+                ->first();
+
+            if ($field) {
+                UserFieldValue::updateOrCreate(
+                    [
+                        'user_id' => $user->id,
+                        'user_type_field_id' => $field->id,
+                    ],
+                    ['value' => $value]
+                );
+            }
+        }
     }
 }
