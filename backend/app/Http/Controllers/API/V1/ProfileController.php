@@ -205,12 +205,12 @@ class ProfileController extends Controller
 
         $profile = UserProfile::where('user_id', $user->id)->firstOrFail();
 
-        if (!$profile->is_public) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Profile is private',
-            ], 403);
-        }
+        // if (!$profile->is_public) {
+        //     return response()->json([
+        //         'success' => false,
+        //         'message' => 'Profile is private',
+        //     ], 403);
+        // }
 
         $stats = [
             'total_projects' => $user->projects()->where('status', 'published')->count(),
@@ -218,6 +218,7 @@ class ProfileController extends Controller
             'years_experience' => $profile->years_experience ?? 0,
             'total_experiences' => $user->experiences()->count(),
             'profile_views' => $profile->profile_views ?? 0,
+            'happy_clients' => $user->testimonials()->where('slug', 'happy-client')->count(),
         ];
 
         return response()->json([

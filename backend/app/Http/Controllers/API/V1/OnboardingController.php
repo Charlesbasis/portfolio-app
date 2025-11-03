@@ -35,7 +35,10 @@ class OnboardingController extends Controller
                 ['user_id' => $user->id],
                 array_merge(
                     $request->only(['full_name', 'username', 'job_title', 'company', 'location', 'tagline', 'bio']),
-                    ['email' => $user->email] // Include the user's email
+                    [
+                        'email' => $user->email,
+                        'is_public' => true,
+                    ]
                 )
             );
 

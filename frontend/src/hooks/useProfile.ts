@@ -147,7 +147,7 @@ export function useDeleteCoverImage() {
   
   return useMutation({
     mutationFn: async () => {
-      const response = await api.delete('/v1/settings/cover-image');
+      const response = await api.delete('/settings/cover-image');
       return response.data;
     },
     onSuccess: () => {
@@ -226,24 +226,24 @@ export function useDeleteExperience() {
 
 // ============= Education Hooks =============
 
-// Public Education Hook
+// Public Education Hook - FIXED: Removed /v1/ prefix
 export function usePublicEducation(username: string) {
   return useQuery({
     queryKey: ['education', 'public', username],
     queryFn: async () => {
-      const response = await api.get(`/v1/users/${username}/education`);
+      const response = await api.get(`/users/${username}/education`);
       return response.data as Education[];
     },
     enabled: !!username,
   });
 }
 
-// Education Hooks
+// Education Hooks - FIXED: Removed /v1/ prefix
 export function useEducation() {
   return useQuery({
     queryKey: ['education'],
     queryFn: async () => {
-      const response = await api.get('/v1/education');
+      const response = await api.get('/education');
       return response.data as Education[];
     },
   });
@@ -254,7 +254,7 @@ export function useCreateEducation() {
   
   return useMutation({
     mutationFn: async (data: Partial<Education>) => {
-      const response = await api.post('/v1/education', data);
+      const response = await api.post('/education', data);
       return response.data;
     },
     onSuccess: () => {
@@ -268,7 +268,7 @@ export function useUpdateEducation() {
   
   return useMutation({
     mutationFn: async ({ id, data }: { id: number; data: Partial<Education> }) => {
-      const response = await api.put(`/v1/education/${id}`, data);
+      const response = await api.put(`/education/${id}`, data);
       return response.data;
     },
     onSuccess: () => {
@@ -282,7 +282,7 @@ export function useDeleteEducation() {
   
   return useMutation({
     mutationFn: async (id: number) => {
-      const response = await api.delete(`/v1/education/${id}`);
+      const response = await api.delete(`/education/${id}`);
       return response.data;
     },
     onSuccess: () => {
@@ -293,12 +293,12 @@ export function useDeleteEducation() {
 
 // ============= Certification Hooks =============
 
-// Public Certifications Hook
+// Public Certifications Hook - FIXED: Removed /v1/ prefix
 export function usePublicCertifications(username: string) {
   return useQuery({
     queryKey: ['certifications', 'public', username],
     queryFn: async () => {
-      const response = await api.get(`/v1/users/${username}/certifications`);
+      const response = await api.get(`/users/${username}/certifications`);
       return response.data as Certification[];
     },
     enabled: !!username,
@@ -309,7 +309,7 @@ export function useCertifications() {
   return useQuery({
     queryKey: ['certifications'],
     queryFn: async () => {
-      const response = await api.get('/v1/certifications');
+      const response = await api.get('/certifications');
       return response.data as Certification[];
     },
   });
@@ -320,7 +320,7 @@ export function useCreateCertification() {
   
   return useMutation({
     mutationFn: async (data: Partial<Certification>) => {
-      const response = await api.post('/v1/certifications', data);
+      const response = await api.post('/certifications', data);
       return response.data;
     },
     onSuccess: () => {
@@ -334,7 +334,7 @@ export function useUpdateCertification() {
   
   return useMutation({
     mutationFn: async ({ id, data }: { id: number; data: Partial<Certification> }) => {
-      const response = await api.put(`/v1/certifications/${id}`, data);
+      const response = await api.put(`/certifications/${id}`, data);
       return response.data;
     },
     onSuccess: () => {
@@ -348,7 +348,7 @@ export function useDeleteCertification() {
   
   return useMutation({
     mutationFn: async (id: number) => {
-      const response = await api.delete(`/v1/certifications/${id}`);
+      const response = await api.delete(`/certifications/${id}`);
       return response.data;
     },
     onSuccess: () => {

@@ -39,7 +39,7 @@ return new class extends Migration
             $table->integer('profile_views')->default(0);
             
             // Settings
-            $table->boolean('is_public')->default(false);
+            $table->boolean('is_public')->default(true);
             $table->boolean('show_email')->default(false);
             $table->boolean('show_phone')->default(false);
             

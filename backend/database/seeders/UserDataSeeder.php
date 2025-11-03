@@ -6,14 +6,23 @@ use App\Models\Projects;
 use App\Models\Skills;
 use App\Models\Service;
 use App\Models\Testimonial;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class UserDataSeeder extends Seeder
 {
     public function run(): void
     {
-        // Get your current user ID (change this to your actual user ID)
-        $userId = 2; // or whatever your authenticated user ID is
+        $user = User::firstOrCreate(
+            ['email' => 'your-email@example.com'],
+            [
+                'name' => 'Your Name',
+                'password' => bcrypt('password'),
+                'email_verified_at' => now(),
+            ]
+        );
+
+        $userId = $user->id;
 
         Projects::create([
             'user_id' => $userId,

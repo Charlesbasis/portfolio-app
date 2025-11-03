@@ -27,6 +27,7 @@ import { use } from 'react';
 
 export default function PortfolioPage({ params }: PortfolioPageProps) {
   const { username } = use(params);
+  // console.log('from PortfolioPage 👤 Username:', username)
   
   const { data: profile, isLoading: profileLoading, isError: profileError } = usePublicProfile(username);
   const { data: stats, isLoading: statsLoading } = useUserStats(username);
@@ -105,7 +106,7 @@ export default function PortfolioPage({ params }: PortfolioPageProps) {
       .join('')
       .toUpperCase()
       .slice(0, 2);
-  };
+  };  
 
   return (
     <div className="min-h-screen bg-gray-50">
