@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useCompleteOnboarding, useCheckUsername } from '@/src/hooks/useApi';
 import { FormData, Step } from '@/src/types';
+import { useRouter } from 'next/navigation';
 
 const OnboardingWizard = () => {
   const [currentStep, setCurrentStep] = useState(0);
@@ -134,6 +135,8 @@ const OnboardingWizard = () => {
     setCurrentStep(steps.length - 1);
   };
 
+  const router = useRouter();
+  
   const handleComplete = async () => {
     if (!validateStep()) return;
 
@@ -153,6 +156,7 @@ const OnboardingWizard = () => {
         } : undefined,
         skills: formData.skills
       });
+      router.push(`/portfolio/${formData.username}`);
     } catch (error: any) {
       console.error('Onboarding failed:', error);
       alert(error.response?.data?.message || 'Failed to complete onboarding. Please try again.');

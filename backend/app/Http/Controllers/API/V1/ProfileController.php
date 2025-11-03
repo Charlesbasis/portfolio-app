@@ -218,7 +218,7 @@ class ProfileController extends Controller
             'years_experience' => $profile->years_experience ?? 0,
             'total_experiences' => $user->experiences()->count(),
             'profile_views' => $profile->profile_views ?? 0,
-            'happy_clients' => $user->testimonials()->where('slug', 'happy-client')->count(),
+            // 'happy_clients' => $user->testimonials()->where('slug', 'happy-client')->count(),
         ];
 
         return response()->json([
