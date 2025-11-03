@@ -190,10 +190,7 @@ const OnboardingWizard = () => {
       // Refresh auth state to get updated user
       await checkAuth();
 
-      // Small delay to ensure state is updated
-      setTimeout(() => {
-        router.push('/dashboard');
-      }, 100);
+      router.push(`/portfolio/${formData.username}`);
     } catch (error: any) {
       console.error('Onboarding failed:', error);
       alert(error.response?.data?.message || 'Failed to complete onboarding. Please try again.');
