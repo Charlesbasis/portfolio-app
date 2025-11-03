@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Menu, X, User, LogOut, LayoutDashboard } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/src/hooks/useAuth';
@@ -10,6 +10,7 @@ export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
   const { user, isAuthenticated, logout } = useAuth();
 
   useEffect(() => {
@@ -29,10 +30,20 @@ export default function Header() {
 
   const handleLogout = async () => {
     try {
+      console.log('🚪 Logging out...');
       await logout();
-      window.location.href = '/';
+      
+      // Close mobile menu if open
+      setIsMenuOpen(false);
+      
+      // Redirect to home page
+      router.push('/');
+      
+      console.log('✅ Logout successful');
     } catch (error) {
-      console.error('Logout failed:', error);
+      console.error('❌ Logout failed:', error);
+      // Even if logout fails, clear local state and redirect
+      router.push('/');
     }
   };
 
@@ -50,7 +61,7 @@ export default function Header() {
           <Link
             href="/"
             className={`text-2xl font-bold transition-colors ${
-              isScrolled ? 'text-blue-300' : 'text-blue-600'
+              isScrolled ? 'text-blue-600' : 'text-white'
             }`}
           >
             Portfolio
@@ -65,11 +76,11 @@ export default function Header() {
                 className={`font-semibold transition-colors ${
                   pathname === link.href
                     ? isScrolled
-                      ? 'text-blue-300'
-                      : 'text-blue-600'
+                      ? 'text-blue-600'
+                      : 'text-white'
                     : isScrolled
                     ? 'text-gray-700 hover:text-blue-600'
-                    : 'text-blue-300 hover:text-blue-600'
+                    : 'text-gray-100 hover:text-white'
                 }`}
               >
                 {link.label}
@@ -81,7 +92,7 @@ export default function Header() {
               <div className="flex items-center gap-4">
                 <div
                   className={`flex items-center gap-2 ${
-                    isScrolled ? 'text-gray-700 hover:text-blue-600' : 'text-blue-300 hover:text-blue-600'
+                    isScrolled ? 'text-gray-700' : 'text-white'
                   }`}
                 >
                   <User size={20} />
@@ -100,10 +111,10 @@ export default function Header() {
                 </Link>
                 <button
                   onClick={handleLogout}
-                  className={`cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all ${
+                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all ${
                     isScrolled
-                      ? 'border-2 border-gray-600 text-gray-700 hover:bg-blue-50'
-                      : 'border-2 border-gray-300 text-gray-300 hover:bg-blue-50 hover:text-red-600'
+                      ? 'border-2 border-gray-300 text-gray-700 hover:border-red-500 hover:text-red-600'
+                      : 'border-2 border-white/30 text-white hover:border-red-500 hover:bg-red-50 hover:text-red-600'
                   }`}
                 >
                   <LogOut size={18} />
@@ -117,7 +128,7 @@ export default function Header() {
                   className={`px-4 py-2 rounded-lg font-semibold transition-all ${
                     isScrolled
                       ? 'text-gray-700 hover:bg-gray-100'
-                      : 'bg-white text-blue-600 hover:bg-blue-50'
+                      : 'text-white hover:bg-white/10'
                   }`}
                 >
                   Sign In
@@ -182,11 +193,8 @@ export default function Header() {
                       Dashboard
                     </Link>
                     <button
-                      onClick={() => {
-                        handleLogout();
-                        setIsMenuOpen(false);
-                      }}
-                      className="flex items-center justify-center gap-2 w-full border-2 border-gray-300 text-gray-700 px-4 py-3 rounded-lg font-semibold hover:bg-gray-100"
+                      onClick={handleLogout}
+                      className="flex items-center justify-center gap-2 w-full border-2 border-gray-300 text-gray-700 px-4 py-3 rounded-lg font-semibold hover:border-red-500 hover:text-red-600"
                     >
                       <LogOut size={18} />
                       Logout

@@ -285,7 +285,7 @@ export const authService = {
   // },
 
   register: async (userData: RegisterData): Promise<{ user: User; token: string }> => {
-    const { data } = await api.post('/auth/register', userData);
+    const { data } = await api.post('/register', userData);
     
     if (data.success && data.data?.token) {
       if (typeof window !== 'undefined') {
@@ -297,7 +297,7 @@ export const authService = {
   },
 
   logout: async (): Promise<void> => {
-    await api.post('/auth/logout');
+    await api.post('/logout');
     
     if (typeof window !== 'undefined') {
       localStorage.removeItem('auth_token');

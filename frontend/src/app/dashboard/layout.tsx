@@ -12,19 +12,54 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, isInitialized } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && user && !user.onboarding_completed) {
+    // Only check after auth is initialized and not loading
+    if (!isInitialized || isLoading) {
+      console.log('⏳ Dashboard layout waiting for auth...');
+      return;
+    }
+
+    // If no user, ProtectedRoute will handle redirect
+    if (!user) {
+      console.log('❌ No user in dashboard layout');
+      return;
+    }
+
+    // Check onboarding status
+    console.log('🔍 Checking onboarding status:', {
+      user: user.name,
+      onboarding_completed: user.onboarding_completed
+    });
+
+    if (!user.onboarding_completed) {
+      console.log('⚠️ Onboarding not completed, redirecting...');
       router.push('/onboarding');
     }
-  }, [user, isLoading, router]);
+  }, [user, isLoading, isInitialized, router]);
 
-  if (isLoading) {
+  // Show loading while initializing or checking
+  if (!isInitialized || isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="animate-spin text-blue-600" size={48} />
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-center">
+          <Loader2 className="animate-spin text-blue-600 mx-auto mb-4" size={48} />
+          <p className="text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render dashboard if user hasn't completed onboarding
+  if (user && !user.onboarding_completed) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-center">
+          <Loader2 className="animate-spin text-blue-600 mx-auto mb-4" size={48} />
+          <p className="text-gray-600">Redirecting to onboarding...</p>
+        </div>
       </div>
     );
   }

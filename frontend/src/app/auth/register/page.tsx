@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import api from '@/src/lib/api';
 import Input from '@/src/components/ui/Input';
 import Button from '@/src/components/ui/Button';
 import { UserPlus } from 'lucide-react';
@@ -27,8 +26,7 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 export default function Register() {
   const router = useRouter();
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const { isAuthenticated } = useAuth();
+  const { register: registerUser, isLoading, isAuthenticated, user } = useAuth();
 
   const {
     register,
@@ -38,33 +36,52 @@ export default function Register() {
     resolver: zodResolver(registerSchema),
   });
 
+  // Redirect authenticated users
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      // If user hasn't completed onboarding, go to onboarding
+      // Otherwise go to dashboard
+      if (!user.onboarding_completed) {
+        router.push('/onboarding');
+      } else {
+        router.push('/dashboard');
+      }
+    }
+  }, [isAuthenticated, user, router]);
+
   const onSubmit = async (data: RegisterFormData) => {
-    setIsLoading(true);
     setError('');
 
     try {
-      const response = await api.post('/register', data);
+      console.log('📝 Attempting registration...');
+      
+      await registerUser({
+        name: data.name,
+        email: data.email,
+        password: data.password,
+        password_confirmation: data.password_confirmation,
+      });
 
-      // Store token
-      if (response.data.data?.token) {
-        localStorage.setItem('auth_token', response.data.data.token);
-      }
-
-      // NEW: Redirect to onboarding instead of login
-      router.push('/onboarding');
+      console.log('✅ Registration successful, redirecting to onboarding...');
+      
+      // The useEffect above will handle the redirect based on user state
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Registration failed. Please try again.');
-    } finally {
-      setIsLoading(false);
+      console.error('❌ Registration failed:', err);
+      setError(err.message || 'Registration failed. Please try again.');
     }
   };
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      // Check if user needs onboarding
-      router.push('/onboarding'); // Will auto-redirect if completed
-    }
-  }, [isAuthenticated, router]);
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Processing...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -98,6 +115,7 @@ export default function Register() {
               label="Full Name"
               placeholder="John Doe"
               error={errors.name?.message}
+              disabled={isLoading}
               required
             />
 
@@ -107,6 +125,7 @@ export default function Register() {
               label="Email address"
               placeholder="john@example.com"
               error={errors.email?.message}
+              disabled={isLoading}
               required
             />
 
@@ -117,6 +136,7 @@ export default function Register() {
               placeholder="••••••••"
               error={errors.password?.message}
               helperText="Must be at least 8 characters"
+              disabled={isLoading}
               required
             />
 
@@ -126,6 +146,7 @@ export default function Register() {
               label="Confirm Password"
               placeholder="••••••••"
               error={errors.password_confirmation?.message}
+              disabled={isLoading}
               required
             />
 
@@ -135,6 +156,7 @@ export default function Register() {
                 name="terms"
                 type="checkbox"
                 required
+                disabled={isLoading}
                 className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded mt-1"
               />
               <label htmlFor="terms" className="ml-2 block text-sm text-gray-900">
@@ -149,8 +171,14 @@ export default function Register() {
               </label>
             </div>
 
-            <Button type="submit" fullWidth isLoading={isLoading} variant="primary">
-              Create account
+            <Button 
+              type="submit" 
+              fullWidth 
+              isLoading={isLoading} 
+              variant="primary"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Creating account...' : 'Create account'}
             </Button>
           </form>
 
@@ -166,7 +194,8 @@ export default function Register() {
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
-              className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              disabled
+              className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path
@@ -191,7 +220,8 @@ export default function Register() {
 
             <button
               type="button"
-              className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              disabled
+              className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />

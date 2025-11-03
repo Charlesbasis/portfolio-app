@@ -1,19 +1,23 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Sparkles, User, Briefcase, Code, Rocket, 
-  ArrowRight, ArrowLeft, Check, X 
+  ArrowRight, ArrowLeft, Check, X, Loader2
 } from 'lucide-react';
-import { useCompleteOnboarding, useCheckUsername } from '@/src/hooks/useApi';
+import { useCompleteOnboarding } from '@/src/hooks/useApi';
 import { FormData, Step } from '@/src/types';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/src/hooks/useAuth';
+import api from '@/src/lib/api';
 
 const OnboardingWizard = () => {
+  const router = useRouter();
+  const { user, checkAuth } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<FormData>({
-    full_name: '',
+    full_name: user?.name || '',
     username: '',
     job_title: '',
     company: '',
@@ -27,9 +31,9 @@ const OnboardingWizard = () => {
   });
   const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
+  const [usernameCheckTimeout, setUsernameCheckTimeout] = useState<NodeJS.Timeout | null>(null);
 
   const completeOnboarding = useCompleteOnboarding();
-  const checkUsername = useCheckUsername();
 
   const steps: Step[] = [
     { id: 0, title: 'Welcome', icon: Sparkles },
@@ -53,7 +57,6 @@ const OnboardingWizard = () => {
 
   const updateFormData = (field: keyof FormData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear error for this field
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
     }
@@ -63,7 +66,7 @@ const OnboardingWizard = () => {
     const newErrors: Partial<Record<keyof FormData, string>> = {};
 
     switch (currentStep) {
-      case 1: // Profile Basics
+      case 1:
         if (!formData.full_name.trim()) {
           newErrors.full_name = 'Full name is required';
         }
@@ -73,19 +76,21 @@ const OnboardingWizard = () => {
           newErrors.username = 'Username can only contain letters, numbers, hyphens, and underscores';
         } else if (usernameStatus === 'taken') {
           newErrors.username = 'Username is already taken';
+        } else if (usernameStatus === 'checking') {
+          newErrors.username = 'Please wait while we check username availability';
         }
         if (!formData.job_title.trim()) {
           newErrors.job_title = 'Job title is required';
         }
         break;
 
-      case 2: // First Project (optional but validate if filled)
+      case 2:
         if (formData.project_title.trim() && !formData.project_description.trim()) {
           newErrors.project_description = 'Please add a project description';
         }
         break;
 
-      case 3: // Skills
+      case 3:
         if (formData.skills.length === 0) {
           newErrors.skills = 'Please select at least one skill';
         }
@@ -96,9 +101,15 @@ const OnboardingWizard = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleUsernameChange = async (username: string) => {
+  // Fixed username checking with proper debouncing
+  const handleUsernameChange = (username: string) => {
     updateFormData('username', username);
     
+    // Clear previous timeout
+    if (usernameCheckTimeout) {
+      clearTimeout(usernameCheckTimeout);
+    }
+
     if (username.length < 3) {
       setUsernameStatus('idle');
       return;
@@ -106,18 +117,39 @@ const OnboardingWizard = () => {
 
     if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
       setUsernameStatus('idle');
+      setErrors(prev => ({ ...prev, username: 'Invalid characters in username' }));
       return;
     }
 
     setUsernameStatus('checking');
-    
-    try {
-      const result = await checkUsername.mutateAsync(username);
-      setUsernameStatus(result.available ? 'available' : 'taken');
-    } catch (error) {
-      setUsernameStatus('idle');
-    }
+
+    // Debounce the API call
+    const timeout = setTimeout(async () => {
+      try {
+        const response = await api.get(`/onboarding/check-username/${username}`);
+        
+        if (response.data.available) {
+          setUsernameStatus('available');
+        } else {
+          setUsernameStatus('taken');
+        }
+      } catch (error) {
+        console.error('Username check failed:', error);
+        setUsernameStatus('idle');
+      }
+    }, 500); // 500ms debounce
+
+    setUsernameCheckTimeout(timeout);
   };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (usernameCheckTimeout) {
+        clearTimeout(usernameCheckTimeout);
+      }
+    };
+  }, [usernameCheckTimeout]);
 
   const handleNext = () => {
     if (validateStep() && currentStep < steps.length - 1) {
@@ -135,8 +167,6 @@ const OnboardingWizard = () => {
     setCurrentStep(steps.length - 1);
   };
 
-  const router = useRouter();
-  
   const handleComplete = async () => {
     if (!validateStep()) return;
 
@@ -156,7 +186,14 @@ const OnboardingWizard = () => {
         } : undefined,
         skills: formData.skills
       });
-      router.push(`/portfolio/${formData.username}`);
+
+      // Refresh auth state to get updated user
+      await checkAuth();
+
+      // Small delay to ensure state is updated
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 100);
     } catch (error: any) {
       console.error('Onboarding failed:', error);
       alert(error.response?.data?.message || 'Failed to complete onboarding. Please try again.');
@@ -301,7 +338,7 @@ const OnboardingWizard = () => {
                           type="text"
                           value={formData.username}
                           onChange={(e) => handleUsernameChange(e.target.value)}
-                          className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                          className={`w-full px-4 py-3 pr-10 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                             errors.username ? 'border-red-500' : 
                             usernameStatus === 'available' ? 'border-green-500' :
                             usernameStatus === 'taken' ? 'border-red-500' :
@@ -309,20 +346,26 @@ const OnboardingWizard = () => {
                           }`}
                           placeholder="johndoe"
                         />
-                        {usernameStatus === 'checking' && (
-                          <div className="absolute right-3 top-3 text-gray-400">
-                            Checking...
-                          </div>
-                        )}
-                        {usernameStatus === 'available' && (
-                          <Check className="absolute right-3 top-3 text-green-500" size={20} />
-                        )}
-                        {usernameStatus === 'taken' && (
-                          <X className="absolute right-3 top-3 text-red-500" size={20} />
-                        )}
+                        <div className="absolute right-3 top-3">
+                          {usernameStatus === 'checking' && (
+                            <Loader2 className="animate-spin text-gray-400" size={20} />
+                          )}
+                          {usernameStatus === 'available' && (
+                            <Check className="text-green-500" size={20} />
+                          )}
+                          {usernameStatus === 'taken' && (
+                            <X className="text-red-500" size={20} />
+                          )}
+                        </div>
                       </div>
                       {errors.username && (
                         <p className="text-red-500 text-sm mt-1">{errors.username}</p>
+                      )}
+                      {usernameStatus === 'available' && (
+                        <p className="text-green-600 text-sm mt-1">Username is available!</p>
+                      )}
+                      {usernameStatus === 'taken' && (
+                        <p className="text-red-500 text-sm mt-1">Username is already taken</p>
                       )}
                       <p className="text-sm text-gray-500 mt-1">
                         Your portfolio will be at: yoursite.com/{formData.username || 'username'}
@@ -570,7 +613,8 @@ const OnboardingWizard = () => {
               {currentStep < steps.length - 1 ? (
                 <button
                   onClick={handleNext}
-                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center"
+                  disabled={currentStep === 1 && usernameStatus === 'checking'}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {currentStep === 0 ? "Let's Start" : 'Continue'}
                   <ArrowRight size={20} className="ml-2" />
@@ -582,7 +626,10 @@ const OnboardingWizard = () => {
                   className="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {completeOnboarding.isPending ? (
-                    <>Processing...</>
+                    <>
+                      <Loader2 className="animate-spin mr-2" size={20} />
+                      Processing...
+                    </>
                   ) : (
                     <>
                       Launch Portfolio
