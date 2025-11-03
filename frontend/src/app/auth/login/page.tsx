@@ -21,8 +21,9 @@ type LoginFormData = z.infer<typeof loginSchema>;
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { login, isAuthenticated, isLoading, error, clearError } = useAuth();
+  const { login, isAuthenticated, user, isLoading, error, clearError } = useAuth();
   const [showSuccess, setShowSuccess] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   const {
     register,
@@ -42,11 +43,25 @@ export default function LoginPage() {
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && user && !isRedirecting) {
+      console.log('🔄 User is authenticated, redirecting...', { 
+        isAuthenticated, 
+        user: user.name,
+        onboarding: user.onboarding_completed 
+      });
+      
+      setIsRedirecting(true);
+      
       const returnUrl = searchParams.get('returnUrl');
-      router.push(returnUrl ? decodeURIComponent(returnUrl) : '/dashboard');
+      if (returnUrl) {
+        router.push(decodeURIComponent(returnUrl));
+      } else if (!user.onboarding_completed) {
+        router.push('/onboarding');
+      } else {
+        router.push('/dashboard');
+      }
     }
-  }, [isAuthenticated, router, searchParams]);
+  }, [isAuthenticated, user, router, searchParams, isRedirecting]);
 
   // Clear error when component unmounts
   useEffect(() => {
@@ -55,20 +70,30 @@ export default function LoginPage() {
 
   const onSubmit = async (data: LoginFormData) => {
     try {
+      console.log('📧 Attempting login...');
       const result = await login(data.email, data.password);
+      
+      console.log('✅ Login result:', result);
 
-      // Check if onboarding is needed
-      if (result.needs_onboarding) {
-        router.push('/onboarding');
-      } else {
-        const returnUrl = searchParams.get('returnUrl');
-        router.push(returnUrl ? decodeURIComponent(returnUrl) : '/dashboard');
-      }
+      // Don't manually redirect - let the useEffect handle it
+      // This prevents race conditions
     } catch (err: any) {
-      // Error is already handled by the useAuth hook
-      console.error('Login failed:', err);
+      console.error('❌ Login failed:', err);
+      // Error is already set by the useAuth hook
     }
   };
+
+  // Don't render the form if we're authenticated and redirecting
+  if (isAuthenticated && isRedirecting) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Redirecting to dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">

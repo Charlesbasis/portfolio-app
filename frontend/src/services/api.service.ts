@@ -1,4 +1,4 @@
-import api, { handleApiRequest } from '../lib/api';
+import api, { handleApiRequest, tokenManager } from '../lib/api';
 import { extractData, extractNestedData } from '../lib/utils';
 import {
   ApiResponse,

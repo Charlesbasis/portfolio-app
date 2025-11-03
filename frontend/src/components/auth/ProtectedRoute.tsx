@@ -1,46 +1,57 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/src/hooks/useAuth';
-import { Shield } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { isAuthenticated, isLoading, checkAuth } = useAuth();
-  const [isChecking, setIsChecking] = useState(true);
-  
+  const { isAuthenticated, isLoading, isInitialized, user } = useAuth();
+
   useEffect(() => {
-    const verifyAuth = async () => {
-      if (!isAuthenticated) {
-        const returnUrl = encodeURIComponent(pathname || '/dashboard');
-        router.push(`/auth/login?returnUrl=${returnUrl}`);
-      } else {
-        await checkAuth();
-        setIsChecking(false);
-      }
-    };
+    // Don't redirect until auth is initialized
+    if (!isInitialized) {
+      console.log('⏳ ProtectedRoute: Waiting for auth initialization...');
+      return;
+    }
 
-    verifyAuth();
-  }, []);
+    if (!isAuthenticated) {
+      console.log('🔒 ProtectedRoute: Not authenticated, redirecting to login');
+      router.push(`/auth/login?returnUrl=${encodeURIComponent(pathname)}`);
+      return;
+    }
 
-  if (isLoading || isChecking) {
+    console.log('✅ ProtectedRoute: User authenticated:', {
+      user: user?.name,
+      onboarding: user?.onboarding_completed,
+      pathname
+    });
+  }, [isAuthenticated, isInitialized, router, pathname, user]);
+
+  // Show loading while checking auth or redirecting
+  if (!isInitialized || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
-            <Shield className="text-blue-600 animate-pulse" size={32} />
-          </div>
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Verifying authentication...</p>
+          <Loader2 className="animate-spin text-blue-600 mx-auto mb-4" size={48} />
+          <p className="text-gray-600">Verifying authentication...</p>
         </div>
       </div>
     );
   }
 
+  // Don't render children if not authenticated
   if (!isAuthenticated) {
-    return null; // Will redirect in useEffect
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <Loader2 className="animate-spin text-blue-600 mx-auto mb-4" size={48} />
+          <p className="text-gray-600">Redirecting to login...</p>
+        </div>
+      </div>
+    );
   }
 
   return <>{children}</>;

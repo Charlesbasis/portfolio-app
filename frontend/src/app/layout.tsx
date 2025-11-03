@@ -5,6 +5,8 @@ import { PersonSchema } from "../components/seo/StructuredData";
 import QueryProvider from "../providers/QueryProvider";
 import Header from "@/src/components/layout/Header";
 import AuthProvider from "../providers/AuthProvider";
+import AuthInitializer from "../components/auth/AuthInitializer";
+import AuthDebug from "../components/auth/AuthDebug";
 // import Footer from "../components/layout/Footer";
 
 const geistSans = Geist({
@@ -75,10 +77,13 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <QueryProvider>
-          <AuthProvider>
-            <Header />
-            <main className="pt-16">{children}</main>
-            {/* <Footer /> */}
+          <AuthProvider>            
+              <Header />
+              <AuthInitializer>
+                <main className="pt-16">{children}</main>
+                {/* <Footer /> */}
+                {/* <AuthDebug /> */}
+            </AuthInitializer>
           </AuthProvider>
         </QueryProvider>
       </body>
