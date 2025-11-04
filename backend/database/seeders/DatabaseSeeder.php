@@ -12,20 +12,20 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory()->create([
-        //     'name' => 'Admin User',
-        //     'email' => 'admin@example.com',
-        //     'password' => bcrypt('password'), // or Hash::make('password')
-        // ]);
+        User::factory()->create([
+            'name' => 'Admin User',
+            'email' => 'admin@example.com',
+            'password' => bcrypt('password'), // or Hash::make('password')
+        ]);
 
         $this->call([
-            // ProjectSeeder::class,
-            // SkillSeeder::class,
-            // TestimonialSeeder::class,
-            // ServiceSeeder::class,
-            // UserDataSeeder::class,
-            // ProfileSeeder::class,
+            ProjectSeeder::class,
+            SkillSeeder::class,
+            TestimonialSeeder::class,
+            ServiceSeeder::class,
+            UserDataSeeder::class,
             UserTypeSeeder::class,
+            ProfileSeeder::class,
             // Add more seeders here as needed
         ]);
 

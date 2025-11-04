@@ -48,7 +48,13 @@ class ProfileController extends Controller
             'success' => true,
             'data' => array_merge($profile->toArray(), [
                 'user_type' => $user->userType,
-                'dynamic_fields' => $dynamicFields
+                'dynamic_fields' => $dynamicFields,
+                // Include new flexible fields in response
+                'headline' => $profile->headline,
+                'current_status' => $profile->current_status,
+                'institution' => $profile->institution,
+                'field_of_interest' => $profile->field_of_interest,
+                'custom_fields' => $profile->custom_fields,
             ]),
         ]);
     }
@@ -63,7 +69,7 @@ class ProfileController extends Controller
         $profile = $user->profile;
         
         if (!$profile) {
-            // Create default profile if doesn't exist
+            // Create default profile if doesn't exist with new flexible fields
             $profile = UserProfile::create([
                 'user_id' => $user->id,
                 'username' => $user->name ?? 'user' . $user->id,
@@ -72,6 +78,12 @@ class ProfileController extends Controller
                 'is_public' => false,
                 'show_email' => false,
                 'show_phone' => false,
+                // Initialize new flexible fields
+                'headline' => null,
+                'current_status' => null,
+                'institution' => null,
+                'field_of_interest' => null,
+                'custom_fields' => null,
             ]);
         }
 
@@ -94,7 +106,7 @@ class ProfileController extends Controller
     {
         $user = $request->user()->load('userType.fields');
         
-        // Base validation rules
+        // Base validation rules - UPDATED with new flexible fields
         $validationRules = [
             'username' => [
                 'sometimes',
@@ -116,9 +128,19 @@ class ProfileController extends Controller
             'linkedin_url' => 'nullable|url',
             'twitter_url' => 'nullable|url',
             'phone' => 'nullable|string|max:20',
+            
+            // Existing fields (now nullable)
             'job_title' => 'nullable|string|max:255',
             'company' => 'nullable|string|max:255',
             'years_experience' => 'nullable|integer|min:0',
+            
+            // New flexible fields
+            'headline' => 'nullable|string|max:200',
+            'current_status' => 'nullable|in:studying,working,teaching,freelancing,researching,unemployed,seeking_opportunities,other',
+            'institution' => 'nullable|string|max:255',
+            'field_of_interest' => 'nullable|string|max:255',
+            'custom_fields' => 'nullable|array',
+            
             'availability_status' => 'nullable|in:available,busy,not_available',
             'is_public' => 'sometimes|boolean',
             'show_email' => 'sometimes|boolean',
@@ -194,16 +216,21 @@ class ProfileController extends Controller
             $user->refresh()->load('userType.fields');
         }
         
-        // Update profile data
+        // Update profile data with new flexible fields
         $profileData = $validator->validated();
         unset($profileData['user_type_id']); // Remove user_type_id from profile data
+        
+        // Handle custom_fields JSON data
+        if ($request->has('custom_fields')) {
+            $profileData['custom_fields'] = $request->input('custom_fields');
+        }
         
         $profile = UserProfile::updateOrCreate(
             ['user_id' => $user->id],
             $profileData
         );
 
-        // Handle dynamic fields
+        // Handle dynamic fields (existing system)
         if ($request->has('dynamic') && $user->userType) {
             $this->updateDynamicFields($user, $request->input('dynamic'));
         }
@@ -293,7 +320,7 @@ class ProfileController extends Controller
     }
 
     /**
-     * Get public stats
+     * Get public stats - UPDATED to include new fields
      */
     public function publicStats($username)
     {
@@ -305,13 +332,6 @@ class ProfileController extends Controller
 
         $profile = $user->profile;
 
-        // if (!$profile->is_public) {
-        //     return response()->json([
-        //         'success' => false,
-        //         'message' => 'Profile is private',
-        //     ], 403);
-        // }
-
         $stats = [
             'total_projects' => $user->projects()->where('status', 'published')->count(),
             'total_skills' => $user->skills()->count(),
@@ -319,7 +339,11 @@ class ProfileController extends Controller
             'total_experiences' => $user->experiences()->count(),
             'profile_views' => $profile->profile_views ?? 0,
             'user_type' => $user->userType->name ?? 'Not set',
-            // 'happy_clients' => $user->testimonials()->where('slug', 'happy-client')->count(),
+            // New flexible field data
+            'headline' => $profile->headline,
+            'current_status' => $profile->current_status,
+            'institution' => $profile->institution,
+            'field_of_interest' => $profile->field_of_interest,
         ];
 
         return response()->json([
@@ -340,6 +364,84 @@ class ProfileController extends Controller
         return response()->json([
             'success' => true,
             'data' => $userTypes,
+        ]);
+    }
+
+    /**
+     * Get user profile with flexible fields
+     */
+    public function getProfileWithFlexibleFields(Request $request)
+    {
+        $user = $request->user()->load(['profile', 'userType']);
+        $profile = $user->profile;
+
+        if (!$profile) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Profile not found',
+            ], 404);
+        }
+
+        // Get custom fields with proper typing
+        $customFields = $profile->custom_fields ?? [];
+        
+        // Enhance response with display values for current_status
+        $currentStatusDisplay = $this->getCurrentStatusDisplay($profile->current_status);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'profile' => $profile,
+                'user_type' => $user->userType,
+                'flexible_fields' => [
+                    'headline' => $profile->headline,
+                    'current_status' => $profile->current_status,
+                    'current_status_display' => $currentStatusDisplay,
+                    'institution' => $profile->institution,
+                    'field_of_interest' => $profile->field_of_interest,
+                    'custom_fields' => $customFields,
+                    'display_headline' => $profile->headline ?? $profile->job_title ?? 'No headline set',
+                ]
+            ],
+        ]);
+    }
+
+    /**
+     * Update flexible profile fields
+     */
+    public function updateFlexibleFields(Request $request)
+    {
+        $user = $request->user();
+        $profile = UserProfile::where('user_id', $user->id)->firstOrFail();
+
+        $validator = Validator::make($request->all(), [
+            'headline' => 'nullable|string|max:200',
+            'current_status' => 'nullable|in:studying,working,teaching,freelancing,researching,unemployed,seeking_opportunities,other',
+            'institution' => 'nullable|string|max:255',
+            'field_of_interest' => 'nullable|string|max:255',
+            'custom_fields' => 'nullable|array',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $profile->update($validator->validated());
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'headline' => $profile->headline,
+                'current_status' => $profile->current_status,
+                'institution' => $profile->institution,
+                'field_of_interest' => $profile->field_of_interest,
+                'custom_fields' => $profile->custom_fields,
+                'display_headline' => $profile->headline ?? $profile->job_title ?? 'No headline set',
+            ],
+            'message' => 'Flexible profile fields updated successfully',
         ]);
     }
 
@@ -393,5 +495,46 @@ class ProfileController extends Controller
                 );
             }
         }
+    }
+
+    /**
+     * Get display value for current_status
+     */
+    private function getCurrentStatusDisplay($status)
+    {
+        $statusMap = [
+            'studying' => 'Studying',
+            'working' => 'Working',
+            'teaching' => 'Teaching',
+            'freelancing' => 'Freelancing',
+            'researching' => 'Researching',
+            'unemployed' => 'Unemployed',
+            'seeking_opportunities' => 'Seeking Opportunities',
+            'other' => 'Other',
+        ];
+
+        return $statusMap[$status] ?? null;
+    }
+
+    /**
+     * Get current status options for forms
+     */
+    public function getCurrentStatusOptions()
+    {
+        $options = [
+            'studying' => 'Studying',
+            'working' => 'Working',
+            'teaching' => 'Teaching',
+            'freelancing' => 'Freelancing',
+            'researching' => 'Researching',
+            'unemployed' => 'Unemployed',
+            'seeking_opportunities' => 'Seeking Opportunities',
+            'other' => 'Other',
+        ];
+
+        return response()->json([
+            'success' => true,
+            'data' => $options,
+        ]);
     }
 }

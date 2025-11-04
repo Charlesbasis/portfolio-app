@@ -8,7 +8,12 @@ class UserType extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'slug', 'description', 'is_active'];
+    protected $fillable = ['name', 'slug', 'description', 'allowed_fields', 'is_active'];
+
+    protected $casts = [
+        'allowed_fields' => 'array',
+        'is_active' => 'boolean',
+    ];
 
     // A user type has many users
     public function users()
@@ -19,5 +24,10 @@ class UserType extends Model
     public function fields()
     {
         return $this->hasMany(UserTypeField::class);
+    }
+
+    public function userProfiles()
+    {
+        return $this->hasMany(UserProfile::class);
     }
 }

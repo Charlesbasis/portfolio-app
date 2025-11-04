@@ -11,6 +11,7 @@ class UserProfile extends Model
 
     protected $fillable = [
         'user_id',
+        'user_type_id',
         'username',
         'full_name',
         'tagline',
@@ -32,6 +33,11 @@ class UserProfile extends Model
         'is_public',
         'show_email',
         'show_phone',
+        'custom_fields',
+        'headline',
+        'current_status',
+        'institution',
+        'field_of_interest',
     ];
 
     protected $casts = [
@@ -40,6 +46,7 @@ class UserProfile extends Model
         'show_phone' => 'boolean',
         'profile_views' => 'integer',
         'years_experience' => 'integer',
+        'custom_fields' => 'array',
     ];
 
     /**
@@ -90,5 +97,27 @@ class UserProfile extends Model
         }
         
         return asset('storage/' . $value);
+    }
+
+    public function userType()
+    {
+        return $this->belongsTo(UserType::class);
+    }
+
+    public function getDisplayHeadlineAttribute()
+    {
+        return $this->headline ?? $this->job_title ?? 'No headline set';
+    }
+
+    public function getCustomFieldAttribute($key, $default = null)
+    {
+        return $this->custom_fields[$key] ?? $default;
+    }
+
+    public function setCustomField($key, $value)
+    {
+        $customFields = $this->custom_fields ?? [];
+        $customFields[$key] = $value;
+        $this->custom_fields = $customFields;
     }
 }
