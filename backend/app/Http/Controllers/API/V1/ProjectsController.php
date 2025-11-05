@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ProjectResource;
 use App\Models\Projects;
+use App\Models\User;
 use App\Repositories\ProjectRepository;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
@@ -26,24 +27,17 @@ class ProjectsController extends Controller
      */
     public function index(Request $request)
     {
-        // Log::info('ProjectsController@index called', [
-        //     'params' => $request->all(),
-        //     'ip' => $request->ip()
-        // ]);
-
-        $cacheKey = 'projects:list:' . request('featured', 'all') . ':' . request('page', 1);
+        $cacheKey = 'projects:list:' . 
+                   request('featured', 'all') . ':' . 
+                   request('type', 'all') . ':' . 
+                   request('page', 1);
         
         $projects = Cache::remember($cacheKey, 3600, function () use ($request) {
-            $filters = $request->only(['featured', 'technology']);
+            $filters = $request->only(['featured', 'technology', 'type']);
             $query = $this->repository->getAll($filters);
 
             return $query->paginate($request->get('per_page', 12));
         });
-
-        // Log::info('ProjectsController: Retrieved projects', [
-        //     'count' => $projects->count(),
-        //     'total' => $projects->total()
-        // ]);
 
         return response()->json([
             'success' => true,
@@ -54,6 +48,59 @@ class ProjectsController extends Controller
                 'per_page' => $projects->perPage(),
                 'total' => $projects->total(),
             ]
+        ]);
+    }
+
+    /**
+     * Get projects by type
+     */
+    public function byType(Request $request, $type)
+    {
+        $validTypes = (new Projects())->getTypes();
+        
+        if (!array_key_exists($type, $validTypes)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid project type'
+            ], 404);
+        }
+
+        $cacheKey = "projects:type:{$type}:" . request('page', 1);
+        
+        $projects = Cache::remember($cacheKey, 3600, function () use ($type, $request) {
+            $query = Projects::ofType($type)->published();
+            
+            if ($request->has('featured') && $request->featured === 'true') {
+                $query->featured();
+            }
+            
+            return $query->orderBy('order')->paginate($request->get('per_page', 12));
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => ProjectResource::collection($projects->items()),
+            'meta' => [
+                'current_page' => $projects->currentPage(),
+                'last_page' => $projects->lastPage(),
+                'per_page' => $projects->perPage(),
+                'total' => $projects->total(),
+                'type' => $type,
+                'type_label' => $validTypes[$type]
+            ]
+        ]);
+    }
+
+    /**
+     * Get available project types
+     */
+    public function getTypes()
+    {
+        $types = (new Projects())->getTypes();
+        
+        return response()->json([
+            'success' => true,
+            'data' => $types
         ]);
     }
 
@@ -250,6 +297,45 @@ class ProjectsController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Project deleted successfully',
+        ]);
+    }
+
+    /**
+     * Get user projects by type (public route)
+     */
+    public function userProjectsByType(Request $request, $username, $type)
+    {
+        $user = User::where('username', $username)->firstOrFail();
+
+        $validTypes = (new Projects())->getTypes();
+
+        if (!array_key_exists($type, $validTypes)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid project type'
+            ], 404);
+        }
+
+        $query = Projects::where('user_id', $user->id)
+            ->ofType($type)
+            ->published()
+            ->orderBy('order')
+            ->orderBy('created_at', 'desc');
+
+        if ($request->has('featured') && $request->featured === 'true') {
+            $query->featured();
+        }
+
+        $projects = $query->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => ProjectResource::collection($projects),
+            'meta' => [
+                'type' => $type,
+                'type_label' => $validTypes[$type],
+                'count' => $projects->count()
+            ]
         ]);
     }
 }

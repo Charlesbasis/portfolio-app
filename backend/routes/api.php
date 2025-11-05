@@ -28,6 +28,8 @@ Route::prefix('v1')->group(function () {
     // Public routes
     Route::get('/projects', [ProjectsController::class, 'index']);
     Route::get('/projects/{slug}', [ProjectsController::class, 'show']);
+    Route::get('/projects/types', [ProjectsController::class, 'getTypes']); // New route
+    Route::get('/projects/type/{type}', [ProjectsController::class, 'byType']); // New route
     Route::get('/skills', [SkillsController::class, 'index']);
     Route::post('/contact', [ContactController::class, 'submit']);
     Route::get('/testimonials', [TestimonialController::class, 'index']);
@@ -38,10 +40,14 @@ Route::prefix('v1')->group(function () {
         Route::get('/profile', [ProfileController::class, 'showPublic']);
         Route::get('/stats', [ProfileController::class, 'publicStats']);
         Route::get('/projects', [ProjectsController::class, 'userProjects']);
+        Route::get('/projects/type/{type}', [ProjectsController::class, 'userProjectsByType']); // New route
         Route::get('/skills', [SkillsController::class, 'index']);
         Route::get('/experiences', [ExperienceController::class, 'userExperiences']);
         Route::get('/education', [EducationController::class, 'userEducation']);
+        Route::get('/education/roles', [EducationController::class, 'getRoles']); // New route
+        Route::get('/education/role/{role}', [EducationController::class, 'userEducationByRole']); // New route
         Route::get('/certifications', [CertificationController::class, 'userCertifications']);
+        Route::get('/user-types', [ProfileController::class, 'getUserTypes']);
     });
     
     // Auth routes
@@ -67,8 +73,10 @@ Route::prefix('v1')->group(function () {
         
         // Onboarding routes (should NOT require onboarding completion)
         Route::prefix('onboarding')->group(function () {
+            Route::get('/user-types', [OnboardingController::class, 'getUserTypes']);
             Route::get('/status', [OnboardingController::class, 'status']);
             Route::post('/complete', [OnboardingController::class, 'complete']);
+            Route::post('/step/{step}', [OnboardingController::class, 'getStepConfiguration']);
         });
     });
 
@@ -79,6 +87,10 @@ Route::prefix('v1')->group(function () {
         Route::put('/profile', [ProfileController::class, 'update']);
         Route::post('/profile/avatar', [ProfileController::class, 'uploadAvatar']);
         Route::post('/profile/cover-image', [ProfileController::class, 'uploadCoverImage']);
+        Route::get('/profile/flexible', [ProfileController::class, 'getProfileWithFlexibleFields']);
+        Route::put('/profile/flexible', [ProfileController::class, 'updateFlexibleFields']);
+        Route::get('/profile/status-options', [ProfileController::class, 'getCurrentStatusOptions']);
+        Route::get('/user-types', [ProfileController::class, 'getUserTypes']);
         
         // Dashboard routes
         Route::prefix('dashboard')->group(function () {
@@ -88,6 +100,19 @@ Route::prefix('v1')->group(function () {
             Route::get('/activity', [DashboardController::class, 'activity']);
             Route::get('/analytics', [DashboardController::class, 'analytics']);
             Route::get('/summary', [DashboardController::class, 'summary']);
+        });
+        
+        // Project type and role management routes
+        Route::prefix('projects')->group(function () {
+            Route::get('/types', [ProjectsController::class, 'getTypes']);
+            Route::get('/type/{type}', [ProjectsController::class, 'byType']);
+        });
+        
+        Route::prefix('education')->group(function () {
+            Route::get('/roles', [EducationController::class, 'getRoles']);
+            Route::get('/role/{role}', [EducationController::class, 'byRole']);
+            Route::get('/student', [EducationController::class, 'asStudent']);
+            Route::get('/teacher', [EducationController::class, 'asTeacher']);
         });
         
         // Admin project management

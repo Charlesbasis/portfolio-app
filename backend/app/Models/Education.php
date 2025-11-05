@@ -13,8 +13,8 @@ class Education extends Model
     protected $fillable = [
         'user_id',
         'institution',
-        'degree',
-        'field_of_study',
+        'title',
+        'field_of_department',
         'start_date',
         'end_date',
         'is_current',
@@ -22,6 +22,9 @@ class Education extends Model
         'grade',
         'location',
         'order',
+        'role',
+        'position',
+        'responsibilities',
     ];
 
     protected $casts = [
@@ -32,6 +35,9 @@ class Education extends Model
     ];
 
     protected $appends = ['duration', 'date_range'];
+
+    const ROLE_STUDENT = 'student';
+    const ROLE_TEACHER = 'teacher';
 
     /**
      * Get the user that owns the education.
@@ -78,5 +84,46 @@ class Education extends Model
         $end = $this->is_current ? 'Present' : Carbon::parse($this->end_date)->format('M Y');
 
         return "{$start} - {$end}";
+    }
+
+    public function getRoles()
+    {
+        return [
+            self::ROLE_STUDENT => 'Student',
+            self::ROLE_TEACHER => 'Teacher',
+        ];
+    }
+
+    public function scopeOfRole($query, $role)
+    {
+        return $query->where('role', $role);
+    }
+
+    public function scopeStudent($query)
+    {
+        return $query->ofRole(self::ROLE_STUDENT);
+    }
+
+    public function scopeTeacher($query)
+    {
+        return $query->ofRole(self::ROLE_TEACHER);
+    }
+
+    public function getDisplayTitleAttribute()
+    {
+        if ($this->role === self::ROLE_TEACHER) {
+            return $this->position ?: 'Teacher';
+        }
+        return $this->title ?: 'Student';
+    }
+
+    public function isStudent()
+    {
+        return $this->role === self::ROLE_STUDENT;
+    }
+
+    public function isTeacher()
+    {
+        return $this->role === self::ROLE_TEACHER;
     }
 }

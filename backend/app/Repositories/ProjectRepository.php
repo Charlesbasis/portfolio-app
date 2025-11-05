@@ -58,6 +58,10 @@ class ProjectRepository
             $query->whereJsonContains('technologies', $filters['technology']);
         }
 
+        if (!empty($filters['type'])) {
+            $query->where('type', $filters['type']);
+        }
+
         return $query->orderBy('order')->orderByDesc('created_at');
     }
 }

@@ -8,11 +8,12 @@ class UserType extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'slug', 'description', 'allowed_fields', 'is_active'];
+    protected $fillable = ['name', 'slug', 'description', 'allowed_fields', 'is_active', 'permissions'];
 
     protected $casts = [
         'allowed_fields' => 'array',
         'is_active' => 'boolean',
+        'permissions' => 'array',
     ];
 
     // A user type has many users

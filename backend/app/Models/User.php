@@ -100,7 +100,8 @@ class User extends Authenticatable implements MustVerifyEmail
     public function completedOnboarding()
     {
         $this->update([
-            'onboarding_completed_at' => now()
+            'onboarding_completed_at' => now(),
+            // 'onboarding_completed' => true,
         ]);
     }
 

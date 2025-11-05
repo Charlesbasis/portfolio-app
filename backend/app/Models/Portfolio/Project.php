@@ -25,13 +25,27 @@ class Project extends Model
         'featured',
         'order',
         'status',
+        'type',
     ];
 
     protected $casts = [
         'technologies' => 'array',
         'featured' => 'boolean',
         'order' => 'integer',
+        'start_date' => 'date',
+        'end_date' => 'date',
     ];
+
+    const TYPE_ACADEMIC = 'academic_project';
+    const TYPE_PROFESSIONAL = 'professional_project';
+    const TYPE_PERSONAL = 'personal_project';
+    const TYPE_RESEARCH_PAPER = 'research_paper';
+    const TYPE_ASSIGNMENT = 'assignment';
+
+    public function scopeDraft($query)
+    {
+        return $query->where('status', 'draft');
+    }
 
     protected static function boot()
     {
@@ -57,5 +71,46 @@ class Project extends Model
     public function scopePublished($query)
     {
         return $query->where('status', 'published');
+    }
+
+    public function getTypes()
+    {
+        return [
+            self::TYPE_ACADEMIC => 'Academic Project',
+            self::TYPE_PROFESSIONAL => 'Professional Project',
+            self::TYPE_PERSONAL => 'Personal Project',
+            self::TYPE_RESEARCH_PAPER => 'Research Paper',
+            self::TYPE_ASSIGNMENT => 'Assignment',
+        ];
+    }
+
+    public function scopeOfType($query, $type)
+    {
+        return $query->where('type', $type);
+    }
+
+    public function scopeAcademic($query)
+    {
+        return $query->ofType(self::TYPE_ACADEMIC);
+    }
+
+    public function scopeProfessional($query)
+    {
+        return $query->ofType(self::TYPE_PROFESSIONAL);
+    }
+
+    public function scopePersonal($query)
+    {
+        return $query->ofType(self::TYPE_PERSONAL);
+    }
+
+    public function scopeResearchPaper($query)
+    {
+        return $query->ofType(self::TYPE_RESEARCH_PAPER);
+    }
+
+    public function scopeAssignment($query)
+    {
+        return $query->ofType(self::TYPE_ASSIGNMENT);
     }
 }

@@ -20,43 +20,53 @@ class ProfileController extends Controller
      */
     public function showPublic($username)
     {
-        $user = User::with(['profile', 'userType', 'userType.fields'])
-            ->whereHas('profile', function ($query) use ($username) {
-                $query->where('username', $username);
-            })
-            ->first();
+        try {
+            $user = User::with(['profile', 'userType', 'userType.fields'])
+                ->whereHas('profile', function ($query) use ($username) {
+                    $query->where('username', $username);
+                })
+                ->first();
 
-        if (!$user) {
-            abort(404, 'User not found');
-        }
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not found',
+                ], 404);
+            }
 
-        $profile = $user->profile;
+            $profile = $user->profile;
 
-        if (!$profile || !$profile->is_public) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Profile not found or is private',
-            ], 404);
-        }
+            if (!$profile || !$profile->is_public) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Profile not found or is private',
+                ], 404);
+            }
 
-        $profile->incrementViews();
+            $profile->incrementViews();
 
-        // Get dynamic field values for this user
-        $dynamicFields = $this->getUserDynamicFields($user);
+            // Get dynamic field values for this user
+            $dynamicFields = $this->getUserDynamicFields($user);
 
-        return response()->json([
-            'success' => true,
-            'data' => array_merge($profile->toArray(), [
+            // Build response data
+            $responseData = array_merge($profile->toArray(), [
                 'user_type' => $user->userType,
                 'dynamic_fields' => $dynamicFields,
-                // Include new flexible fields in response
-                'headline' => $profile->headline,
-                'current_status' => $profile->current_status,
-                'institution' => $profile->institution,
-                'field_of_interest' => $profile->field_of_interest,
-                'custom_fields' => $profile->custom_fields,
-            ]),
-        ]);
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => $responseData,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching public profile: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch profile',
+            ], 500);
+        }
     }
     
     /**
@@ -64,39 +74,34 @@ class ProfileController extends Controller
      */
     public function show(Request $request)
     {
-        $user = $request->user()->load(['profile', 'userType', 'userType.fields']);
-        
-        $profile = $user->profile;
-        
-        if (!$profile) {
-            // Create default profile if doesn't exist with new flexible fields
-            $profile = UserProfile::create([
-                'user_id' => $user->id,
-                'username' => $user->name ?? 'user' . $user->id,
-                'full_name' => $user->name,
-                'email' => $user->email,
-                'is_public' => false,
-                'show_email' => false,
-                'show_phone' => false,
-                // Initialize new flexible fields
-                'headline' => null,
-                'current_status' => null,
-                'institution' => null,
-                'field_of_interest' => null,
-                'custom_fields' => null,
-            ]);
-        }
+        try {
+            $user = $request->user()->load(['profile', 'userType', 'userType.fields']);
+            
+            $profile = $user->profile;
+            
+            if (!$profile) {
+                $profile = $this->createDefaultProfile($user);
+            }
 
-        // Get dynamic field values
-        $dynamicFields = $this->getUserDynamicFields($user);
-        
-        return response()->json([
-            'success' => true,
-            'data' => array_merge($profile->toArray(), [
-                'user_type' => $user->userType,
-                'dynamic_fields' => $dynamicFields
-            ]),
-        ]);
+            // Get dynamic field values
+            $dynamicFields = $this->getUserDynamicFields($user);
+            
+            return response()->json([
+                'success' => true,
+                'data' => array_merge($profile->toArray(), [
+                    'user_type' => $user->userType,
+                    'dynamic_fields' => $dynamicFields
+                ]),
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching user profile: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch profile',
+            ], 500);
+        }
     }
     
     /**
@@ -104,15 +109,343 @@ class ProfileController extends Controller
      */
     public function update(Request $request)
     {
-        $user = $request->user()->load('userType.fields');
-        
-        // Base validation rules - UPDATED with new flexible fields
-        $validationRules = [
+        try {
+            $user = $request->user()->load('userType.fields');
+            
+            // Base validation rules
+            $validationRules = $this->getBaseValidationRules($user->id);
+            
+            // Add dynamic field validation rules based on user type
+            $dynamicFieldRules = $this->getDynamicFieldValidationRules($user->userType);
+            
+            // Merge all validation rules
+            $allRules = array_merge($validationRules, $dynamicFieldRules);
+            
+            $validator = Validator::make($request->all(), $allRules);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+
+            // Update user type if provided
+            if ($request->has('user_type_id') && $request->user_type_id != $user->user_type_id) {
+                $user->update(['user_type_id' => $request->user_type_id]);
+                $user->refresh()->load('userType.fields');
+            }
+            
+            // Update profile data
+            $profileData = $validator->validated();
+            unset($profileData['user_type_id']);
+            
+            // Handle custom_fields JSON data
+            if ($request->has('custom_fields')) {
+                $profileData['custom_fields'] = $request->input('custom_fields');
+            }
+            
+            $profile = UserProfile::updateOrCreate(
+                ['user_id' => $user->id],
+                $profileData
+            );
+
+            // Handle dynamic fields
+            if ($request->has('dynamic') && $user->userType) {
+                $this->updateDynamicFields($user, $request->input('dynamic'));
+            }
+            
+            // Reload with fresh data
+            $user->refresh()->load(['profile', 'userType.fields']);
+            $dynamicFields = $this->getUserDynamicFields($user);
+            
+            return response()->json([
+                'success' => true,
+                'data' => array_merge($profile->toArray(), [
+                    'user_type' => $user->userType,
+                    'dynamic_fields' => $dynamicFields
+                ]),
+                'message' => 'Profile updated successfully',
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error updating profile: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update profile',
+            ], 500);
+        }
+    }
+    
+    /**
+     * Upload avatar
+     */
+    public function uploadAvatar(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'avatar' => 'required|image|max:2048', // 2MB max
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+            
+            $profile = UserProfile::where('user_id', $request->user()->id)->firstOrFail();
+            
+            // Delete old avatar if exists
+            if ($profile->avatar_url && !filter_var($profile->avatar_url, FILTER_VALIDATE_URL)) {
+                Storage::disk('public')->delete($profile->avatar_url);
+            }
+            
+            // Store new avatar
+            $path = $request->file('avatar')->store('avatars', 'public');
+            $profile->avatar_url = $path;
+            $profile->save();
+            
+            return response()->json([
+                'success' => true,
+                'data' => ['avatar_url' => asset('storage/' . $path)],
+                'message' => 'Avatar uploaded successfully',
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error uploading avatar: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to upload avatar',
+            ], 500);
+        }
+    }
+    
+    /**
+     * Upload cover image
+     */
+    public function uploadCoverImage(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'cover_image' => 'required|image|max:5120', // 5MB max
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+            
+            $profile = UserProfile::where('user_id', $request->user()->id)->firstOrFail();
+            
+            // Delete old cover image if exists
+            if ($profile->cover_image_url && !filter_var($profile->cover_image_url, FILTER_VALIDATE_URL)) {
+                Storage::disk('public')->delete($profile->cover_image_url);
+            }
+            
+            // Store new cover image
+            $path = $request->file('cover_image')->store('covers', 'public');
+            $profile->cover_image_url = $path;
+            $profile->save();
+            
+            return response()->json([
+                'success' => true,
+                'data' => ['cover_image_url' => asset('storage/' . $path)],
+                'message' => 'Cover image uploaded successfully',
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error uploading cover image: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to upload cover image',
+            ], 500);
+        }
+    }
+
+    /**
+     * Get public stats
+     */
+    public function publicStats($username)
+    {
+        try {
+            $user = User::with(['profile', 'userType'])
+                ->whereHas('profile', function ($query) use ($username) {
+                    $query->where('username', $username);
+                })
+                ->firstOrFail();
+
+            $profile = $user->profile;
+
+            $stats = [
+                'total_projects' => $user->projects()->where('status', 'published')->count(),
+                'total_skills' => $user->skills()->count(),
+                'years_experience' => $profile->years_experience ?? 0,
+                'total_experiences' => $user->experiences()->count(),
+                'profile_views' => $profile->profile_views ?? 0,
+                'user_type' => $user->userType->name ?? 'Not set',
+                'headline' => $profile->headline,
+                'current_status' => $profile->current_status,
+                'institution' => $profile->institution,
+                'field_of_interest' => $profile->field_of_interest,
+            ];
+
+            return response()->json([
+                'success' => true,
+                'data' => $stats,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching public stats: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch profile stats',
+            ], 500);
+        }
+    }
+
+    /**
+     * Get available user types
+     */
+    public function getUserTypes()
+    {
+        try {
+            $userTypes = UserType::where('is_active', true)
+                ->with('fields')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $userTypes,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching user types: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch user types',
+            ], 500);
+        }
+    }
+
+    /**
+     * Get user profile with flexible fields
+     */
+    public function getProfileWithFlexibleFields(Request $request)
+    {
+        try {
+            $user = $request->user()->load(['profile', 'userType']);
+            $profile = $user->profile;
+
+            if (!$profile) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Profile not found',
+                ], 404);
+            }
+
+            // Get custom fields with proper typing
+            $customFields = $profile->custom_fields ?? [];
+            
+            // Enhance response with display values for current_status
+            $currentStatusDisplay = $this->getCurrentStatusDisplay($profile->current_status);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'profile' => $profile,
+                    'user_type' => $user->userType,
+                    'flexible_fields' => [
+                        'headline' => $profile->headline,
+                        'current_status' => $profile->current_status,
+                        'current_status_display' => $currentStatusDisplay,
+                        'institution' => $profile->institution,
+                        'field_of_interest' => $profile->field_of_interest,
+                        'custom_fields' => $customFields,
+                        'display_headline' => $profile->headline ?? $profile->job_title ?? 'No headline set',
+                    ]
+                ],
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching flexible profile fields: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch profile fields',
+            ], 500);
+        }
+    }
+
+    /**
+     * Update flexible profile fields
+     */
+    public function updateFlexibleFields(Request $request)
+    {
+        try {
+            $user = $request->user();
+            $profile = UserProfile::where('user_id', $user->id)->firstOrFail();
+
+            $validator = Validator::make($request->all(), [
+                'headline' => 'nullable|string|max:200',
+                'current_status' => 'nullable|in:studying,working,teaching,freelancing,researching,unemployed,seeking_opportunities,other',
+                'institution' => 'nullable|string|max:255',
+                'field_of_interest' => 'nullable|string|max:255',
+                'custom_fields' => 'nullable|array',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+
+            $profile->update($validator->validated());
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'headline' => $profile->headline,
+                    'current_status' => $profile->current_status,
+                    'institution' => $profile->institution,
+                    'field_of_interest' => $profile->field_of_interest,
+                    'custom_fields' => $profile->custom_fields,
+                    'display_headline' => $profile->headline ?? $profile->job_title ?? 'No headline set',
+                ],
+                'message' => 'Flexible profile fields updated successfully',
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error updating flexible profile fields: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update profile fields',
+            ], 500);
+        }
+    }
+
+    // ==================== HELPER METHODS ====================
+
+    /**
+     * Get base validation rules
+     */
+    private function getBaseValidationRules($userId)
+    {
+        return [
             'username' => [
                 'sometimes',
                 'string',
                 'max:255',
-                'unique:user_profiles,username,' . $user->id . ',user_id',
+                'unique:user_profiles,username,' . $userId . ',user_id',
                 function ($attribute, $value, $fail) {
                     if (User::where('email', $value)->exists()) {
                         $fail('This username is not available.');
@@ -147,13 +480,17 @@ class ProfileController extends Controller
             'show_phone' => 'sometimes|boolean',
             'user_type_id' => 'sometimes|exists:user_types,id',
         ];
+    }
 
-        // Add dynamic field validation rules based on user type
+    /**
+     * Get dynamic field validation rules based on user type
+     */
+    private function getDynamicFieldValidationRules($userType)
+    {
         $dynamicFieldRules = [];
-        $dynamicFieldData = [];
 
-        if ($user->userType) {
-            foreach ($user->userType->fields as $field) {
+        if ($userType) {
+            foreach ($userType->fields as $field) {
                 $rule = [];
                 
                 if ($field->is_required) {
@@ -198,250 +535,28 @@ class ProfileController extends Controller
             }
         }
 
-        // Merge all validation rules
-        $allRules = array_merge($validationRules, $dynamicFieldRules);
-        
-        $validator = Validator::make($request->all(), $allRules);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
-        // Update user type if provided
-        if ($request->has('user_type_id') && $request->user_type_id != $user->user_type_id) {
-            $user->update(['user_type_id' => $request->user_type_id]);
-            $user->refresh()->load('userType.fields');
-        }
-        
-        // Update profile data with new flexible fields
-        $profileData = $validator->validated();
-        unset($profileData['user_type_id']); // Remove user_type_id from profile data
-        
-        // Handle custom_fields JSON data
-        if ($request->has('custom_fields')) {
-            $profileData['custom_fields'] = $request->input('custom_fields');
-        }
-        
-        $profile = UserProfile::updateOrCreate(
-            ['user_id' => $user->id],
-            $profileData
-        );
-
-        // Handle dynamic fields (existing system)
-        if ($request->has('dynamic') && $user->userType) {
-            $this->updateDynamicFields($user, $request->input('dynamic'));
-        }
-        
-        // Reload with fresh data
-        $user->refresh()->load(['profile', 'userType.fields']);
-        $dynamicFields = $this->getUserDynamicFields($user);
-        
-        return response()->json([
-            'success' => true,
-            'data' => array_merge($profile->toArray(), [
-                'user_type' => $user->userType,
-                'dynamic_fields' => $dynamicFields
-            ]),
-            'message' => 'Profile updated successfully',
-        ]);
-    }
-    
-    /**
-     * Upload avatar
-     */
-    public function uploadAvatar(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'avatar' => 'required|image|max:2048', // 2MB max
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-        
-        $profile = UserProfile::where('user_id', $request->user()->id)->firstOrFail();
-        
-        // Delete old avatar if exists
-        if ($profile->avatar_url && !filter_var($profile->avatar_url, FILTER_VALIDATE_URL)) {
-            Storage::disk('public')->delete($profile->avatar_url);
-        }
-        
-        // Store new avatar
-        $path = $request->file('avatar')->store('avatars', 'public');
-        $profile->avatar_url = $path;
-        $profile->save();
-        
-        return response()->json([
-            'success' => true,
-            'data' => ['avatar_url' => asset('storage/' . $path)],
-            'message' => 'Avatar uploaded successfully',
-        ]);
-    }
-    
-    /**
-     * Upload cover image
-     */
-    public function uploadCoverImage(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'cover_image' => 'required|image|max:5120', // 5MB max
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-        
-        $profile = UserProfile::where('user_id', $request->user()->id)->firstOrFail();
-        
-        // Delete old cover image if exists
-        if ($profile->cover_image_url && !filter_var($profile->cover_image_url, FILTER_VALIDATE_URL)) {
-            Storage::disk('public')->delete($profile->cover_image_url);
-        }
-        
-        // Store new cover image
-        $path = $request->file('cover_image')->store('covers', 'public');
-        $profile->cover_image_url = $path;
-        $profile->save();
-        
-        return response()->json([
-            'success' => true,
-            'data' => ['cover_image_url' => asset('storage/' . $path)],
-            'message' => 'Cover image uploaded successfully',
-        ]);
+        return $dynamicFieldRules;
     }
 
     /**
-     * Get public stats - UPDATED to include new fields
+     * Create default profile for user
      */
-    public function publicStats($username)
+    private function createDefaultProfile(User $user)
     {
-        $user = User::with(['profile', 'userType'])
-            ->whereHas('profile', function ($query) use ($username) {
-                $query->where('username', $username);
-            })
-            ->firstOrFail();
-
-        $profile = $user->profile;
-
-        $stats = [
-            'total_projects' => $user->projects()->where('status', 'published')->count(),
-            'total_skills' => $user->skills()->count(),
-            'years_experience' => $profile->years_experience ?? 0,
-            'total_experiences' => $user->experiences()->count(),
-            'profile_views' => $profile->profile_views ?? 0,
-            'user_type' => $user->userType->name ?? 'Not set',
-            // New flexible field data
-            'headline' => $profile->headline,
-            'current_status' => $profile->current_status,
-            'institution' => $profile->institution,
-            'field_of_interest' => $profile->field_of_interest,
-        ];
-
-        return response()->json([
-            'success' => true,
-            'data' => $stats,
-        ]);
-    }
-
-    /**
-     * Get available user types
-     */
-    public function getUserTypes()
-    {
-        $userTypes = UserType::where('is_active', true)
-            ->with('fields')
-            ->get();
-
-        return response()->json([
-            'success' => true,
-            'data' => $userTypes,
-        ]);
-    }
-
-    /**
-     * Get user profile with flexible fields
-     */
-    public function getProfileWithFlexibleFields(Request $request)
-    {
-        $user = $request->user()->load(['profile', 'userType']);
-        $profile = $user->profile;
-
-        if (!$profile) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Profile not found',
-            ], 404);
-        }
-
-        // Get custom fields with proper typing
-        $customFields = $profile->custom_fields ?? [];
-        
-        // Enhance response with display values for current_status
-        $currentStatusDisplay = $this->getCurrentStatusDisplay($profile->current_status);
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'profile' => $profile,
-                'user_type' => $user->userType,
-                'flexible_fields' => [
-                    'headline' => $profile->headline,
-                    'current_status' => $profile->current_status,
-                    'current_status_display' => $currentStatusDisplay,
-                    'institution' => $profile->institution,
-                    'field_of_interest' => $profile->field_of_interest,
-                    'custom_fields' => $customFields,
-                    'display_headline' => $profile->headline ?? $profile->job_title ?? 'No headline set',
-                ]
-            ],
-        ]);
-    }
-
-    /**
-     * Update flexible profile fields
-     */
-    public function updateFlexibleFields(Request $request)
-    {
-        $user = $request->user();
-        $profile = UserProfile::where('user_id', $user->id)->firstOrFail();
-
-        $validator = Validator::make($request->all(), [
-            'headline' => 'nullable|string|max:200',
-            'current_status' => 'nullable|in:studying,working,teaching,freelancing,researching,unemployed,seeking_opportunities,other',
-            'institution' => 'nullable|string|max:255',
-            'field_of_interest' => 'nullable|string|max:255',
-            'custom_fields' => 'nullable|array',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
-        $profile->update($validator->validated());
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'headline' => $profile->headline,
-                'current_status' => $profile->current_status,
-                'institution' => $profile->institution,
-                'field_of_interest' => $profile->field_of_interest,
-                'custom_fields' => $profile->custom_fields,
-                'display_headline' => $profile->headline ?? $profile->job_title ?? 'No headline set',
-            ],
-            'message' => 'Flexible profile fields updated successfully',
+        return UserProfile::create([
+            'user_id' => $user->id,
+            'username' => $user->name ?? 'user' . $user->id,
+            'full_name' => $user->name,
+            'email' => $user->email,
+            'is_public' => false,
+            'show_email' => false,
+            'show_phone' => false,
+            // Initialize new flexible fields
+            'headline' => null,
+            'current_status' => null,
+            'institution' => null,
+            'field_of_interest' => null,
+            'custom_fields' => null,
         ]);
     }
 

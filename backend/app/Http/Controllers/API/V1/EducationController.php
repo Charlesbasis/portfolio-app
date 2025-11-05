@@ -19,6 +19,12 @@ class EducationController extends Controller
             ->orderBy('start_date', 'desc')
             ->orderBy('order');
 
+        // Filter by role if provided
+        if ($request->has('role')) {
+            $query->ofRole($request->role);
+        }
+
+        // Filter by current status
         if ($request->has('current') && $request->current === 'true') {
             $query->current();
         }
@@ -28,6 +34,65 @@ class EducationController extends Controller
         return response()->json([
             'success' => true,
             'data' => $education,
+        ]);
+    }
+
+    /**
+     * Get education entries by role
+     */
+    public function byRole(Request $request, $role)
+    {
+        $validRoles = (new Education())->getRoles();
+        
+        if (!array_key_exists($role, $validRoles)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid role'
+            ], 404);
+        }
+
+        $education = Education::where('user_id', $request->user()->id)
+            ->ofRole($role)
+            ->orderBy('start_date', 'desc')
+            ->orderBy('order')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $education,
+            'meta' => [
+                'role' => $role,
+                'role_label' => $validRoles[$role]
+            ]
+        ]);
+    }
+
+    /**
+     * Get student education entries
+     */
+    public function asStudent(Request $request)
+    {
+        return $this->byRole($request, 'student');
+    }
+
+    /**
+     * Get teacher education entries
+     */
+    public function asTeacher(Request $request)
+    {
+        return $this->byRole($request, 'teacher');
+    }
+
+    /**
+     * Get available roles
+     */
+    public function getRoles()
+    {
+        $roles = (new Education())->getRoles();
+        
+        return response()->json([
+            'success' => true,
+            'data' => $roles
         ]);
     }
 
@@ -157,6 +222,38 @@ class EducationController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Education deleted successfully',
+        ]);
+    }
+    /**
+     * Get user education by role (public route)
+     */
+    public function userEducationByRole(Request $request, $username, $role)
+    {
+        $user = User::where('username', $username)->firstOrFail();
+
+        $validRoles = (new Education())->getRoles();
+
+        if (!array_key_exists($role, $validRoles)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid role'
+            ], 404);
+        }
+
+        $education = Education::where('user_id', $user->id)
+            ->ofRole($role)
+            ->orderBy('start_date', 'desc')
+            ->orderBy('order')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $education,
+            'meta' => [
+                'role' => $role,
+                'role_label' => $validRoles[$role],
+                'count' => $education->count()
+            ]
         ]);
     }
 }
