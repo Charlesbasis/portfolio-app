@@ -429,6 +429,7 @@ export interface OnboardingCompleteResponse {
 }
 
 export interface FormData {
+  user_type: string;
   full_name: string;
   username: string;
   job_title: string;
@@ -440,10 +441,628 @@ export interface FormData {
   project_description: string;
   project_technologies: string[];
   skills: string[];
+  profile_data: Record<string, any>;
 }
 
 export interface Step {
   id: number;
   title: string;
   icon: any;
+  required?: boolean;
 }
+
+export interface OnboardingStep {
+  id: string;
+  title: string;
+  component: string;
+  required?: boolean;
+  validationRules?: any[];
+}
+
+export interface ProfileField {
+  name: string;
+  label: string;
+  type: 'text' | 'select' | 'number' | 'date' | 'textarea' | 'file';
+  required?: boolean;
+  options?: Array<{ label: string; value: string }>;
+  validation?: any;
+}
+
+export interface DashboardWidget {
+  id: string;
+  title: string;
+  component: string;
+  grid: { x: number; y: number; w: number; h: number };
+  config?: any;
+}
+
+export interface PortfolioSection {
+  id: string;
+  title: string;
+  component: string;
+  editable: boolean;
+  visibility: 'public' | 'private' | 'connections';
+}
+
+export interface UserTypeConfig {
+  label: string;
+  description: string;
+  icon: string;
+  color: string;
+  onboardingSteps: OnboardingStep[];
+  profileFields: ProfileField[];
+  dashboardWidgets: DashboardWidget[];
+  portfolioSections: PortfolioSection[];
+  permissions: string[];
+}
+
+export const USER_TYPES: Record<string, UserTypeConfig> = {
+  student: {
+    label: "Student",
+    description: "Currently studying or seeking education",
+    icon: "graduation-cap",
+    color: "blue",
+    onboardingSteps: [
+      {
+        id: "profile_setup",
+        title: "Basic Profile",
+        component: "StudentProfileSetup",
+        required: true,
+        validationRules: ['required']
+      },
+      {
+        id: "academic_info",
+        title: "Academic Information",
+        component: "AcademicInfo",
+        required: true
+      },
+      {
+        id: "skills_assessment",
+        title: "Skills Assessment",
+        component: "SkillsAssessment",
+        required: false
+      },
+      {
+        id: "goal_setting",
+        title: "Learning Goals",
+        component: "GoalSetting",
+        required: true
+      }
+    ],
+    profileFields: [
+      {
+        name: "gpa",
+        label: "GPA",
+        type: "number",
+        required: false,
+        validation: { min: 0, max: 4.0 }
+      },
+      {
+        name: "major",
+        label: "Major/Field of Study",
+        type: "text",
+        required: true
+      },
+      {
+        name: "graduation_year",
+        label: "Expected Graduation Year",
+        type: "number",
+        required: true,
+        validation: { min: 2023, max: 2030 }
+      },
+      {
+        name: "current_semester",
+        label: "Current Semester",
+        type: "select",
+        required: true,
+        options: [
+          { label: "Freshman", value: "freshman" },
+          { label: "Sophomore", value: "sophomore" },
+          { label: "Junior", value: "junior" },
+          { label: "Senior", value: "senior" },
+          { label: "Graduate", value: "graduate" }
+        ]
+      },
+      {
+        name: "school",
+        label: "School/University",
+        type: "text",
+        required: true
+      }
+    ],
+    dashboardWidgets: [
+      {
+        id: "academic_progress",
+        title: "Academic Progress",
+        component: "AcademicProgressWidget",
+        grid: { x: 0, y: 0, w: 4, h: 2 }
+      },
+      {
+        id: "upcoming_deadlines",
+        title: "Upcoming Deadlines",
+        component: "DeadlinesWidget",
+        grid: { x: 4, y: 0, w: 2, h: 2 }
+      },
+      {
+        id: "skill_gaps",
+        title: "Skill Development",
+        component: "SkillGapsWidget",
+        grid: { x: 0, y: 2, w: 3, h: 2 }
+      },
+      {
+        id: "recommended_courses",
+        title: "Recommended Courses",
+        component: "CourseRecommendationsWidget",
+        grid: { x: 3, y: 2, w: 3, h: 2 }
+      }
+    ],
+    portfolioSections: [
+      {
+        id: "projects",
+        title: "Academic Projects",
+        component: "ProjectsSection",
+        editable: true,
+        visibility: "public"
+      },
+      {
+        id: "certifications",
+        title: "Certifications",
+        component: "CertificationsSection",
+        editable: true,
+        visibility: "public"
+      },
+      {
+        id: "academic_achievements",
+        title: "Achievements",
+        component: "AchievementsSection",
+        editable: true,
+        visibility: "public"
+      },
+      {
+        id: "skills",
+        title: "Skills & Competencies",
+        component: "SkillsSection",
+        editable: true,
+        visibility: "public"
+      }
+    ],
+    permissions: [
+      "course_access",
+      "peer_networking",
+      "mentor_requests",
+      "academic_resources",
+      "career_guidance"
+    ]
+  },
+  professional: {
+    label: "Professional",
+    description: "Working professional",
+    icon: "briefcase",
+    color: "green",
+    onboardingSteps: [
+      {
+        id: "profile_setup",
+        title: "Professional Profile",
+        component: "ProfessionalProfileSetup",
+        required: true
+      },
+      {
+        id: "work_experience",
+        title: "Work Experience",
+        component: "WorkExperience",
+        required: true
+      },
+      {
+        id: "skills_validation",
+        title: "Skills Validation",
+        component: "SkillsValidation",
+        required: false
+      },
+      {
+        id: "career_goals",
+        title: "Career Goals",
+        component: "CareerGoals",
+        required: true
+      }
+    ],
+    profileFields: [
+      {
+        name: "current_role",
+        label: "Current Role",
+        type: "text",
+        required: true
+      },
+      {
+        name: "company",
+        label: "Company",
+        type: "text",
+        required: true
+      },
+      {
+        name: "experience_years",
+        label: "Years of Experience",
+        type: "number",
+        required: true
+      },
+      {
+        name: "industry",
+        label: "Industry",
+        type: "select",
+        required: true,
+        options: [
+          { label: "Technology", value: "technology" },
+          { label: "Healthcare", value: "healthcare" },
+          { label: "Finance", value: "finance" },
+          { label: "Education", value: "education" },
+          { label: "Manufacturing", value: "manufacturing" }
+        ]
+      },
+      {
+        name: "skills",
+        label: "Key Skills",
+        type: "textarea",
+        required: true
+      }
+    ],
+    dashboardWidgets: [
+      {
+        id: "career_progress",
+        title: "Career Progress",
+        component: "CareerProgressWidget",
+        grid: { x: 0, y: 0, w: 3, h: 2 }
+      },
+      {
+        id: "skill_development",
+        title: "Skill Development",
+        component: "SkillDevelopmentWidget",
+        grid: { x: 3, y: 0, w: 3, h: 2 }
+      },
+      {
+        id: "networking_opportunities",
+        title: "Networking",
+        component: "NetworkingWidget",
+        grid: { x: 0, y: 2, w: 2, h: 2 }
+      },
+      {
+        id: "job_recommendations",
+        title: "Job Recommendations",
+        component: "JobRecommendationsWidget",
+        grid: { x: 2, y: 2, w: 4, h: 2 }
+      }
+    ],
+    portfolioSections: [
+      {
+        id: "work_experience",
+        title: "Work Experience",
+        component: "WorkExperienceSection",
+        editable: true,
+        visibility: "public"
+      },
+      {
+        id: "projects",
+        title: "Professional Projects",
+        component: "ProjectsSection",
+        editable: true,
+        visibility: "public"
+      },
+      {
+        id: "certifications",
+        title: "Certifications",
+        component: "CertificationsSection",
+        editable: true,
+        visibility: "public"
+      },
+      {
+        id: "testimonials",
+        title: "Testimonials",
+        component: "TestimonialsSection",
+        editable: false,
+        visibility: "public"
+      }
+    ],
+    permissions: [
+      "professional_networking",
+      "job_search",
+      "mentorship",
+      "industry_insights",
+      "recruitment"
+    ]
+  },
+  teacher: {
+    label: "Teacher",
+    description: "Educator or instructor",
+    icon: "chalkboard-teacher",
+    color: "purple",
+    onboardingSteps: [
+      {
+        id: "profile_setup",
+        title: "Teacher Profile",
+        component: "TeacherProfileSetup",
+        required: true
+      },
+      {
+        id: "teaching_experience",
+        title: "Teaching Experience",
+        component: "TeachingExperience",
+        required: true
+      },
+      {
+        id: "subject_expertise",
+        title: "Subject Expertise",
+        component: "SubjectExpertise",
+        required: true
+      },
+      {
+        id: "availability",
+        title: "Availability",
+        component: "AvailabilitySetup",
+        required: false
+      }
+    ],
+    profileFields: [
+      {
+        name: "teaching_subjects",
+        label: "Subjects Taught",
+        type: "textarea",
+        required: true
+      },
+      {
+        name: "education_level",
+        label: "Education Level",
+        type: "select",
+        required: true,
+        options: [
+          { label: "Elementary", value: "elementary" },
+          { label: "Middle School", value: "middle_school" },
+          { label: "High School", value: "high_school" },
+          { label: "Undergraduate", value: "undergraduate" },
+          { label: "Graduate", value: "graduate" }
+        ]
+      },
+      {
+        name: "years_experience",
+        label: "Years of Teaching Experience",
+        type: "number",
+        required: true
+      },
+      {
+        name: "certifications",
+        label: "Teaching Certifications",
+        type: "textarea",
+        required: false
+      },
+      {
+        name: "teaching_style",
+        label: "Teaching Philosophy/Style",
+        type: "textarea",
+        required: false
+      }
+    ],
+    dashboardWidgets: [
+      {
+        id: "student_progress",
+        title: "Student Progress",
+        component: "StudentProgressWidget",
+        grid: { x: 0, y: 0, w: 4, h: 2 }
+      },
+      {
+        id: "teaching_schedule",
+        title: "Teaching Schedule",
+        component: "TeachingScheduleWidget",
+        grid: { x: 4, y: 0, w: 2, h: 2 }
+      },
+      {
+        id: "resource_management",
+        title: "Teaching Resources",
+        component: "ResourceManagementWidget",
+        grid: { x: 0, y: 2, w: 3, h: 2 }
+      },
+      {
+        id: "performance_metrics",
+        title: "Performance Metrics",
+        component: "PerformanceMetricsWidget",
+        grid: { x: 3, y: 2, w: 3, h: 2 }
+      }
+    ],
+    portfolioSections: [
+      {
+        id: "teaching_philosophy",
+        title: "Teaching Philosophy",
+        component: "TeachingPhilosophySection",
+        editable: true,
+        visibility: "public"
+      },
+      {
+        id: "course_materials",
+        title: "Course Materials",
+        component: "CourseMaterialsSection",
+        editable: true,
+        visibility: "connections"
+      },
+      {
+        id: "student_testimonials",
+        title: "Student Testimonials",
+        component: "StudentTestimonialsSection",
+        editable: false,
+        visibility: "public"
+      },
+      {
+        id: "professional_development",
+        title: "Professional Development",
+        component: "ProfessionalDevelopmentSection",
+        editable: true,
+        visibility: "public"
+      }
+    ],
+    permissions: [
+      "student_management",
+      "content_creation",
+      "assessment_tools",
+      "progress_tracking",
+      "resource_sharing"
+    ]
+  },
+  freelancer: {
+    label: "Freelancer",
+    description: "Independent contractor or gig worker",
+    icon: "user-tie",
+    color: "orange",
+    onboardingSteps: [
+      {
+        id: "profile_setup",
+        title: "Freelancer Profile",
+        component: "FreelancerProfileSetup",
+        required: true
+      },
+      {
+        id: "portfolio_setup",
+        title: "Portfolio Setup",
+        component: "PortfolioSetup",
+        required: true
+      },
+      {
+        id: "service_offerings",
+        title: "Service Offerings",
+        component: "ServiceOfferings",
+        required: true
+      },
+      {
+        id: "pricing_setup",
+        title: "Pricing & Rates",
+        component: "PricingSetup",
+        required: true
+      }
+    ],
+    profileFields: [
+      {
+        name: "specialties",
+        label: "Specialties/Services",
+        type: "textarea",
+        required: true
+      },
+      {
+        name: "hourly_rate",
+        label: "Hourly Rate (USD)",
+        type: "number",
+        required: true
+      },
+      {
+        name: "portfolio_url",
+        label: "Portfolio URL",
+        type: "text",
+        required: false
+      },
+      {
+        name: "availability",
+        label: "Availability",
+        type: "select",
+        required: true,
+        options: [
+          { label: "Full-time", value: "full_time" },
+          { label: "Part-time", value: "part_time" },
+          { label: "As needed", value: "as_needed" }
+        ]
+      },
+      {
+        name: "tools_technologies",
+        label: "Tools & Technologies",
+        type: "textarea",
+        required: true
+      }
+    ],
+    dashboardWidgets: [
+      {
+        id: "project_pipeline",
+        title: "Project Pipeline",
+        component: "ProjectPipelineWidget",
+        grid: { x: 0, y: 0, w: 3, h: 2 }
+      },
+      {
+        id: "income_tracker",
+        title: "Income Tracker",
+        component: "IncomeTrackerWidget",
+        grid: { x: 3, y: 0, w: 3, h: 2 }
+      },
+      {
+        id: "client_management",
+        title: "Client Management",
+        component: "ClientManagementWidget",
+        grid: { x: 0, y: 2, w: 3, h: 2 }
+      },
+      {
+        id: "skill_marketability",
+        title: "Skill Marketability",
+        component: "SkillMarketabilityWidget",
+        grid: { x: 3, y: 2, w: 3, h: 2 }
+      }
+    ],
+    portfolioSections: [
+      {
+        id: "projects",
+        title: "Portfolio Projects",
+        component: "PortfolioProjectsSection",
+        editable: true,
+        visibility: "public"
+      },
+      {
+        id: "client_testimonials",
+        title: "Client Testimonials",
+        component: "ClientTestimonialsSection",
+        editable: false,
+        visibility: "public"
+      },
+      {
+        id: "services",
+        title: "Services Offered",
+        component: "ServicesSection",
+        editable: true,
+        visibility: "public"
+      },
+      {
+        id: "case_studies",
+        title: "Case Studies",
+        component: "CaseStudiesSection",
+        editable: true,
+        visibility: "public"
+      }
+    ],
+    permissions: [
+      "project_bidding",
+      "client_management",
+      "portfolio_showcase",
+      "contract_management",
+      "payment_processing"
+    ]
+  }
+};
+
+// Utility functions
+export const getUserTypeConfig = (userTypeSlug: string): UserTypeConfig => {
+  return USER_TYPES[userTypeSlug] || USER_TYPES.student;
+};
+
+export const getUserTypeOptions = () => {
+  return Object.entries(USER_TYPES).map(([slug, config]) => ({
+    value: slug,
+    label: config.label,
+    description: config.description,
+    icon: config.icon,
+    color: config.color
+  }));
+};
+
+export const getOnboardingSteps = (userTypeSlug: string): OnboardingStep[] => {
+  return getUserTypeConfig(userTypeSlug).onboardingSteps;
+};
+
+export const getProfileFields = (userTypeSlug: string): ProfileField[] => {
+  return getUserTypeConfig(userTypeSlug).profileFields;
+};
+
+export const getDashboardConfig = (userTypeSlug: string): DashboardWidget[] => {
+  return getUserTypeConfig(userTypeSlug).dashboardWidgets;
+};
+
+export const getPortfolioConfig = (userTypeSlug: string): PortfolioSection[] => {
+  return getUserTypeConfig(userTypeSlug).portfolioSections;
+};

@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -8,27 +9,40 @@ class UserType extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'slug', 'description', 'allowed_fields', 'is_active', 'permissions'];
+    protected $fillable = [
+        'name',
+        'slug',
+        'description',
+        'allowed_fields',
+        'is_active',
+    ];
 
     protected $casts = [
         'allowed_fields' => 'array',
         'is_active' => 'boolean',
-        'permissions' => 'array',
     ];
 
-    // A user type has many users
+    /**
+     * Get the users with this type.
+     */
     public function users()
     {
         return $this->hasMany(User::class);
     }
 
+    /**
+     * Get the fields for this user type.
+     */
     public function fields()
     {
         return $this->hasMany(UserTypeField::class);
     }
 
-    public function userProfiles()
+    /**
+     * Scope to get only active user types.
+     */
+    public function scopeActive($query)
     {
-        return $this->hasMany(UserProfile::class);
+        return $query->where('is_active', true);
     }
 }

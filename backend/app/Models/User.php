@@ -2,30 +2,20 @@
 
 namespace App\Models;
 
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-class User extends Authenticatable implements MustVerifyEmail
+class User extends Authenticatable
 {
-    use HasFactory, Notifiable, HasApiTokens;
+    use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
         'name',
         'email',
         'password',
-        'onboarding_completed',
-        'onboarding_completed_at',
-        'onboarding_data',
         'user_type_id',
-    ];
-
-    protected $casts = [
-        'onboarding_completed' => 'boolean',
-        'onboarding_data' => 'array',
-        'onboarding_completed_at' => 'datetime',
     ];
 
     protected $hidden = [
@@ -33,20 +23,17 @@ class User extends Authenticatable implements MustVerifyEmail
         'remember_token',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
-    }
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+    ];
 
     /**
-     * Get the onboarding_completed attribute based on onboarding_completed_at
+     * Get the user type associated with the user.
      */
-    public function getOnboardingCompletedAttribute(): bool
+    public function userType()
     {
-        return $this->onboarding_completed_at !== null;
+        return $this->belongsTo(UserType::class);
     }
 
     /**
@@ -58,19 +45,21 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Get the user's projects.
-     */
-    public function projects()
-    {
-        return $this->hasMany(\App\Models\Portfolio\Project::class);
-    }
-
-    /**
      * Get the user's skills.
      */
     public function skills()
     {
-        return $this->hasMany(Skill::class);
+        return $this->belongsToMany(Skill::class, 'user_skills')
+                    ->withPivot('proficiency', 'years_experience')
+                    ->withTimestamps();
+    }
+
+    /**
+     * Get the user's projects.
+     */
+    public function projects()
+    {
+        return $this->hasMany(Projects::class);
     }
 
     /**
@@ -82,7 +71,7 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Get the user's education.
+     * Get the user's education records.
      */
     public function education()
     {
@@ -90,39 +79,58 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Get the user's certifications.
+     * Get the user's testimonials.
      */
-    public function certifications()
+    public function testimonials()
     {
-        return $this->hasMany(Certification::class);
+        return $this->hasMany(Testimonial::class);
     }
 
-    public function completedOnboarding()
+    /**
+     * Get the user's services.
+     */
+    public function services()
     {
-        $this->update([
-            'onboarding_completed_at' => now(),
-            // 'onboarding_completed' => true,
-        ]);
+        return $this->hasMany(Service::class);
     }
 
-    public function getOnboardingStepAttribute($value)
-    {
-        return $this->onboarding_data['current_step'] ?? [];
-    }
-
-    public function userType()
-    {
-        return $this->belongsTo(UserType::class);
-    }
-
-    // Accessor for user type name
-    public function getUserTypeNameAttribute()
-    {
-        return $this->userType->name ?? null;
-    }
-
-    public function dynamicFieldValues()
+    /**
+     * Get the user's field values.
+     */
+    public function fieldValues()
     {
         return $this->hasMany(UserFieldValue::class);
+    }
+
+    /**
+     * Check if user is a student.
+     */
+    public function isStudent()
+    {
+        return $this->userType?->slug === 'student';
+    }
+
+    /**
+     * Check if user is a teacher.
+     */
+    public function isTeacher()
+    {
+        return $this->userType?->slug === 'teacher';
+    }
+
+    /**
+     * Check if user is a professional.
+     */
+    public function isProfessional()
+    {
+        return $this->userType?->slug === 'professional';
+    }
+
+    /**
+     * Check if user is a freelancer.
+     */
+    public function isFreelancer()
+    {
+        return $this->userType?->slug === 'freelancer';
     }
 }

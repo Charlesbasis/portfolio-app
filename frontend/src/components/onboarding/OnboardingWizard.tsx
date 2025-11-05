@@ -1,22 +1,31 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Sparkles, User, Briefcase, Code, Rocket, 
-  ArrowRight, ArrowLeft, Check, X, Loader2
-} from 'lucide-react';
 import { useCompleteOnboarding } from '@/src/hooks/useApi';
-import { FormData, Step } from '@/src/types';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/src/hooks/useAuth';
 import api from '@/src/lib/api';
+import { FormData, Step, USER_TYPES, getUserTypeConfig, getUserTypeOptions } from '@/src/types';
+import { AnimatePresence, motion } from 'framer-motion';
+import {
+  ArrowLeft,
+  ArrowRight,
+  Briefcase,
+  Check,
+  Code,
+  Loader2,
+  Rocket,
+  Sparkles, User,
+  Users,
+  X
+} from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 const OnboardingWizard = () => {
   const router = useRouter();
   const { user, checkAuth } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<FormData>({
+    user_type: '', // Initialize user type
     full_name: user?.name || '',
     username: '',
     job_title: '',
@@ -27,7 +36,8 @@ const OnboardingWizard = () => {
     project_title: '',
     project_description: '',
     project_technologies: [],
-    skills: []
+    skills: [],
+    profile_data: {}
   });
   const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
@@ -37,11 +47,15 @@ const OnboardingWizard = () => {
 
   const steps: Step[] = [
     { id: 0, title: 'Welcome', icon: Sparkles },
-    { id: 1, title: 'Profile Basics', icon: User },
-    { id: 2, title: 'First Project', icon: Briefcase },
-    { id: 3, title: 'Your Skills', icon: Code },
-    { id: 4, title: 'Launch', icon: Rocket }
+    { id: 1, title: 'Choose Role', icon: Users }, // New step for user type
+    { id: 2, title: 'Profile Basics', icon: User },
+    { id: 3, title: 'First Project', icon: Briefcase },
+    { id: 4, title: 'Your Skills', icon: Code },
+    { id: 5, title: 'Launch', icon: Rocket }
   ];
+
+  // Get user type specific configuration
+  const userTypeConfig = formData.user_type ? getUserTypeConfig(formData.user_type) : null;
 
   const commonSkills = [
     'JavaScript', 'TypeScript', 'React', 'Node.js', 'Python',
@@ -55,6 +69,17 @@ const OnboardingWizard = () => {
     'TypeScript', 'Python', 'Laravel', 'Django', 'PostgreSQL'
   ];
 
+  // User type specific fields configuration
+  const getUserTypeFields = () => {
+    if (!userTypeConfig) return [];
+    
+    return userTypeConfig.profileFields.map(field => ({
+      ...field,
+      value: formData.profile_data?.[field.name] || '',
+      onChange: (value: any) => updateProfileData(field.name, value)
+    }));
+  };
+
   const updateFormData = (field: keyof FormData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
@@ -62,11 +87,27 @@ const OnboardingWizard = () => {
     }
   };
 
+  const updateProfileData = (field: string, value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      profile_data: {
+        ...prev.profile_data,
+        [field]: value
+      }
+    }));
+  };
+
   const validateStep = (): boolean => {
     const newErrors: Partial<Record<keyof FormData, string>> = {};
 
     switch (currentStep) {
-      case 1:
+      case 1: // User type selection
+        if (!formData.user_type) {
+          newErrors.user_type = 'Please select your role';
+        }
+        break;
+
+      case 2: // Profile basics
         if (!formData.full_name.trim()) {
           newErrors.full_name = 'Full name is required';
         }
@@ -82,15 +123,24 @@ const OnboardingWizard = () => {
         if (!formData.job_title.trim()) {
           newErrors.job_title = 'Job title is required';
         }
+        
+        // Validate user type specific required fields
+        if (userTypeConfig) {
+          userTypeConfig.profileFields.forEach(field => {
+            if (field.required && !formData.profile_data?.[field.name]) {
+              newErrors[`profile_${field.name}` as keyof FormData] = `${field.label} is required`;
+            }
+          });
+        }
         break;
 
-      case 2:
+      case 3: // Project
         if (formData.project_title.trim() && !formData.project_description.trim()) {
           newErrors.project_description = 'Please add a project description';
         }
         break;
 
-      case 3:
+      case 4: // Skills
         if (formData.skills.length === 0) {
           newErrors.skills = 'Please select at least one skill';
         }
@@ -101,11 +151,10 @@ const OnboardingWizard = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Fixed username checking with proper debouncing
+  // Username checking (same as before)
   const handleUsernameChange = (username: string) => {
     updateFormData('username', username);
     
-    // Clear previous timeout
     if (usernameCheckTimeout) {
       clearTimeout(usernameCheckTimeout);
     }
@@ -123,7 +172,6 @@ const OnboardingWizard = () => {
 
     setUsernameStatus('checking');
 
-    // Debounce the API call
     const timeout = setTimeout(async () => {
       try {
         const response = await api.get(`/onboarding/check-username/${username}`);
@@ -137,12 +185,11 @@ const OnboardingWizard = () => {
         console.error('Username check failed:', error);
         setUsernameStatus('idle');
       }
-    }, 500); // 500ms debounce
+    }, 500);
 
     setUsernameCheckTimeout(timeout);
   };
 
-  // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
       if (usernameCheckTimeout) {
@@ -172,6 +219,7 @@ const OnboardingWizard = () => {
 
     try {
       await completeOnboarding.mutateAsync({
+        user_type: formData.user_type,
         full_name: formData.full_name,
         username: formData.username,
         job_title: formData.job_title,
@@ -184,12 +232,11 @@ const OnboardingWizard = () => {
           description: formData.project_description,
           technologies: formData.project_technologies
         } : undefined,
-        skills: formData.skills
+        skills: formData.skills,
+        profile_data: formData.profile_data || {}
       });
 
-      // Refresh auth state to get updated user
       await checkAuth();
-
       router.push(`/portfolio/${formData.username}`);
     } catch (error: any) {
       console.error('Onboarding failed:', error);
@@ -213,6 +260,60 @@ const OnboardingWizard = () => {
         ? formData.project_technologies.filter(t => t !== tech)
         : [...formData.project_technologies, tech]
     );
+  };
+
+  const renderUserTypeField = (field: any) => {
+    switch (field.type) {
+      case 'text':
+      case 'number':
+        return (
+          <input
+            type={field.type}
+            value={field.value}
+            onChange={(e) => field.onChange(e.target.value)}
+            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+              errors[`profile_${field.name}` as keyof FormData] ? 'border-red-500' : 'border-gray-300'
+            }`}
+            placeholder={field.label}
+            min={field.validation?.min}
+            max={field.validation?.max}
+          />
+        );
+      
+      case 'textarea':
+        return (
+          <textarea
+            value={field.value}
+            onChange={(e) => field.onChange(e.target.value)}
+            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+              errors[`profile_${field.name}` as keyof FormData] ? 'border-red-500' : 'border-gray-300'
+            }`}
+            rows={4}
+            placeholder={field.label}
+          />
+        );
+      
+      case 'select':
+        return (
+          <select
+            value={field.value}
+            onChange={(e) => field.onChange(e.target.value)}
+            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+              errors[`profile_${field.name}` as keyof FormData] ? 'border-red-500' : 'border-gray-300'
+            }`}
+          >
+            <option value="">Select {field.label}</option>
+            {field.options?.map((option: any) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        );
+      
+      default:
+        return null;
+    }
   };
 
   return (
@@ -284,14 +385,14 @@ const OnboardingWizard = () => {
                   </p>
                   <div className="grid grid-cols-3 gap-4 max-w-2xl mx-auto text-left">
                     <div className="bg-blue-50 p-4 rounded-lg">
-                      <User className="w-8 h-8 text-blue-600 mb-2" />
-                      <h3 className="font-semibold text-gray-900">Profile</h3>
-                      <p className="text-sm text-gray-600">Basic info about you</p>
+                      <Users className="w-8 h-8 text-blue-600 mb-2" />
+                      <h3 className="font-semibold text-gray-900">Your Role</h3>
+                      <p className="text-sm text-gray-600">Choose your profile type</p>
                     </div>
                     <div className="bg-purple-50 p-4 rounded-lg">
-                      <Briefcase className="w-8 h-8 text-purple-600 mb-2" />
-                      <h3 className="font-semibold text-gray-900">Project</h3>
-                      <p className="text-sm text-gray-600">Showcase your work</p>
+                      <User className="w-8 h-8 text-purple-600 mb-2" />
+                      <h3 className="font-semibold text-gray-900">Profile</h3>
+                      <p className="text-sm text-gray-600">Basic info about you</p>
                     </div>
                     <div className="bg-green-50 p-4 rounded-lg">
                       <Code className="w-8 h-8 text-green-600 mb-2" />
@@ -302,10 +403,90 @@ const OnboardingWizard = () => {
                 </div>
               )}
 
-              {/* Step 1: Profile Basics */}
+              {/* Step 1: User Type Selection */}
               {currentStep === 1 && (
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-6">Tell us about yourself</h2>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                    What best describes you?
+                  </h2>
+                  <p className="text-gray-600 mb-6">Choose the role that fits you best - you can customize later</p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {getUserTypeOptions().map((userType) => {
+                      const config = USER_TYPES[userType.value];
+                      return (
+                        <button
+                          key={userType.value}
+                          type="button"
+                          onClick={() => updateFormData('user_type', userType.value)}
+                          className={`p-6 border-2 rounded-xl text-left transition-all ${
+                            formData.user_type === userType.value
+                              ? `border-${userType.color}-500 bg-${userType.color}-50`
+                              : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className="flex items-start space-x-4">
+                            <div className={`w-12 h-12 rounded-lg bg-${userType.color}-100 flex items-center justify-center`}>
+                              <Users className={`w-6 h-6 text-${userType.color}-600`} />
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="font-semibold text-gray-900 text-lg">
+                                {userType.label}
+                              </h3>
+                              <p className="text-gray-600 text-sm mt-1">
+                                {userType.description}
+                              </p>
+                              {formData.user_type === userType.value && (
+                                <div className="mt-3 text-xs text-gray-500">
+                                  <p>Includes: {config.onboardingSteps.length} setup steps</p>
+                                  <p>Features: {config.dashboardWidgets.length} dashboard widgets</p>
+                                </div>
+                              )}
+                            </div>
+                            {formData.user_type === userType.value && (
+                              <Check className="text-green-500 flex-shrink-0" size={20} />
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  
+                  {errors.user_type && (
+                    <p className="text-red-500 text-sm mt-4 text-center">{errors.user_type}</p>
+                  )}
+
+                  {formData.user_type && userTypeConfig && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      className="mt-6 p-4 bg-blue-50 rounded-lg"
+                    >
+                      <h4 className="font-semibold text-blue-900 mb-2">
+                        {userTypeConfig.label} Features:
+                      </h4>
+                      <ul className="text-sm text-blue-800 space-y-1">
+                        <li>• {userTypeConfig.onboardingSteps.length} personalized setup steps</li>
+                        <li>• {userTypeConfig.dashboardWidgets.length} custom dashboard widgets</li>
+                        <li>• {userTypeConfig.portfolioSections.length} portfolio sections</li>
+                        <li>• Specialized fields for {userTypeConfig.label.toLowerCase()}s</li>
+                      </ul>
+                    </motion.div>
+                  )}
+                </div>
+              )}
+
+              {/* Step 2: Profile Basics */}
+              {currentStep === 2 && (
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                    Tell us about yourself
+                    {userTypeConfig && (
+                      <span className="text-blue-600 text-lg block mt-1">
+                        as a {userTypeConfig.label}
+                      </span>
+                    )}
+                  </h2>
                   
                   <div className="space-y-4">
                     <div>
@@ -402,6 +583,21 @@ const OnboardingWizard = () => {
                       </div>
                     </div>
 
+                    {/* User Type Specific Fields */}
+                    {userTypeConfig && getUserTypeFields()?.map((field) => (
+                      <div key={field.name}>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          {field.label} {field.required && '*'}
+                        </label>
+                        {renderUserTypeField(field)}
+                        {errors[`profile_${field.name}` as keyof FormData] && (
+                          <p className="text-red-500 text-sm mt-1">
+                            {errors[`profile_${field.name}` as keyof FormData]}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Location
@@ -445,8 +641,9 @@ const OnboardingWizard = () => {
                 </div>
               )}
 
-              {/* Step 2: First Project */}
-              {currentStep === 2 && (
+              {/* Steps 3-5 remain mostly the same */}
+              {/* Step 3: First Project */}
+              {currentStep === 3 && (
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900 mb-2">
                     Add your first project
@@ -510,8 +707,8 @@ const OnboardingWizard = () => {
                 </div>
               )}
 
-              {/* Step 3: Skills */}
-              {currentStep === 3 && (
+              {/* Step 4: Skills */}
+              {currentStep === 4 && (
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900 mb-2">
                     What are your skills?
@@ -547,18 +744,23 @@ const OnboardingWizard = () => {
                 </div>
               )}
 
-              {/* Step 4: Launch */}
-              {currentStep === 4 && (
+              {/* Step 5: Launch */}
+              {currentStep === 5 && (
                 <div className="text-center py-8">
                   <Rocket className="w-20 h-20 mx-auto text-blue-600 mb-6" />
                   <h1 className="text-4xl font-bold text-gray-900 mb-4">
                     You're All Set! 🚀
                   </h1>
                   <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-                    Your portfolio is ready to launch. You can always customize it further from your dashboard.
+                    Your {userTypeConfig?.label.toLowerCase()} portfolio is ready to launch. 
+                    You can always customize it further from your dashboard.
                   </p>
 
                   <div className="bg-gray-50 rounded-lg p-6 max-w-2xl mx-auto text-left space-y-3">
+                    <div className="flex items-center">
+                      <Check className="text-green-500 mr-3" size={20} />
+                      <span>Role: <strong>{userTypeConfig?.label}</strong></span>
+                    </div>
                     <div className="flex items-center">
                       <Check className="text-green-500 mr-3" size={20} />
                       <span>Profile: <strong>{formData.full_name}</strong> (@{formData.username})</span>
@@ -610,7 +812,7 @@ const OnboardingWizard = () => {
               {currentStep < steps.length - 1 ? (
                 <button
                   onClick={handleNext}
-                  disabled={currentStep === 1 && usernameStatus === 'checking'}
+                  disabled={(currentStep === 2 && usernameStatus === 'checking')}
                   className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {currentStep === 0 ? "Let's Start" : 'Continue'}
