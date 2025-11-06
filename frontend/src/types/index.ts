@@ -387,6 +387,7 @@ export interface EducationCertificationsProps {
 }
 
 export interface OnboardingData {
+  user_type: string;
   full_name: string;
   username: string;
   job_title: string;
@@ -400,6 +401,7 @@ export interface OnboardingData {
     technologies: string[];
   };
   skills: string[];
+  profile_data: Record<string, any>;
 }
 
 export interface OnboardingStatusResponse {
