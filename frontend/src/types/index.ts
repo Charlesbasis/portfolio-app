@@ -430,8 +430,10 @@ export interface OnboardingCompleteResponse {
   };
 }
 
+export type UserType = 'student' | 'professional' | 'teacher' | 'freelancer';
+
 export interface FormData {
-  user_type: string;
+  user_type: UserType;
   full_name: string;
   username: string;
   job_title: string;
@@ -496,6 +498,7 @@ export interface UserTypeConfig {
   dashboardWidgets: DashboardWidget[];
   portfolioSections: PortfolioSection[];
   permissions: string[];
+  suggestedSkills: USER_TYPES[];
 }
 
 export const USER_TYPES: Record<string, UserTypeConfig> = {
@@ -504,6 +507,7 @@ export const USER_TYPES: Record<string, UserTypeConfig> = {
     description: "Currently studying or seeking education",
     icon: "graduation-cap",
     color: "blue",
+    suggestedSkills: ["Math", "Science", "English", "History", "Geography"],
     onboardingSteps: [
       {
         id: "profile_setup",
@@ -641,6 +645,7 @@ export const USER_TYPES: Record<string, UserTypeConfig> = {
     description: "Working professional",
     icon: "briefcase",
     color: "green",
+    suggestedSkills: ["Management", "Leadership", "Communication", "Teamwork", "Problem Solving"],
     onboardingSteps: [
       {
         id: "profile_setup",
@@ -775,6 +780,7 @@ export const USER_TYPES: Record<string, UserTypeConfig> = {
     description: "Educator or instructor",
     icon: "chalkboard-teacher",
     color: "purple",
+    suggestedSkills: ["Teaching", "Curriculum Development", "Classroom Management", "Assessment", "Instruction"],
     onboardingSteps: [
       {
         id: "profile_setup",
@@ -909,6 +915,7 @@ export const USER_TYPES: Record<string, UserTypeConfig> = {
     description: "Independent contractor or gig worker",
     icon: "user-tie",
     color: "orange",
+    suggestedSkills: ["Content Creation", "Social Media Management", "SEO", "Marketing", "Business Development"],
     onboardingSteps: [
       {
         id: "profile_setup",

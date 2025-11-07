@@ -25,7 +25,7 @@ const OnboardingWizard = () => {
   const { user, checkAuth } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<FormData>({
-    user_type: '', // Initialize user type
+    user_type: 'student',
     full_name: user?.name || '',
     username: '',
     job_title: '',
@@ -63,6 +63,20 @@ const OnboardingWizard = () => {
     'CSS', 'Tailwind', 'HTML', 'SQL', 'MongoDB',
     'Git', 'Docker', 'AWS', 'Firebase', 'REST API'
   ];
+  
+  const getFilteredSkills = () => {
+    if (!userTypeConfig) return commonSkills;
+
+    // Filter skills based on user type
+    const userTypeSkills: any = {
+      student: [...commonSkills, ...userTypeConfig.suggestedSkills],
+      professional: [...commonSkills, ...userTypeConfig.suggestedSkills],
+      teacher: [...commonSkills, ...userTypeConfig.suggestedSkills],
+      freelancer: [...commonSkills, ...userTypeConfig.suggestedSkills]
+    };
+
+    return userTypeSkills[formData.user_type];
+  };
 
   const techOptions = [
     'React', 'Next.js', 'Vue.js', 'Angular', 'Node.js',
@@ -641,14 +655,15 @@ const OnboardingWizard = () => {
                 </div>
               )}
 
-              {/* Steps 3-5 remain mostly the same */}
               {/* Step 3: First Project */}
               {currentStep === 3 && (
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                    Add your first project
+                    {userTypeConfig?.label || 'Add your first project'}
                   </h2>
-                  <p className="text-gray-600 mb-6">Optional - you can skip and add projects later</p>
+                  <p className="text-gray-600 mb-6">
+                    {userTypeConfig?.description || 'Optional - you can skip and add projects later'}
+                  </p>
                   
                   <div className="space-y-4">
                     <div>
@@ -684,7 +699,7 @@ const OnboardingWizard = () => {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Technologies Used
+                        {userTypeConfig?.label || 'Technologies Used'}
                       </label>
                       <div className="flex flex-wrap gap-2">
                         {techOptions.map((tech) => (
@@ -716,7 +731,7 @@ const OnboardingWizard = () => {
                   <p className="text-gray-600 mb-6">Select all that apply - you can add more later</p>
                   
                   <div className="flex flex-wrap gap-2 mb-4">
-                    {commonSkills.map((skill) => (
+                    {getFilteredSkills().map((skill) => (
                       <button
                         key={skill}
                         type="button"
