@@ -1,9 +1,10 @@
 'use client';
 
+import { SKILL_CATEGORIES, USER_TYPES, getUserTypeConfig, getUserTypeOptions } from '@/src/config';
 import { useCompleteOnboarding } from '@/src/hooks/useApi';
 import { useAuth } from '@/src/hooks/useAuth';
 import api from '@/src/lib/api';
-import { FormData, Step, USER_TYPES, getUserTypeConfig, getUserTypeOptions } from '@/src/types';
+import { FormData, Step } from '@/src/types';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowLeft,
@@ -43,6 +44,8 @@ const OnboardingWizard = () => {
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
   const [usernameCheckTimeout, setUsernameCheckTimeout] = useState<NodeJS.Timeout | null>(null);
 
+  const [activeSkillSection, setActiveSkillSection] = useState<'primary' | 'secondary' | 'suggested'>('primary');
+
   const completeOnboarding = useCompleteOnboarding();
 
   const steps: Step[] = [
@@ -56,26 +59,48 @@ const OnboardingWizard = () => {
 
   // Get user type specific configuration
   const userTypeConfig = formData.user_type ? getUserTypeConfig(formData.user_type) : null;
-
-  const commonSkills = [
-    'JavaScript', 'TypeScript', 'React', 'Node.js', 'Python',
-    'Java', 'PHP', 'Laravel', 'Next.js', 'Vue.js',
-    'CSS', 'Tailwind', 'HTML', 'SQL', 'MongoDB',
-    'Git', 'Docker', 'AWS', 'Firebase', 'REST API'
-  ];
   
   const getFilteredSkills = () => {
-    if (!userTypeConfig) return commonSkills;
+    if (!userTypeConfig) {
+      // Fallback: show general technical skills
+      return [
+        ...SKILL_CATEGORIES.frontend.slice(0, 5),
+        ...SKILL_CATEGORIES.backend.slice(0, 5),
+        ...SKILL_CATEGORIES.database.slice(0, 3),
+        ...SKILL_CATEGORIES.devops.slice(0, 3)
+      ];
+    }
 
-    // Filter skills based on user type
-    const userTypeSkills: any = {
-      student: [...commonSkills, ...userTypeConfig.suggestedSkills],
-      professional: [...commonSkills, ...userTypeConfig.suggestedSkills],
-      teacher: [...commonSkills, ...userTypeConfig.suggestedSkills],
-      freelancer: [...commonSkills, ...userTypeConfig.suggestedSkills]
+    const { primary, secondary, suggested } = userTypeConfig.skills;
+
+    // Combine and deduplicate
+    const allSkills = [...new Set([...primary, ...secondary, ...suggested])];
+
+    return allSkills;
+  };
+
+  const getSkillSections = () => {
+    if (!userTypeConfig) return null;
+
+    const { primary, secondary, suggested } = userTypeConfig.skills;
+
+    return {
+      primary: {
+        title: 'Essential Skills',
+        description: 'Core skills for your role',
+        skills: primary
+      },
+      secondary: {
+        title: 'Advanced Skills',
+        description: 'Take your expertise to the next level',
+        skills: secondary
+      },
+      suggested: {
+        title: 'Recommended Skills',
+        description: 'Skills that complement your profile',
+        skills: suggested
+      }
     };
-
-    return userTypeSkills[formData.user_type];
   };
 
   const techOptions = [
@@ -728,34 +753,116 @@ const OnboardingWizard = () => {
                   <h2 className="text-2xl font-bold text-gray-900 mb-2">
                     What are your skills?
                   </h2>
-                  <p className="text-gray-600 mb-6">Select all that apply - you can add more later</p>
-                  
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {getFilteredSkills().map((skill) => (
-                      <button
-                        key={skill}
-                        type="button"
-                        onClick={() => toggleSkill(skill)}
-                        className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                          formData.skills.includes(skill)
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        {skill}
-                      </button>
-                    ))}
-                  </div>
-                  
+                  <p className="text-gray-600 mb-6">
+                    Select your skills - we've organized them based on your role as a {userTypeConfig?.label.toLowerCase()}
+                  </p>
+
+                  {(() => {
+                    const sections = getSkillSections();
+
+                    if (!sections) {
+                      // Fallback if no sections available
+                      return (
+                        <div className="flex flex-wrap gap-2">
+                          {getFilteredSkills().map((skill) => (
+                            <button
+                              key={skill}
+                              type="button"
+                              onClick={() => toggleSkill(skill)}
+                              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${formData.skills.includes(skill)
+                                  ? 'bg-blue-600 text-white'
+                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                }`}
+                            >
+                              {skill}
+                            </button>
+                          ))}
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <>
+                        {/* Section Tabs */}
+                        <div className="flex space-x-2 mb-4 border-b">
+                          {Object.entries(sections).map(([key, section]) => (
+                            <button
+                              key={key}
+                              type="button"
+                              onClick={() => setActiveSkillSection(key as 'primary' | 'secondary' | 'suggested')}
+                              className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeSkillSection === key
+                                  ? 'border-blue-600 text-blue-600'
+                                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                                }`}
+                            >
+                              {section.title}
+                              <span className="ml-2 text-xs">
+                                ({section.skills.filter(s => formData.skills.includes(s)).length}/{section.skills.length})
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Active Section Display */}
+                        <div className="mb-4">
+                          <h3 className="font-semibold text-gray-900 mb-1">
+                            {sections[activeSkillSection].title}
+                          </h3>
+                          <p className="text-sm text-gray-600 mb-4">
+                            {sections[activeSkillSection].description}
+                          </p>
+
+                          <div className="flex flex-wrap gap-2">
+                            {sections[activeSkillSection].skills.map((skill) => (
+                              <button
+                                key={skill}
+                                type="button"
+                                onClick={() => toggleSkill(skill)}
+                                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${formData.skills.includes(skill)
+                                    ? 'bg-blue-600 text-white shadow-md scale-105'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                  }`}
+                              >
+                                {skill}
+                                {formData.skills.includes(skill) && (
+                                  <Check className="inline ml-1" size={14} />
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Summary */}
+                        <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm text-blue-800">
+                                <strong>{formData.skills.length}</strong> skills selected
+                              </p>
+                              <p className="text-xs text-blue-600 mt-1">
+                                Essential: {sections.primary.skills.filter(s => formData.skills.includes(s)).length} •
+                                Advanced: {sections.secondary.skills.filter(s => formData.skills.includes(s)).length} •
+                                Recommended: {sections.suggested.skills.filter(s => formData.skills.includes(s)).length}
+                              </p>
+                            </div>
+                            {formData.skills.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => updateFormData('skills', [])}
+                                className="text-sm text-red-600 hover:text-red-700"
+                              >
+                                Clear all
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </>
+                    );
+                  })()}
+
                   {errors.skills && (
                     <p className="text-red-500 text-sm mt-2">{errors.skills}</p>
                   )}
-
-                  <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                    <p className="text-sm text-blue-800">
-                      <strong>{formData.skills.length}</strong> skills selected
-                    </p>
-                  </div>
                 </div>
               )}
 
@@ -767,32 +874,84 @@ const OnboardingWizard = () => {
                     You're All Set! 🚀
                   </h1>
                   <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-                    Your {userTypeConfig?.label.toLowerCase()} portfolio is ready to launch. 
+                    Your {userTypeConfig?.label.toLowerCase()} portfolio is ready to launch.
                     You can always customize it further from your dashboard.
                   </p>
 
                   <div className="bg-gray-50 rounded-lg p-6 max-w-2xl mx-auto text-left space-y-3">
                     <div className="flex items-center">
-                      <Check className="text-green-500 mr-3" size={20} />
+                      <Check className="text-green-500 mr-3 flex-shrink-0" size={20} />
                       <span>Role: <strong>{userTypeConfig?.label}</strong></span>
                     </div>
                     <div className="flex items-center">
-                      <Check className="text-green-500 mr-3" size={20} />
+                      <Check className="text-green-500 mr-3 flex-shrink-0" size={20} />
                       <span>Profile: <strong>{formData.full_name}</strong> (@{formData.username})</span>
                     </div>
                     <div className="flex items-center">
-                      <Check className="text-green-500 mr-3" size={20} />
+                      <Check className="text-green-500 mr-3 flex-shrink-0" size={20} />
                       <span>Job Title: <strong>{formData.job_title}</strong></span>
                     </div>
                     {formData.project_title && (
                       <div className="flex items-center">
-                        <Check className="text-green-500 mr-3" size={20} />
+                        <Check className="text-green-500 mr-3 flex-shrink-0" size={20} />
                         <span>Project: <strong>{formData.project_title}</strong></span>
                       </div>
                     )}
-                    <div className="flex items-center">
-                      <Check className="text-green-500 mr-3" size={20} />
-                      <span>Skills: <strong>{formData.skills.length} added</strong></span>
+                    <div className="flex items-start">
+                      <Check className="text-green-500 mr-3 flex-shrink-0 mt-1" size={20} />
+                      <div className="flex-1">
+                        <span className="block mb-2">
+                          Skills: <strong>{formData.skills.length} selected</strong>
+                        </span>
+                        {userTypeConfig && (() => {
+                          const { primary, secondary, suggested } = userTypeConfig.skills;
+                          const essentialCount = primary.filter(s => formData.skills.includes(s)).length;
+                          const advancedCount = secondary.filter(s => formData.skills.includes(s)).length;
+                          const recommendedCount = suggested.filter(s => formData.skills.includes(s)).length;
+
+                          return (
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              {essentialCount > 0 && (
+                                <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
+                                  {essentialCount} Essential
+                                </span>
+                              )}
+                              {advancedCount > 0 && (
+                                <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
+                                  {advancedCount} Advanced
+                                </span>
+                              )}
+                              {recommendedCount > 0 && (
+                                <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+                                  {recommendedCount} Recommended
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Skill Breakdown Preview */}
+                  <div className="mt-6 max-w-2xl mx-auto">
+                    <div className="text-left p-4 bg-white rounded-lg border border-gray-200">
+                      <h3 className="font-semibold text-gray-900 mb-3">Your Selected Skills</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {formData.skills.slice(0, 10).map((skill) => (
+                          <span
+                            key={skill}
+                            className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full"
+                          >
+                            {skill}
+                          </span>
+                        ))}
+                        {formData.skills.length > 10 && (
+                          <span className="px-3 py-1 bg-gray-200 text-gray-600 text-sm rounded-full">
+                            +{formData.skills.length - 10} more
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
