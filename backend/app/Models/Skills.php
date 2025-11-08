@@ -2,36 +2,24 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Relations\Pivot;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
-class UserSkill extends Pivot
+class Skills extends Model
 {
-    protected $table = 'user_skills';
+    use HasFactory;
 
     protected $fillable = [
-        'user_id',
-        'skill_id',
-        'proficiency',
-        'years_experience',
+        'name',
+        'category',
+        'proficiency_level',
+        'user_id'
+        // 'skill_id',
+        // 'years_of_experience',
     ];
 
-    protected $casts = [
-        'years_experience' => 'integer',
-    ];
-
-    /**
-     * Get the user that owns the skill.
-     */
     public function user()
     {
         return $this->belongsTo(User::class);
-    }
-
-    /**
-     * Get the skill.
-     */
-    public function skill()
-    {
-        return $this->belongsTo(Skill::class);
     }
 }

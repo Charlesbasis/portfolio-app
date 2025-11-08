@@ -160,7 +160,7 @@ class OnboardingController extends Controller
             // Handle user type specific additional data
             $this->handleTypeSpecificData($user, $request, $userType);
 
-            $user->completedOnboarding();
+            // $user->completedOnboarding();
         });
 
         $user->load(['profile', 'projects', 'skills', 'userType']);
