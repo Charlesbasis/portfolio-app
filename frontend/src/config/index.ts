@@ -1,709 +1,539 @@
-import { DashboardWidget, OnboardingStep, PortfolioSection, ProfileField, UserTypeConfig } from "../types";
+import { UserTypeConfig } from "../types";
 
 export const USER_TYPES: Record<string, UserTypeConfig> = {
   student: {
-    label: "Student",
-    description: "Currently studying or seeking education",
-    icon: "graduation-cap",
-    color: "blue",
-    skills: {
-      primary: [
-        // Core academic and foundational tech
-        'HTML', 'CSS', 'JavaScript', 'Python', 'Git',
-        'Mathematics', 'Data Structures', 'Algorithms',
-        'Problem Solving', 'Research Methods'
-      ],
-      secondary: [
-        // Growing into professional skills
-        'React', 'TypeScript', 'Node.js', 'SQL', 'MongoDB',
-        'Statistics', 'Computer Science', 'Technical Writing'
-      ],
-      suggested: [
-        // Career preparation
-        'Next.js', 'Docker', 'AWS', 'Agile', 'Communication',
-        'Team Leadership', 'Project Management'
-      ]
-    },
-    onboardingSteps: [
-      {
-        id: "profile_setup",
-        title: "Basic Profile",
-        component: "StudentProfileSetup",
-        required: true,
-        validationRules: ['required']
-      },
-      {
-        id: "academic_info",
-        title: "Academic Information",
-        component: "AcademicInfo",
-        required: true
-      },
-      {
-        id: "skills_assessment",
-        title: "Skills Assessment",
-        component: "SkillsAssessment",
-        required: false
-      },
-      {
-        id: "goal_setting",
-        title: "Learning Goals",
-        component: "GoalSetting",
-        required: true
-      }
-    ],
+    value: 'student',
+    label: 'Student',
+    description: 'Learning and building projects',
+    color: 'blue',
+    icon: 'GraduationCap',
+
     profileFields: [
       {
-        name: "gpa",
-        label: "GPA",
-        type: "number",
+        name: 'grade_level',
+        label: 'Grade Level',
+        type: 'select',
+        required: true,
+        options: [
+          { value: 'high-school', label: 'High School' },
+          { value: 'undergraduate', label: 'Undergraduate' },
+          { value: 'graduate', label: 'Graduate' },
+          { value: 'postgraduate', label: 'Postgraduate' }
+        ]
+      },
+      {
+        name: 'institution',
+        label: 'School/University',
+        type: 'text',
         required: false,
-        validation: { min: 0, max: 4.0 }
+        placeholder: 'MIT'
       },
       {
-        name: "major",
-        label: "Major/Field of Study",
-        type: "text",
-        required: true
+        name: 'major',
+        label: 'Major/Field of Study',
+        type: 'text',
+        required: false,
+        placeholder: 'Computer Science'
       },
       {
-        name: "graduation_year",
-        label: "Expected Graduation Year",
-        type: "number",
-        required: true,
-        validation: { min: 2023, max: 2030 }
-      },
-      {
-        name: "current_semester",
-        label: "Current Semester",
-        type: "select",
-        required: true,
-        options: [
-          { label: "Freshman", value: "freshman" },
-          { label: "Sophomore", value: "sophomore" },
-          { label: "Junior", value: "junior" },
-          { label: "Senior", value: "senior" },
-          { label: "Graduate", value: "graduate" }
-        ]
-      },
-      {
-        name: "school",
-        label: "School/University",
-        type: "text",
-        required: true
+        name: 'graduation_year',
+        label: 'Expected Graduation',
+        type: 'number',
+        required: false,
+        placeholder: '2025',
+        validation: { min: 2024, max: 2035 }
       }
     ],
-    dashboardWidgets: [
-      {
-        id: "academic_progress",
-        title: "Academic Progress",
-        component: "AcademicProgressWidget",
-        grid: { x: 0, y: 0, w: 4, h: 2 }
-      },
-      {
-        id: "upcoming_deadlines",
-        title: "Upcoming Deadlines",
-        component: "DeadlinesWidget",
-        grid: { x: 4, y: 0, w: 2, h: 2 }
-      },
-      {
-        id: "skill_gaps",
-        title: "Skill Development",
-        component: "SkillGapsWidget",
-        grid: { x: 0, y: 2, w: 3, h: 2 }
-      },
-      {
-        id: "recommended_courses",
-        title: "Recommended Courses",
-        component: "CourseRecommendationsWidget",
-        grid: { x: 3, y: 2, w: 3, h: 2 }
-      }
-    ],
-    portfolioSections: [
-      {
-        id: "projects",
-        title: "Academic Projects",
-        component: "ProjectsSection",
-        editable: true,
-        visibility: "public"
-      },
-      {
-        id: "certifications",
-        title: "Certifications",
-        component: "CertificationsSection",
-        editable: true,
-        visibility: "public"
-      },
-      {
-        id: "academic_achievements",
-        title: "Achievements",
-        component: "AchievementsSection",
-        editable: true,
-        visibility: "public"
-      },
-      {
-        id: "skills",
-        title: "Skills & Competencies",
-        component: "SkillsSection",
-        editable: true,
-        visibility: "public"
-      }
-    ],
-    permissions: [
-      "course_access",
-      "peer_networking",
-      "mentor_requests",
-      "academic_resources",
-      "career_guidance"
-    ]
-  },
-  professional: {
-    label: "Professional",
-    description: "Working professional",
-    icon: "briefcase",
-    color: "green",
-    skills: {
-      primary: [
-        // Core professional tech skills
-        'JavaScript', 'TypeScript', 'React', 'Node.js', 'Python',
-        'SQL', 'MongoDB', 'Git', 'Docker', 'AWS',
-        'REST API', 'GraphQL', 'Microservices'
-      ],
-      secondary: [
-        // Advanced technical
-        'Next.js', 'Vue.js', 'Laravel', 'PostgreSQL', 'Redis',
-        'Kubernetes', 'CI/CD', 'System Design'
-      ],
-      suggested: [
-        // Leadership and management
-        'Team Leadership', 'Project Management', 'Agile', 'Scrum',
-        'Mentoring', 'Strategic Planning', 'Stakeholder Management'
+
+    activityConfig: {
+      title: 'Share Your First Project',
+      subtitle: 'Show off what you\'ve built - it could be a school project, personal experiment, or anything you\'re proud of!',
+      fields: [
+        {
+          name: 'title',
+          label: 'Project Title',
+          type: 'text',
+          required: false,
+          placeholder: 'E-commerce Website'
+        },
+        {
+          name: 'description',
+          label: 'What did you build?',
+          type: 'textarea',
+          required: false,
+          placeholder: 'Describe your project, what problem it solves, and what you learned...',
+          description: 'Be specific about your role and the technologies you used'
+        },
+        {
+          name: 'course',
+          label: 'Course/Class',
+          type: 'text',
+          required: false,
+          placeholder: 'CS101 - Intro to Programming'
+        },
+        {
+          name: 'technologies',
+          label: 'Technologies Used',
+          type: 'array',
+          required: false,
+          description: 'Select technologies you used'
+        }
       ]
     },
-    onboardingSteps: [
-      {
-        id: "profile_setup",
-        title: "Professional Profile",
-        component: "ProfessionalProfileSetup",
-        required: true
-      },
-      {
-        id: "work_experience",
-        title: "Work Experience",
-        component: "WorkExperience",
-        required: true
-      },
-      {
-        id: "skills_validation",
-        title: "Skills Validation",
-        component: "SkillsValidation",
-        required: false
-      },
-      {
-        id: "career_goals",
-        title: "Career Goals",
-        component: "CareerGoals",
-        required: true
-      }
-    ],
-    profileFields: [
-      {
-        name: "current_role",
-        label: "Current Role",
-        type: "text",
-        required: true
-      },
-      {
-        name: "company",
-        label: "Company",
-        type: "text",
-        required: true
-      },
-      {
-        name: "experience_years",
-        label: "Years of Experience",
-        type: "number",
-        required: true
-      },
-      {
-        name: "industry",
-        label: "Industry",
-        type: "select",
-        required: true,
-        options: [
-          { label: "Technology", value: "technology" },
-          { label: "Healthcare", value: "healthcare" },
-          { label: "Finance", value: "finance" },
-          { label: "Education", value: "education" },
-          { label: "Manufacturing", value: "manufacturing" }
-        ]
-      },
-      {
-        name: "skills",
-        label: "Key Skills",
-        type: "textarea",
-        required: true
-      }
-    ],
-    dashboardWidgets: [
-      {
-        id: "career_progress",
-        title: "Career Progress",
-        component: "CareerProgressWidget",
-        grid: { x: 0, y: 0, w: 3, h: 2 }
-      },
-      {
-        id: "skill_development",
-        title: "Skill Development",
-        component: "SkillDevelopmentWidget",
-        grid: { x: 3, y: 0, w: 3, h: 2 }
-      },
-      {
-        id: "networking_opportunities",
-        title: "Networking",
-        component: "NetworkingWidget",
-        grid: { x: 0, y: 2, w: 2, h: 2 }
-      },
-      {
-        id: "job_recommendations",
-        title: "Job Recommendations",
-        component: "JobRecommendationsWidget",
-        grid: { x: 2, y: 2, w: 4, h: 2 }
-      }
-    ],
-    portfolioSections: [
-      {
-        id: "work_experience",
-        title: "Work Experience",
-        component: "WorkExperienceSection",
-        editable: true,
-        visibility: "public"
-      },
-      {
-        id: "projects",
-        title: "Professional Projects",
-        component: "ProjectsSection",
-        editable: true,
-        visibility: "public"
-      },
-      {
-        id: "certifications",
-        title: "Certifications",
-        component: "CertificationsSection",
-        editable: true,
-        visibility: "public"
-      },
-      {
-        id: "testimonials",
-        title: "Testimonials",
-        component: "TestimonialsSection",
-        editable: false,
-        visibility: "public"
-      }
-    ],
-    permissions: [
-      "professional_networking",
-      "job_search",
-      "mentorship",
-      "industry_insights",
-      "recruitment"
-    ]
+
+    skills: {
+      primary: [
+        ...SKILL_CATEGORIES.languages.slice(0, 6),
+        ...SKILL_CATEGORIES.frontend.slice(0, 4)
+      ],
+      secondary: [
+        ...SKILL_CATEGORIES.backend.slice(0, 4),
+        ...SKILL_CATEGORIES.database.slice(0, 3)
+      ],
+      suggested: [
+        ...SKILL_CATEGORIES.academic.slice(0, 5),
+        ...SKILL_CATEGORIES.business.slice(0, 3)
+      ]
+    },
+
+    dashboardWidgets: ['projects', 'courses', 'achievements', 'learning-path'],
+    portfolioSections: ['projects', 'education', 'skills', 'achievements'],
+    onboardingSteps: ['welcome', 'user-type', 'profile', 'project', 'skills', 'launch']
   },
+
   teacher: {
-    label: "Teacher",
-    description: "Educator or instructor",
-    icon: "chalkboard-teacher",
-    color: "purple",
-    skills: {
-      primary: [
-        // Core teaching skills
-        'Curriculum Development', 'Lesson Planning', 'Classroom Management',
-        'Educational Assessment', 'Student Engagement', 'Communication',
-        'Instructional Design', 'Learning Theory'
-      ],
-      secondary: [
-        // Educational technology
-        'Educational Technology', 'Learning Management Systems',
-        'Online Teaching', 'Blended Learning', 'Differentiated Instruction',
-        'Data Analysis', 'Student Assessment Tools'
-      ],
-      suggested: [
-        // Modern teaching tools
-        'HTML', 'CSS', 'JavaScript', 'Video Editing', 'Content Creation',
-        'Digital Presentation', 'Research Methods', 'Academic Writing'
-      ]
-    },
-    onboardingSteps: [
-      {
-        id: "profile_setup",
-        title: "Teacher Profile",
-        component: "TeacherProfileSetup",
-        required: true
-      },
-      {
-        id: "teaching_experience",
-        title: "Teaching Experience",
-        component: "TeachingExperience",
-        required: true
-      },
-      {
-        id: "subject_expertise",
-        title: "Subject Expertise",
-        component: "SubjectExpertise",
-        required: true
-      },
-      {
-        id: "availability",
-        title: "Availability",
-        component: "AvailabilitySetup",
-        required: false
-      }
-    ],
+    value: 'teacher',
+    label: 'Teacher/Educator',
+    description: 'Sharing knowledge and teaching materials',
+    color: 'green',
+    icon: 'BookOpen',
+
     profileFields: [
       {
-        name: "teaching_subjects",
-        label: "Subjects Taught",
-        type: "textarea",
-        required: true
+        name: 'subject_specialty',
+        label: 'Subject Specialty',
+        type: 'text',
+        required: true,
+        placeholder: 'Mathematics, Physics, etc.'
       },
       {
-        name: "education_level",
-        label: "Education Level",
-        type: "select",
+        name: 'teaching_level',
+        label: 'Teaching Level',
+        type: 'select',
         required: true,
         options: [
-          { label: "Elementary", value: "elementary" },
-          { label: "Middle School", value: "middle_school" },
-          { label: "High School", value: "high_school" },
-          { label: "Undergraduate", value: "undergraduate" },
-          { label: "Graduate", value: "graduate" }
+          { value: 'elementary', label: 'Elementary School' },
+          { value: 'middle', label: 'Middle School' },
+          { value: 'high', label: 'High School' },
+          { value: 'college', label: 'College/University' },
+          { value: 'adult', label: 'Adult Education' }
         ]
       },
       {
-        name: "years_experience",
-        label: "Years of Teaching Experience",
-        type: "number",
-        required: true
+        name: 'years_experience',
+        label: 'Years of Experience',
+        type: 'number',
+        required: false,
+        placeholder: '5',
+        validation: { min: 0, max: 50 }
       },
       {
-        name: "certifications",
-        label: "Teaching Certifications",
-        type: "textarea",
-        required: false
-      },
-      {
-        name: "teaching_style",
-        label: "Teaching Philosophy/Style",
-        type: "textarea",
-        required: false
+        name: 'institution',
+        label: 'Current Institution',
+        type: 'text',
+        required: false,
+        placeholder: 'Lincoln High School'
       }
     ],
-    dashboardWidgets: [
-      {
-        id: "student_progress",
-        title: "Student Progress",
-        component: "StudentProgressWidget",
-        grid: { x: 0, y: 0, w: 4, h: 2 }
-      },
-      {
-        id: "teaching_schedule",
-        title: "Teaching Schedule",
-        component: "TeachingScheduleWidget",
-        grid: { x: 4, y: 0, w: 2, h: 2 }
-      },
-      {
-        id: "resource_management",
-        title: "Teaching Resources",
-        component: "ResourceManagementWidget",
-        grid: { x: 0, y: 2, w: 3, h: 2 }
-      },
-      {
-        id: "performance_metrics",
-        title: "Performance Metrics",
-        component: "PerformanceMetricsWidget",
-        grid: { x: 3, y: 2, w: 3, h: 2 }
-      }
-    ],
-    portfolioSections: [
-      {
-        id: "teaching_philosophy",
-        title: "Teaching Philosophy",
-        component: "TeachingPhilosophySection",
-        editable: true,
-        visibility: "public"
-      },
-      {
-        id: "course_materials",
-        title: "Course Materials",
-        component: "CourseMaterialsSection",
-        editable: true,
-        visibility: "connections"
-      },
-      {
-        id: "student_testimonials",
-        title: "Student Testimonials",
-        component: "StudentTestimonialsSection",
-        editable: false,
-        visibility: "public"
-      },
-      {
-        id: "professional_development",
-        title: "Professional Development",
-        component: "ProfessionalDevelopmentSection",
-        editable: true,
-        visibility: "public"
-      }
-    ],
-    permissions: [
-      "student_management",
-      "content_creation",
-      "assessment_tools",
-      "progress_tracking",
-      "resource_sharing"
-    ]
+
+    activityConfig: {
+      title: 'Share a Teaching Resource',
+      subtitle: 'Share a lesson plan, course material, or teaching resource you\'ve created',
+      fields: [
+        {
+          name: 'title',
+          label: 'Resource Title',
+          type: 'text',
+          required: false,
+          placeholder: 'Introduction to Calculus - Complete Course'
+        },
+        {
+          name: 'description',
+          label: 'Description',
+          type: 'textarea',
+          required: false,
+          placeholder: 'Describe your teaching resource, learning objectives, and target audience...'
+        },
+        {
+          name: 'subject',
+          label: 'Subject',
+          type: 'text',
+          required: false,
+          placeholder: 'Mathematics'
+        },
+        {
+          name: 'grade_level',
+          label: 'Grade Level',
+          type: 'text',
+          required: false,
+          placeholder: '11th Grade'
+        },
+        {
+          name: 'tools_used',
+          label: 'Tools & Platforms',
+          type: 'array',
+          required: false,
+          description: 'Teaching tools and platforms you use'
+        }
+      ]
+    },
+
+    skills: {
+      primary: [
+        ...SKILL_CATEGORIES.teaching.slice(0, 6),
+        ...SKILL_CATEGORIES.academic.slice(0, 4)
+      ],
+      secondary: [
+        ...SKILL_CATEGORIES.business.slice(0, 4),
+        ...SKILL_CATEGORIES.design.slice(0, 3)
+      ],
+      suggested: [
+        ...SKILL_CATEGORIES.frontend.slice(0, 3),
+        'Content Creation', 'Video Editing', 'Public Speaking'
+      ]
+    },
+
+    dashboardWidgets: ['classes', 'students', 'materials', 'calendar'],
+    portfolioSections: ['courses', 'materials', 'testimonials', 'certifications'],
+    onboardingSteps: ['welcome', 'user-type', 'profile', 'resource', 'skills', 'launch']
   },
-  freelancer: {
-    label: "Freelancer",
-    description: "Independent contractor or gig worker",
-    icon: "user-tie",
-    color: "orange",
-    skills: {
-      primary: [
-        // Core freelance skills
-        'JavaScript', 'React', 'Node.js', 'HTML', 'CSS',
-        'UI/UX Design', 'Content Writing', 'SEO', 'Digital Marketing',
-        'Social Media Management', 'Communication', 'Client Management'
-      ],
-      secondary: [
-        // Advanced technical and creative
-        'TypeScript', 'Next.js', 'Vue.js', 'Figma', 'Adobe Creative Suite',
-        'Video Editing', 'Copywriting', 'Brand Strategy', 'Analytics'
-      ],
-      suggested: [
-        // Business growth
-        'Project Management', 'Business Development', 'Negotiation',
-        'Email Marketing', 'Marketing Strategy', 'Market Research',
-        'Financial Management', 'Contract Management'
-      ]
-    },
-    onboardingSteps: [
-      {
-        id: "profile_setup",
-        title: "Freelancer Profile",
-        component: "FreelancerProfileSetup",
-        required: true
-      },
-      {
-        id: "portfolio_setup",
-        title: "Portfolio Setup",
-        component: "PortfolioSetup",
-        required: true
-      },
-      {
-        id: "service_offerings",
-        title: "Service Offerings",
-        component: "ServiceOfferings",
-        required: true
-      },
-      {
-        id: "pricing_setup",
-        title: "Pricing & Rates",
-        component: "PricingSetup",
-        required: true
-      }
-    ],
+
+  professional: {
+    value: 'professional',
+    label: 'Professional Developer',
+    description: 'Building production applications',
+    color: 'purple',
+    icon: 'Code',
+
     profileFields: [
       {
-        name: "specialties",
-        label: "Specialties/Services",
-        type: "textarea",
-        required: true
-      },
-      {
-        name: "hourly_rate",
-        label: "Hourly Rate (USD)",
-        type: "number",
-        required: true
-      },
-      {
-        name: "portfolio_url",
-        label: "Portfolio URL",
-        type: "text",
-        required: false
-      },
-      {
-        name: "availability",
-        label: "Availability",
-        type: "select",
+        name: 'current_role',
+        label: 'Current Role',
+        type: 'text',
         required: true,
+        placeholder: 'Senior Full Stack Developer'
+      },
+      {
+        name: 'years_experience',
+        label: 'Years of Experience',
+        type: 'number',
+        required: false,
+        placeholder: '5',
+        validation: { min: 0, max: 50 }
+      },
+      {
+        name: 'specialization',
+        label: 'Specialization',
+        type: 'select',
+        required: false,
         options: [
-          { label: "Full-time", value: "full_time" },
-          { label: "Part-time", value: "part_time" },
-          { label: "As needed", value: "as_needed" }
+          { value: 'frontend', label: 'Frontend Development' },
+          { value: 'backend', label: 'Backend Development' },
+          { value: 'fullstack', label: 'Full Stack Development' },
+          { value: 'mobile', label: 'Mobile Development' },
+          { value: 'devops', label: 'DevOps Engineering' },
+          { value: 'data', label: 'Data Engineering' }
         ]
       },
       {
-        name: "tools_technologies",
-        label: "Tools & Technologies",
-        type: "textarea",
-        required: true
+        name: 'availability',
+        label: 'Availability',
+        type: 'select',
+        required: false,
+        options: [
+          { value: 'employed', label: 'Currently Employed' },
+          { value: 'open', label: 'Open to Opportunities' },
+          { value: 'freelance', label: 'Available for Freelance' },
+          { value: 'not-looking', label: 'Not Looking' }
+        ]
       }
     ],
-    dashboardWidgets: [
+
+    activityConfig: {
+      title: 'Showcase Your Best Project',
+      subtitle: 'Share a professional project that demonstrates your expertise',
+      fields: [
+        {
+          name: 'title',
+          label: 'Project Name',
+          type: 'text',
+          required: false,
+          placeholder: 'Enterprise CRM Platform'
+        },
+        {
+          name: 'description',
+          label: 'Project Description',
+          type: 'textarea',
+          required: false,
+          placeholder: 'Describe the project scope, your role, technical challenges, and impact...'
+        },
+        {
+          name: 'company',
+          label: 'Company/Client',
+          type: 'text',
+          required: false,
+          placeholder: 'Tech Corp Inc.'
+        },
+        {
+          name: 'team_size',
+          label: 'Team Size',
+          type: 'text',
+          required: false,
+          placeholder: '5 developers'
+        },
+        {
+          name: 'technologies',
+          label: 'Tech Stack',
+          type: 'array',
+          required: false,
+          description: 'Technologies and frameworks used'
+        },
+        {
+          name: 'github_url',
+          label: 'GitHub URL',
+          type: 'url',
+          required: false,
+          placeholder: 'https://github.com/username/project'
+        },
+        {
+          name: 'live_url',
+          label: 'Live URL',
+          type: 'url',
+          required: false,
+          placeholder: 'https://project.com'
+        }
+      ]
+    },
+
+    skills: {
+      primary: [
+        ...SKILL_CATEGORIES.languages.slice(0, 5),
+        ...SKILL_CATEGORIES.frontend.slice(0, 5),
+        ...SKILL_CATEGORIES.backend.slice(0, 5)
+      ],
+      secondary: [
+        ...SKILL_CATEGORIES.database,
+        ...SKILL_CATEGORIES.devops.slice(0, 5)
+      ],
+      suggested: [
+        ...SKILL_CATEGORIES.design.slice(0, 3),
+        ...SKILL_CATEGORIES.business.slice(0, 4)
+      ]
+    },
+
+    dashboardWidgets: ['projects', 'experience', 'skills', 'analytics'],
+    portfolioSections: ['projects', 'experience', 'skills', 'certifications'],
+    onboardingSteps: ['welcome', 'user-type', 'profile', 'project', 'skills', 'launch']
+  },
+
+  freelancer: {
+    value: 'freelancer',
+    label: 'Freelancer',
+    description: 'Independent contractor and consultant',
+    color: 'orange',
+    icon: 'Briefcase',
+
+    profileFields: [
       {
-        id: "project_pipeline",
-        title: "Project Pipeline",
-        component: "ProjectPipelineWidget",
-        grid: { x: 0, y: 0, w: 3, h: 2 }
+        name: 'hourly_rate',
+        label: 'Hourly Rate (USD)',
+        type: 'number',
+        required: false,
+        placeholder: '75',
+        validation: { min: 1, max: 1000 }
       },
       {
-        id: "income_tracker",
-        title: "Income Tracker",
-        component: "IncomeTrackerWidget",
-        grid: { x: 3, y: 0, w: 3, h: 2 }
+        name: 'portfolio_url',
+        label: 'Portfolio Website',
+        type: 'url',
+        required: false,
+        placeholder: 'https://yourportfolio.com'
       },
       {
-        id: "client_management",
-        title: "Client Management",
-        component: "ClientManagementWidget",
-        grid: { x: 0, y: 2, w: 3, h: 2 }
+        name: 'specialization',
+        label: 'Primary Service',
+        type: 'select',
+        required: true,
+        options: [
+          { value: 'web-dev', label: 'Web Development' },
+          { value: 'mobile-dev', label: 'Mobile Development' },
+          { value: 'design', label: 'UI/UX Design' },
+          { value: 'consulting', label: 'Technical Consulting' },
+          { value: 'full-service', label: 'Full Service Development' }
+        ]
       },
       {
-        id: "skill_marketability",
-        title: "Skill Marketability",
-        component: "SkillMarketabilityWidget",
-        grid: { x: 3, y: 2, w: 3, h: 2 }
+        name: 'availability',
+        label: 'Current Availability',
+        type: 'select',
+        required: false,
+        options: [
+          { value: 'available', label: 'Available Now' },
+          { value: 'limited', label: 'Limited Availability' },
+          { value: 'booked', label: 'Fully Booked' }
+        ]
       }
     ],
-    portfolioSections: [
-      {
-        id: "projects",
-        title: "Portfolio Projects",
-        component: "PortfolioProjectsSection",
-        editable: true,
-        visibility: "public"
-      },
-      {
-        id: "client_testimonials",
-        title: "Client Testimonials",
-        component: "ClientTestimonialsSection",
-        editable: false,
-        visibility: "public"
-      },
-      {
-        id: "services",
-        title: "Services Offered",
-        component: "ServicesSection",
-        editable: true,
-        visibility: "public"
-      },
-      {
-        id: "case_studies",
-        title: "Case Studies",
-        component: "CaseStudiesSection",
-        editable: true,
-        visibility: "public"
-      }
-    ],
-    permissions: [
-      "project_bidding",
-      "client_management",
-      "portfolio_showcase",
-      "contract_management",
-      "payment_processing"
-    ]
+
+    activityConfig: {
+      title: 'Feature a Client Project',
+      subtitle: 'Showcase your best client work and the value you delivered',
+      fields: [
+        {
+          name: 'title',
+          label: 'Project Name',
+          type: 'text',
+          required: false,
+          placeholder: 'E-commerce Redesign for Retail Brand'
+        },
+        {
+          name: 'description',
+          label: 'Project Details',
+          type: 'textarea',
+          required: false,
+          placeholder: 'Describe the project, client requirements, your solution, and results...'
+        },
+        {
+          name: 'client',
+          label: 'Client Name',
+          type: 'text',
+          required: false,
+          placeholder: 'Acme Retail (or keep confidential)'
+        },
+        {
+          name: 'duration',
+          label: 'Project Duration',
+          type: 'text',
+          required: false,
+          placeholder: '3 months'
+        },
+        {
+          name: 'technologies',
+          label: 'Technologies Used',
+          type: 'array',
+          required: false,
+          description: 'Tech stack and tools'
+        },
+        {
+          name: 'project_url',
+          label: 'Project URL',
+          type: 'url',
+          required: false,
+          placeholder: 'https://clientproject.com'
+        }
+      ]
+    },
+
+    skills: {
+      primary: [
+        ...SKILL_CATEGORIES.languages.slice(0, 4),
+        ...SKILL_CATEGORIES.frontend.slice(0, 4),
+        ...SKILL_CATEGORIES.backend.slice(0, 3)
+      ],
+      secondary: [
+        ...SKILL_CATEGORIES.database.slice(0, 3),
+        ...SKILL_CATEGORIES.design.slice(0, 4)
+      ],
+      suggested: [
+        ...SKILL_CATEGORIES.business,
+        'Client Communication', 'Proposal Writing', 'Contract Negotiation'
+      ]
+    },
+
+    dashboardWidgets: ['services', 'clients', 'revenue', 'testimonials'],
+    portfolioSections: ['services', 'portfolio', 'testimonials', 'contact'],
+    onboardingSteps: ['welcome', 'user-type', 'profile', 'project', 'skills', 'launch']
   }
 };
 
-export const getUserTypeConfig = (userTypeSlug: string): UserTypeConfig => {
-  return USER_TYPES[userTypeSlug] || USER_TYPES.student;
+export const getUserTypeConfig = (userType: string): UserTypeConfig | null => {
+  return USER_TYPES[userType] || null;
 };
 
 export const getUserTypeOptions = () => {
-  return Object.entries(USER_TYPES).map(([slug, config]) => ({
-    value: slug,
-    label: config.label,
-    description: config.description,
-    icon: config.icon,
-    color: config.color
+  return Object.values(USER_TYPES).map(type => ({
+    value: type.value,
+    label: type.label,
+    description: type.description,
+    color: type.color,
+    icon: type.icon
   }));
 };
 
-export const getOnboardingSteps = (userTypeSlug: string): OnboardingStep[] => {
-  return getUserTypeConfig(userTypeSlug).onboardingSteps;
-};
-
-export const getProfileFields = (userTypeSlug: string): ProfileField[] => {
-  return getUserTypeConfig(userTypeSlug).profileFields;
-};
-
-export const getDashboardConfig = (userTypeSlug: string): DashboardWidget[] => {
-  return getUserTypeConfig(userTypeSlug).dashboardWidgets;
-};
-
-export const getPortfolioConfig = (userTypeSlug: string): PortfolioSection[] => {
-  return getUserTypeConfig(userTypeSlug).portfolioSections;
+export const getSkillsForUserType = (userType: string): string[] => {
+  const config = getUserTypeConfig(userType);
+  if (!config) return [];
+  
+  return [
+    ...config.skills.primary,
+    ...config.skills.secondary,
+    ...config.skills.suggested
+  ];
 };
 
 export const SKILL_CATEGORIES = {
-  // Technical/Programming
-  frontend: [
-    'HTML', 'CSS', 'JavaScript', 'TypeScript', 'React', 'Vue.js', 
-    'Angular', 'Next.js', 'Tailwind', 'Bootstrap', 'SASS', 'Webpack'
-  ],
-  backend: [
-    'Node.js', 'Python', 'Java', 'PHP', 'C#', 'Ruby', 'Go',
-    'Laravel', 'Django', 'Spring Boot', 'Express.js', 'FastAPI'
-  ],
-  database: [
-    'SQL', 'PostgreSQL', 'MySQL', 'MongoDB', 'Redis', 'Firebase',
-    'Supabase', 'DynamoDB', 'Elasticsearch'
-  ],
-  devops: [
-    'Git', 'Docker', 'Kubernetes', 'AWS', 'Azure', 'GCP',
-    'CI/CD', 'Jenkins', 'GitHub Actions', 'Terraform'
-  ],
-  mobile: [
-    'React Native', 'Flutter', 'Swift', 'Kotlin', 'iOS Development',
-    'Android Development', 'Expo'
-  ],
-  
-  // Academic/Student
+  // Academic subjects
   academic: [
-    'Mathematics', 'Physics', 'Chemistry', 'Biology', 'Statistics',
-    'Calculus', 'Linear Algebra', 'Data Structures', 'Algorithms',
-    'Computer Science', 'Research Methods'
+    'Mathematics', 'Physics', 'Chemistry', 'Biology', 'History',
+    'English Literature', 'Geography', 'Economics', 'Psychology'
   ],
-  languages: [
-    'English', 'Spanish', 'French', 'German', 'Chinese', 'Japanese',
-    'Arabic', 'Technical Writing', 'Academic Writing'
-  ],
-  
-  // Professional/Soft Skills
-  business: [
-    'Project Management', 'Agile', 'Scrum', 'Product Management',
-    'Business Analysis', 'Strategic Planning', 'Stakeholder Management'
-  ],
-  leadership: [
-    'Team Leadership', 'Communication', 'Problem Solving', 'Decision Making',
-    'Conflict Resolution', 'Mentoring', 'Coaching', 'Negotiation'
-  ],
-  
-  // Teaching
+
+  // Teaching tools
   teaching: [
-    'Curriculum Development', 'Lesson Planning', 'Classroom Management',
-    'Educational Assessment', 'Instructional Design', 'Student Engagement',
-    'Differentiated Instruction', 'Educational Technology', 'Learning Theory'
+    'Lesson Planning', 'Classroom Management', 'Google Classroom',
+    'Canvas LMS', 'Zoom', 'Microsoft Teams', 'Kahoot', 'Nearpod',
+    'Educational Technology', 'Curriculum Development'
   ],
-  
-  // Freelancing/Creative
-  creative: [
-    'UI/UX Design', 'Graphic Design', 'Video Editing', 'Content Writing',
-    'Copywriting', 'SEO', 'Social Media Marketing', 'Brand Strategy',
-    'Adobe Creative Suite', 'Figma', 'Sketch'
+
+  // Programming languages
+  languages: [
+    'JavaScript', 'TypeScript', 'Python', 'Java', 'C++', 'C#',
+    'Ruby', 'Go', 'Rust', 'PHP', 'Swift', 'Kotlin'
   ],
-  marketing: [
-    'Digital Marketing', 'Content Marketing', 'Email Marketing',
-    'Social Media Management', 'Analytics', 'Google Ads', 'Facebook Ads',
-    'Marketing Strategy', 'Market Research'
+
+  // Frontend technologies
+  frontend: [
+    'React', 'Next.js', 'Vue.js', 'Angular', 'Svelte',
+    'HTML', 'CSS', 'Tailwind CSS', 'SASS', 'Redux'
+  ],
+
+  // Backend technologies
+  backend: [
+    'Node.js', 'Express', 'Django', 'Flask', 'Laravel',
+    'Spring Boot', 'ASP.NET', 'Ruby on Rails', 'FastAPI'
+  ],
+
+  // Database technologies
+  database: [
+    'PostgreSQL', 'MySQL', 'MongoDB', 'Redis', 'SQLite',
+    'Firebase', 'Supabase', 'DynamoDB'
+  ],
+
+  // DevOps & Tools
+  devops: [
+    'Docker', 'Kubernetes', 'AWS', 'Azure', 'GCP',
+    'CI/CD', 'Git', 'GitHub Actions', 'Jenkins'
+  ],
+
+  // Design & Creative
+  design: [
+    'Figma', 'Adobe XD', 'Photoshop', 'Illustrator',
+    'UI/UX Design', 'Wireframing', 'Prototyping'
+  ],
+
+  // Business & Soft Skills
+  business: [
+    'Project Management', 'Agile', 'Scrum', 'Communication',
+    'Leadership', 'Problem Solving', 'Critical Thinking'
   ]
-} as const;
+};

@@ -402,6 +402,8 @@ export interface OnboardingData {
   };
   skills: string[];
   profile_data: Record<string, any>;
+  activity_data: Record<string, any>;
+  skills: string[];
 }
 
 export interface OnboardingStatusResponse {
@@ -446,6 +448,7 @@ export interface FormData {
   project_technologies: string[];
   skills: string[];
   profile_data: Record<string, any>;
+  activity_data: Record<string, any>;
 }
 
 export interface Step {
@@ -466,10 +469,25 @@ export interface OnboardingStep {
 export interface ProfileField {
   name: string;
   label: string;
-  type: 'text' | 'select' | 'number' | 'date' | 'textarea' | 'file';
-  required?: boolean;
-  options?: Array<{ label: string; value: string }>;
-  validation?: any;
+  type: 'text' | 'textarea' | 'select' | 'number' | 'url' | 'email';
+  required: boolean;
+  placeholder?: string;
+  options?: { value: string; label: string }[];
+  validation?: {
+    min?: number;
+    max?: number;
+    pattern?: string;
+  };
+  description?: string;
+}
+
+export interface ActivityField {
+  name: string;
+  label: string;
+  type: 'text' | 'textarea' | 'select' | 'array' | 'url';
+  required: boolean;
+  placeholder?: string;
+  description?: string;
 }
 
 export interface DashboardWidget {
@@ -489,21 +507,35 @@ export interface PortfolioSection {
 }
 
 export interface UserTypeConfig {
+  value: string;
   label: string;
   description: string;
-  icon: string;
   color: string;
-  onboardingSteps: OnboardingStep[];
+  icon: string;
+  
+  // Profile fields specific to this user type
   profileFields: ProfileField[];
-  dashboardWidgets: DashboardWidget[];
-  portfolioSections: PortfolioSection[];
-  permissions: string[];
-  skills: UserTypeSkills; 
+  
+  // Activity/Project configuration
+  activityConfig: {
+    title: string;
+    subtitle: string;
+    fields: ActivityField[];
+  };
+  
+  // Skills configuration
+  skills: SkillCategory;
+  
+  // Dashboard & portfolio settings
+  dashboardWidgets: string[];
+  portfolioSections: string[];
+  onboardingSteps: string[];
 }
 
 export interface SkillCategory {
-  name: string;
-  skills: string[];
+  primary: string[];    // Essential skills
+  secondary: string[];  // Advanced skills
+  suggested: string[];  // Recommended skills
 }
 
 export interface UserTypeSkills {

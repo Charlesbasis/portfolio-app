@@ -82,7 +82,7 @@ class OnboardingController extends Controller
     public function complete(CompleteOnboardingRequest $request): JsonResponse
     {
         $user = $request->user();
-        
+
         DB::transaction(function () use ($user, $request) {
             // Update user type if provided
             if ($request->has('user_type_id')) {
@@ -99,7 +99,7 @@ class OnboardingController extends Controller
             if ($userType) {
                 $validationRules = $this->getUserTypeValidationRules($userType);
                 $validator = Validator::make($request->all(), $validationRules);
-                
+
                 if ($validator->fails()) {
                     throw new \Illuminate\Validation\ValidationException($validator);
                 }
@@ -107,9 +107,65 @@ class OnboardingController extends Controller
 
             // Get allowed fields for this user type
             $allowedFields = $userType ? $this->getDefaultAllowedFields($userType->slug) : [
-                'full_name', 'username', 'job_title', 'company', 'location', 'tagline', 'bio'
+                'full_name',
+                'username',
+                'job_title',
+                'company',
+                'location',
+                'tagline',
+                'bio'
             ];
 
+            if ($request->has('activity_data')) {
+                $activityData = $request->input('activity_data');
+
+                switch ($userType->slug) {
+                    case 'student':
+                        if (!empty($activityData['title'])) {
+                            $user->projects()->create([
+                                'title' => $activityData['title'],
+                                'description' => $activityData['description'] ?? '',
+                                'project_type' => 'academic',
+                                'course' => $activityData['course'] ?? null,
+                            ]);
+                        }
+                        break;
+
+                    case 'teacher':
+                        if (!empty($activityData['title'])) {
+                            $user->teachingMaterials()->create([
+                                'title' => $activityData['title'],
+                                'description' => $activityData['description'] ?? '',
+                                'subject' => $activityData['subject'] ?? null,
+                                'grade_level' => $activityData['grade_level'] ?? null,
+                            ]);
+                        }
+                        break;
+
+                    case 'professional':
+                        if (!empty($activityData['title'])) {
+                            $user->portfolioProjects()->create([
+                                'title' => $activityData['title'],
+                                'description' => $activityData['description'] ?? '',
+                                'client' => $activityData['client'] ?? null,
+                                'service_url' => $activityData['service_url'] ?? null,
+                                'services' => $activityData['services'] ?? [],
+                            ]);
+                        }
+                        break;
+
+                    case 'freelancer':
+                        if (!empty($activityData['title'])) {
+                            $user->freelancerProjects()->create([
+                                'title' => $activityData['title'],
+                                'description' => $activityData['description'] ?? '',
+                                'client' => $activityData['client'] ?? null,
+                                'project_url' => $activityData['project_url'] ?? null,
+                                'technologies' => $activityData['technologies'] ?? [],
+                            ]);
+                        }
+                }
+            }
             // Prepare base profile data
             $profileData = [
                 'email' => $user->email,
@@ -160,7 +216,7 @@ class OnboardingController extends Controller
             // Handle user type specific additional data
             $this->handleTypeSpecificData($user, $request, $userType);
 
-            // $user->completedOnboarding();
+            $user->completedOnboarding();
         });
 
         $user->load(['profile', 'projects', 'skills', 'userType']);
