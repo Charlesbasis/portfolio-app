@@ -472,11 +472,13 @@ export interface ProfileField {
   type: 'text' | 'textarea' | 'select' | 'number' | 'url' | 'email';
   required: boolean;
   placeholder?: string;
-  options?: { value: string; label: string }[];
+  options?: Array<{ value: string; label: string }>;
   validation?: {
     min?: number;
     max?: number;
     pattern?: string;
+    email?: boolean;
+    url?: boolean;
   };
   description?: string;
 }
@@ -512,21 +514,13 @@ export interface UserTypeConfig {
   description: string;
   color: string;
   icon: string;
-  
-  // Profile fields specific to this user type
   profileFields: ProfileField[];
-  
-  // Activity/Project configuration
   activityConfig: {
     title: string;
     subtitle: string;
     fields: ActivityField[];
   };
-  
-  // Skills configuration
   skills: SkillCategory;
-  
-  // Dashboard & portfolio settings
   dashboardWidgets: string[];
   portfolioSections: string[];
   onboardingSteps: string[];
@@ -542,4 +536,25 @@ export interface UserTypeSkills {
   primary: string[];      
   secondary: string[];    
   suggested: string[];   
+}
+
+export interface UserTypeFromAPI {
+  id: number;
+  name: string;
+  slug: string;
+  description: string;
+  icon: string;
+  color: string;
+  is_active: boolean;
+  fields: Array<{
+    id: number;
+    field_name: string;
+    field_slug: string;
+    data_type: string;
+    validation_rules: string;
+    is_required: boolean;
+    placeholder?: string;
+    description?: string;
+    options?: Array<{ value: string; label: string }>;
+  }>;
 }

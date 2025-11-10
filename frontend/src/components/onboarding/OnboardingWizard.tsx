@@ -1,377 +1,67 @@
+'use client';
+
 import { useState, useEffect } from 'react';
-import { 
-  USER_TYPES, 
-  getUserTypeConfig, 
-  getUserTypeOptions,
-  SKILL_CATEGORIES 
-} from '@/src/config';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/src/hooks/useAuth';
+import { useCompleteOnboarding } from '@/src/hooks/useApi';
+import { useUserTypeConfig } from '@/src/hooks/useUserTypeConfig';
+import { DynamicField, TechnologySelector } from './DynamicFormFields';
+import api from '@/src/lib/api';
 import {
   ArrowLeft,
   ArrowRight,
-  Briefcase,
   Check,
-  Code,
   Loader2,
   Rocket,
   Sparkles,
   User,
   Users,
+  Briefcase,
+  Code,
   X,
-  GraduationCap,
-  BookOpen,
-  AlertCircle
+  AlertCircle,
 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 
-const DynamicField = ({ field, value, onChange, error }) => {
-  const baseClasses = `w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-    error ? 'border-red-500 bg-red-50' : 'border-gray-300'
-  }`;
-
-  const renderField = () => {
-    switch (field.type) {
-      case 'text':
-      case 'email':
-      case 'url':
-        return (
-          <input
-            type={field.type}
-            value={value || ''}
-            onChange={(e) => onChange(e.target.value)}
-            className={baseClasses}
-            placeholder={field.placeholder}
-          />
-        );
-
-      case 'number':
-        return (
-          <input
-            type="number"
-            value={value || ''}
-            onChange={(e) => onChange(e.target.value)}
-            className={baseClasses}
-            placeholder={field.placeholder}
-            min={field.validation?.min}
-            max={field.validation?.max}
-          />
-        );
-
-      case 'textarea':
-        return (
-          <textarea
-            value={value || ''}
-            onChange={(e) => onChange(e.target.value)}
-            className={baseClasses}
-            placeholder={field.placeholder}
-            rows={4}
-          />
-        );
-
-      case 'select':
-        return (
-          <select
-            value={value || ''}
-            onChange={(e) => onChange(e.target.value)}
-            className={baseClasses}
-          >
-            <option value="">Select {field.label}</option>
-            {field.options?.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        );
-
-      default:
-        return null;
-    }
+// helper to dynamically import icons
+const getIconComponent = (iconName: string) => {
+  const icons: Record<string, any> = {
+    GraduationCap: require('lucide-react').GraduationCap,
+    BookOpen: require('lucide-react').BookOpen,
+    Code: require('lucide-react').Code,
+    Briefcase: require('lucide-react').Briefcase,
+    Users: Users,
   };
-
-  return (
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">
-        {field.label} {field.required && <span className="text-red-500">*</span>}
-      </label>
-      {renderField()}
-      {field.description && (
-        <p className="text-xs text-gray-500 mt-1">{field.description}</p>
-      )}
-      {error && (
-        <div className="flex items-center mt-2 text-red-600 text-sm">
-          <AlertCircle size={14} className="mr-1" />
-          {error}
-        </div>
-      )}
-    </div>
-  );
+  return icons[iconName] || Users;
 };
 
-// Technology Selector Component
-const TechnologySelector = ({ label, description, options, selected, onChange }) => {
-  const toggleTechnology = (tech) => {
-    if (selected.includes(tech)) {
-      onChange(selected.filter(t => t !== tech));
-    } else {
-      onChange([...selected, tech]);
-    }
-  };
-
-  return (
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">
-        {label}
-      </label>
-      {description && (
-        <p className="text-sm text-gray-600 mb-3">{description}</p>
-      )}
-      <div className="flex flex-wrap gap-2">
-        {options.map((tech) => (
-          <button
-            key={tech}
-            type="button"
-            onClick={() => toggleTechnology(tech)}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-              selected.includes(tech)
-                ? 'bg-blue-600 text-white shadow-md'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            {tech}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-// Main Config
-const config = {
-  student: {
-    value: 'student',
-    label: 'Student',
-    description: 'Learning and building projects',
-    color: 'blue',
-    icon: GraduationCap,
-    profileFields: [
-      {
-        name: 'grade_level',
-        label: 'Grade Level',
-        type: 'select',
-        required: true,
-        options: [
-          { value: 'high-school', label: 'High School' },
-          { value: 'undergraduate', label: 'Undergraduate' },
-          { value: 'graduate', label: 'Graduate' }
-        ]
-      },
-      {
-        name: 'institution',
-        label: 'School/University',
-        type: 'text',
-        required: false,
-        placeholder: 'MIT'
-      }
-    ],
-    activityConfig: {
-      title: 'Share Your First Project',
-      subtitle: 'Show off what you\'ve built',
-      fields: [
-        {
-          name: 'title',
-          label: 'Project Title',
-          type: 'text',
-          required: false,
-          placeholder: 'My Awesome App'
-        },
-        {
-          name: 'description',
-          label: 'Description',
-          type: 'textarea',
-          required: false,
-          placeholder: 'Describe your project...'
-        }
-      ]
-    },
-    skills: {
-      primary: ['JavaScript', 'Python', 'React', 'HTML', 'CSS'],
-      secondary: ['Node.js', 'SQL', 'Git'],
-      suggested: ['Mathematics', 'Physics', 'Problem Solving']
-    }
-  },
-  teacher: {
-    value: 'teacher',
-    label: 'Teacher/Educator',
-    description: 'Sharing knowledge and teaching materials',
-    color: 'green',
-    icon: BookOpen,
-    profileFields: [
-      {
-        name: 'subject_specialty',
-        label: 'Subject Specialty',
-        type: 'text',
-        required: true,
-        placeholder: 'Mathematics'
-      },
-      {
-        name: 'teaching_level',
-        label: 'Teaching Level',
-        type: 'select',
-        required: true,
-        options: [
-          { value: 'elementary', label: 'Elementary' },
-          { value: 'middle', label: 'Middle School' },
-          { value: 'high', label: 'High School' },
-          { value: 'college', label: 'College' }
-        ]
-      }
-    ],
-    activityConfig: {
-      title: 'Share a Teaching Resource',
-      subtitle: 'Share your teaching materials',
-      fields: [
-        {
-          name: 'title',
-          label: 'Resource Title',
-          type: 'text',
-          required: false,
-          placeholder: 'Intro to Algebra Course'
-        },
-        {
-          name: 'description',
-          label: 'Description',
-          type: 'textarea',
-          required: false,
-          placeholder: 'Describe your teaching resource...'
-        }
-      ]
-    },
-    skills: {
-      primary: ['Lesson Planning', 'Google Classroom', 'Zoom', 'Mathematics'],
-      secondary: ['Canvas LMS', 'Kahoot', 'Content Creation'],
-      suggested: ['Communication', 'Leadership', 'Project Management']
-    }
-  },
-  professional: {
-    value: 'professional',
-    label: 'Professional Developer',
-    description: 'Building production applications',
-    color: 'purple',
-    icon: Code,
-    profileFields: [
-      {
-        name: 'current_role',
-        label: 'Current Role',
-        type: 'text',
-        required: true,
-        placeholder: 'Senior Developer'
-      },
-      {
-        name: 'years_experience',
-        label: 'Years of Experience',
-        type: 'number',
-        required: false,
-        placeholder: '5'
-      }
-    ],
-    activityConfig: {
-      title: 'Showcase Your Best Project',
-      subtitle: 'Share a professional project',
-      fields: [
-        {
-          name: 'title',
-          label: 'Project Name',
-          type: 'text',
-          required: false,
-          placeholder: 'Enterprise Platform'
-        },
-        {
-          name: 'description',
-          label: 'Description',
-          type: 'textarea',
-          required: false,
-          placeholder: 'Describe the project...'
-        }
-      ]
-    },
-    skills: {
-      primary: ['JavaScript', 'TypeScript', 'React', 'Node.js', 'Python'],
-      secondary: ['PostgreSQL', 'Docker', 'AWS', 'Redis'],
-      suggested: ['Agile', 'Leadership', 'Architecture']
-    }
-  },
-  freelancer: {
-    value: 'freelancer',
-    label: 'Freelancer',
-    description: 'Independent contractor',
-    color: 'orange',
-    icon: Briefcase,
-    profileFields: [
-      {
-        name: 'hourly_rate',
-        label: 'Hourly Rate (USD)',
-        type: 'number',
-        required: false,
-        placeholder: '75'
-      },
-      {
-        name: 'portfolio_url',
-        label: 'Portfolio Website',
-        type: 'url',
-        required: false,
-        placeholder: 'https://yoursite.com'
-      }
-    ],
-    activityConfig: {
-      title: 'Feature a Client Project',
-      subtitle: 'Showcase your client work',
-      fields: [
-        {
-          name: 'title',
-          label: 'Project Name',
-          type: 'text',
-          required: false,
-          placeholder: 'Client Website'
-        },
-        {
-          name: 'description',
-          label: 'Description',
-          type: 'textarea',
-          required: false,
-          placeholder: 'Describe the project...'
-        }
-      ]
-    },
-    skills: {
-      primary: ['React', 'Vue.js', 'Node.js', 'UI/UX Design'],
-      secondary: ['Figma', 'PostgreSQL', 'AWS'],
-      suggested: ['Client Communication', 'Project Management']
-    }
-  }
-};
-
-export default function DynamicOnboardingWizard() {
+export default function OnboardingWizard() {
   const router = useRouter();
+  const { user, checkAuth } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
-  const [userType, setUserType] = useState('');
+  const [selectedUserType, setSelectedUserType] = useState('');
+  
+  // Fetch user types from API
+  const { userTypes, currentConfig, isLoading: userTypesLoading } = useUserTypeConfig(selectedUserType);
+  
   const [formData, setFormData] = useState({
-    full_name: '',
+    full_name: user?.name || '',
     username: '',
     job_title: '',
     company: '',
     location: '',
     tagline: '',
     bio: '',
-    profile_data: {},
-    activity_data: {},
-    skills: []
+    profile_data: {} as Record<string, any>,
+    activity_data: {} as Record<string, any>,
+    skills: [] as string[],
   });
-  const [errors, setErrors] = useState({});
-  const [usernameStatus, setUsernameStatus] = useState('idle');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeSkillSection, setActiveSkillSection] = useState('primary');
+  
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
+  const [usernameCheckTimeout, setUsernameCheckTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [activeSkillSection, setActiveSkillSection] = useState<'primary' | 'secondary' | 'suggested'>('primary');
 
-  const userTypeConfig = userType ? config[userType] : null;
+  const completeOnboarding = useCompleteOnboarding();
 
   const steps = [
     { id: 0, title: 'Welcome', icon: Sparkles },
@@ -379,34 +69,76 @@ export default function DynamicOnboardingWizard() {
     { id: 2, title: 'Profile', icon: User },
     { id: 3, title: 'Activity', icon: Briefcase },
     { id: 4, title: 'Skills', icon: Code },
-    { id: 5, title: 'Launch', icon: Rocket }
+    { id: 5, title: 'Launch', icon: Rocket },
   ];
 
-  const updateFormData = (field, value) => {
+  // Username checking
+  const handleUsernameChange = (username: string) => {
+    updateFormData('username', username);
+    
+    if (usernameCheckTimeout) {
+      clearTimeout(usernameCheckTimeout);
+    }
+
+    if (username.length < 3) {
+      setUsernameStatus('idle');
+      return;
+    }
+
+    if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+      setUsernameStatus('idle');
+      setErrors(prev => ({ ...prev, username: 'Invalid characters in username' }));
+      return;
+    }
+
+    setUsernameStatus('checking');
+
+    const timeout = setTimeout(async () => {
+      try {
+        const response = await api.get(`/onboarding/check-username/${username}`);
+        setUsernameStatus(response.data.available ? 'available' : 'taken');
+      } catch (error) {
+        console.error('Username check failed:', error);
+        setUsernameStatus('idle');
+      }
+    }, 500);
+
+    setUsernameCheckTimeout(timeout);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (usernameCheckTimeout) {
+        clearTimeout(usernameCheckTimeout);
+      }
+    };
+  }, [usernameCheckTimeout]);
+
+  const updateFormData = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
     }
   };
 
-  const updateProfileData = (field, value) => {
+  const updateProfileData = (field: string, value: any) => {
     setFormData(prev => ({
       ...prev,
-      profile_data: { ...prev.profile_data, [field]: value }
+      profile_data: { ...prev.profile_data, [field]: value },
     }));
   };
 
-  const updateActivityData = (field, value) => {
+  const updateActivityData = (field: string, value: any) => {
     setFormData(prev => ({
       ...prev,
-      activity_data: { ...prev.activity_data, [field]: value }
+      activity_data: { ...prev.activity_data, [field]: value },
     }));
   };
 
-  const validateStep = () => {
-    const newErrors = {};
+  const validateStep = (): boolean => {
+    const newErrors: Record<string, string> = {};
 
-    if (currentStep === 1 && !userType) {
+    if (currentStep === 1 && !selectedUserType) {
       newErrors.user_type = 'Please select your role';
     }
 
@@ -416,14 +148,18 @@ export default function DynamicOnboardingWizard() {
       }
       if (!formData.username.trim()) {
         newErrors.username = 'Username is required';
+      } else if (usernameStatus === 'taken') {
+        newErrors.username = 'Username is already taken';
+      } else if (usernameStatus === 'checking') {
+        newErrors.username = 'Please wait while we check username availability';
       }
       if (!formData.job_title.trim()) {
         newErrors.job_title = 'Job title is required';
       }
 
       // Validate user type specific required fields
-      if (userTypeConfig) {
-        userTypeConfig.profileFields.forEach(field => {
+      if (currentConfig) {
+        currentConfig.profileFields.forEach(field => {
           if (field.required && !formData.profile_data[field.name]) {
             newErrors[`profile_${field.name}`] = `${field.label} is required`;
           }
@@ -458,22 +194,34 @@ export default function DynamicOnboardingWizard() {
   const handleComplete = async () => {
     if (!validateStep()) return;
 
-    setIsSubmitting(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      // console.log('Onboarding complete!', { userType, formData });
-      // alert('Onboarding complete! 🎉');
+      // Find the user type ID
+      const userType = userTypes.find(ut => ut.value === selectedUserType);
+      
+      await completeOnboarding.mutateAsync({
+        user_type_id: userType?.id,
+        user_type: selectedUserType,
+        full_name: formData.full_name,
+        username: formData.username,
+        job_title: formData.job_title,
+        company: formData.company || undefined,
+        location: formData.location || undefined,
+        tagline: formData.tagline || undefined,
+        bio: formData.bio || undefined,
+        profile_data: formData.profile_data,
+        activity_data: formData.activity_data,
+        skills: formData.skills,
+      });
+
+      await checkAuth();
       router.push(`/portfolio/${formData.username}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Onboarding failed:', error);
-      alert('Failed to complete onboarding');
-    } finally {
-      setIsSubmitting(false);
+      alert(error.response?.data?.message || 'Failed to complete onboarding');
     }
   };
 
-  const toggleSkill = (skill) => {
+  const toggleSkill = (skill: string) => {
     updateFormData(
       'skills',
       formData.skills.includes(skill)
@@ -482,7 +230,17 @@ export default function DynamicOnboardingWizard() {
     );
   };
 
-  const IconComponent = userTypeConfig?.icon || Users;
+  // Show loading while fetching user types
+  if (userTypesLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <div className="text-center">
+          <Loader2 className="animate-spin text-blue-600 mx-auto mb-4" size={48} />
+          <p className="text-gray-600">Loading onboarding...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
@@ -536,12 +294,12 @@ export default function DynamicOnboardingWizard() {
                 Welcome! 🎉
               </h1>
               <p className="text-xl text-gray-600 mb-8">
-                Let's set up your profile in just a few steps
+                Let's set up your professional portfolio in just a few steps
               </p>
             </div>
           )}
 
-          {/* Step 1: User Type Selection */}
+          {/* Step 1: User Type Selection (Dynamic from API) */}
           {currentStep === 1 && (
             <div>
               <h2 className="text-2xl font-bold text-gray-900 mb-2">
@@ -549,31 +307,31 @@ export default function DynamicOnboardingWizard() {
               </h2>
               <p className="text-gray-600 mb-6">Choose your role</p>
 
-              <div className="grid grid-cols-2 gap-4">
-                {Object.values(config).map((type) => {
-                  const Icon = type.icon;
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {userTypes.map((type) => {
+                  const IconComponent = getIconComponent(type.icon);
                   return (
                     <button
                       key={type.value}
                       onClick={() => {
-                        setUserType(type.value);
+                        setSelectedUserType(type.value);
                         setErrors({});
                       }}
                       className={`p-6 border-2 rounded-xl text-left transition-all ${
-                        userType === type.value
+                        selectedUserType === type.value
                           ? `border-${type.color}-500 bg-${type.color}-50`
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
                       <div className="flex items-start space-x-4">
                         <div className={`w-12 h-12 rounded-lg bg-${type.color}-100 flex items-center justify-center`}>
-                          <Icon className={`w-6 h-6 text-${type.color}-600`} />
+                          <IconComponent className={`w-6 h-6 text-${type.color}-600`} />
                         </div>
-                        <div>
+                        <div className="flex-1">
                           <h3 className="font-semibold text-lg">{type.label}</h3>
                           <p className="text-sm text-gray-600 mt-1">{type.description}</p>
                         </div>
-                        {userType === type.value && (
+                        {selectedUserType === type.value && (
                           <Check className="text-green-500" size={20} />
                         )}
                       </div>
@@ -581,6 +339,7 @@ export default function DynamicOnboardingWizard() {
                   );
                 })}
               </div>
+              
               {errors.user_type && (
                 <p className="text-red-500 text-sm mt-4 text-center">{errors.user_type}</p>
               )}
@@ -588,38 +347,80 @@ export default function DynamicOnboardingWizard() {
           )}
 
           {/* Step 2: Profile Basics (Dynamic) */}
-          {currentStep === 2 && userTypeConfig && (
+          {currentStep === 2 && currentConfig && (
             <div>
               <h2 className="text-2xl font-bold text-gray-900 mb-2">
                 Tell us about yourself
               </h2>
-              <p className="text-gray-600 mb-6">as a {userTypeConfig.label}</p>
+              <p className="text-gray-600 mb-6">as a {currentConfig.label}</p>
 
               <div className="space-y-4">
                 {/* Standard fields */}
                 <DynamicField
-                  field={{ name: 'full_name', label: 'Full Name', type: 'text', required: true, placeholder: 'John Doe' }}
+                  field={{ 
+                    name: 'full_name', 
+                    label: 'Full Name', 
+                    type: 'text', 
+                    required: true, 
+                    placeholder: 'John Doe' 
+                  }}
                   value={formData.full_name}
                   onChange={(v) => updateFormData('full_name', v)}
                   error={errors.full_name}
                 />
 
-                <DynamicField
-                  field={{ name: 'username', label: 'Username', type: 'text', required: true, placeholder: 'johndoe' }}
-                  value={formData.username}
-                  onChange={(v) => updateFormData('username', v)}
-                  error={errors.username}
-                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Username <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={formData.username}
+                      onChange={(e) => handleUsernameChange(e.target.value)}
+                      className={`w-full px-4 py-3 pr-10 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                        errors.username ? 'border-red-500' : 
+                        usernameStatus === 'available' ? 'border-green-500' :
+                        usernameStatus === 'taken' ? 'border-red-500' :
+                        'border-gray-300'
+                      }`}
+                      placeholder="johndoe"
+                    />
+                    <div className="absolute right-3 top-3">
+                      {usernameStatus === 'checking' && (
+                        <Loader2 className="animate-spin text-gray-400" size={20} />
+                      )}
+                      {usernameStatus === 'available' && (
+                        <Check className="text-green-500" size={20} />
+                      )}
+                      {usernameStatus === 'taken' && (
+                        <X className="text-red-500" size={20} />
+                      )}
+                    </div>
+                  </div>
+                  {errors.username && (
+                    <p className="text-red-500 text-sm mt-1">{errors.username}</p>
+                  )}
+                  {usernameStatus === 'available' && (
+                    <p className="text-green-600 text-sm mt-1">Username is available!</p>
+                  )}
+                </div>
 
                 <DynamicField
-                  field={{ name: 'job_title', label: 'Job Title', type: 'text', required: true, placeholder: 'Developer' }}
+                  field={{ 
+                    name: 'job_title', 
+                    label: 'Job Title', 
+                    type: 'text', 
+                    required: true, 
+                    placeholder: 'Developer' 
+                  }}
                   value={formData.job_title}
                   onChange={(v) => updateFormData('job_title', v)}
                   error={errors.job_title}
                 />
 
-                {/* Dynamic user type fields */}
-                {userTypeConfig.profileFields.map(field => (
+                {/* Dynamic user type fields from API */}
+                {currentConfig.profileFields.map(field => (
                   <DynamicField
                     key={field.name}
                     field={field}
@@ -630,7 +431,13 @@ export default function DynamicOnboardingWizard() {
                 ))}
 
                 <DynamicField
-                  field={{ name: 'bio', label: 'Bio', type: 'textarea', required: false, placeholder: 'Tell us about yourself...' }}
+                  field={{ 
+                    name: 'bio', 
+                    label: 'Bio', 
+                    type: 'textarea', 
+                    required: false, 
+                    placeholder: 'Tell us about yourself...' 
+                  }}
                   value={formData.bio}
                   onChange={(v) => updateFormData('bio', v)}
                 />
@@ -639,17 +446,17 @@ export default function DynamicOnboardingWizard() {
           )}
 
           {/* Step 3: Activity (Dynamic) */}
-          {currentStep === 3 && userTypeConfig && (
+          {currentStep === 3 && currentConfig && (
             <div>
               <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                {userTypeConfig.activityConfig.title}
+                {currentConfig.activityConfig.title}
               </h2>
               <p className="text-gray-600 mb-6">
-                {userTypeConfig.activityConfig.subtitle}
+                {currentConfig.activityConfig.subtitle}
               </p>
 
               <div className="space-y-4">
-                {userTypeConfig.activityConfig.fields.map(field => (
+                {currentConfig.activityConfig.fields.map(field => (
                   <DynamicField
                     key={field.name}
                     field={field}
@@ -662,18 +469,18 @@ export default function DynamicOnboardingWizard() {
           )}
 
           {/* Step 4: Skills (Dynamic) */}
-          {currentStep === 4 && userTypeConfig && (
+          {currentStep === 4 && currentConfig && (
             <div>
               <h2 className="text-2xl font-bold text-gray-900 mb-2">
                 What are your skills?
               </h2>
               <p className="text-gray-600 mb-6">
-                Select skills for a {userTypeConfig.label.toLowerCase()}
+                Select skills for a {currentConfig.label.toLowerCase()}
               </p>
 
               {/* Skill Section Tabs */}
               <div className="flex space-x-2 mb-4 border-b">
-                {['primary', 'secondary', 'suggested'].map(section => (
+                {(['primary', 'secondary', 'suggested'] as const).map(section => (
                   <button
                     key={section}
                     onClick={() => setActiveSkillSection(section)}
@@ -685,8 +492,8 @@ export default function DynamicOnboardingWizard() {
                   >
                     {section.charAt(0).toUpperCase() + section.slice(1)}
                     <span className="ml-2 text-xs">
-                      ({userTypeConfig.skills[section].filter(s => formData.skills.includes(s)).length}/
-                      {userTypeConfig.skills[section].length})
+                      ({currentConfig.skills[section].filter(s => formData.skills.includes(s)).length}/
+                      {currentConfig.skills[section].length})
                     </span>
                   </button>
                 ))}
@@ -694,7 +501,7 @@ export default function DynamicOnboardingWizard() {
 
               {/* Active Section Skills */}
               <div className="flex flex-wrap gap-2 mb-4">
-                {userTypeConfig.skills[activeSkillSection].map(skill => (
+                {currentConfig.skills[activeSkillSection].map(skill => (
                   <button
                     key={skill}
                     onClick={() => toggleSkill(skill)}
@@ -723,20 +530,20 @@ export default function DynamicOnboardingWizard() {
           )}
 
           {/* Step 5: Launch */}
-          {currentStep === 5 && (
+          {currentStep === 5 && currentConfig && (
             <div className="text-center py-8">
               <Rocket className="w-20 h-20 mx-auto text-blue-600 mb-6" />
               <h1 className="text-4xl font-bold text-gray-900 mb-4">
                 You're All Set! 🚀
               </h1>
               <p className="text-xl text-gray-600 mb-8">
-                Your {userTypeConfig?.label.toLowerCase()} portfolio is ready
+                Your {currentConfig.label.toLowerCase()} portfolio is ready
               </p>
 
               <div className="bg-gray-50 rounded-lg p-6 max-w-2xl mx-auto text-left space-y-3">
                 <div className="flex items-center">
                   <Check className="text-green-500 mr-3" size={20} />
-                  <span>Role: <strong>{userTypeConfig?.label}</strong></span>
+                  <span>Role: <strong>{currentConfig.label}</strong></span>
                 </div>
                 <div className="flex items-center">
                   <Check className="text-green-500 mr-3" size={20} />
@@ -777,7 +584,8 @@ export default function DynamicOnboardingWizard() {
               {currentStep < steps.length - 1 ? (
                 <button
                   onClick={handleNext}
-                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
+                  disabled={currentStep === 2 && usernameStatus === 'checking'}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center disabled:opacity-50"
                 >
                   {currentStep === 0 ? "Let's Start" : 'Continue'}
                   <ArrowRight size={20} className="ml-2" />
@@ -785,10 +593,10 @@ export default function DynamicOnboardingWizard() {
               ) : (
                 <button
                   onClick={handleComplete}
-                  disabled={isSubmitting}
+                  disabled={completeOnboarding.isPending}
                   className="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center disabled:opacity-50"
                 >
-                  {isSubmitting ? (
+                  {completeOnboarding.isPending ? (
                     <>
                       <Loader2 className="animate-spin mr-2" size={20} />
                       Processing...

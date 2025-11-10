@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, UseQueryOptions } from '@tanstack/react-query';
-import { 
+import api, { 
   projectsService, 
   skillsService, 
   testimonialsService, 
@@ -8,7 +8,7 @@ import {
   experienceService,
   onboardingService,
 } from '../services/api.service';
-import { Project, Skill, Testimonial, Service, ContactFormData, OnboardingData } from '../types';
+import { Project, Skill, Testimonial, Service, ContactFormData, OnboardingData, UserTypeFromAPI } from '../types';
 
 // ============= Query Keys =============
 export const queryKeys = {
@@ -304,3 +304,14 @@ export function useCompleteOnboarding() {
     },
   });
 }
+
+export const useUserTypes = () => {
+  return useQuery({
+    queryKey: ['user-types'],
+    queryFn: async () => {
+      const response = await api.get('/user-types');
+      return response.data.data as UserTypeFromAPI[];
+    },
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  });
+};

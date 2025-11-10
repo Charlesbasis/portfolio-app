@@ -122,56 +122,62 @@ class OnboardingController extends Controller
                 'bio'
             ];
 
-            if ($request->has('activity_data')) {
+            // Handle activity_data only if userType exists and has a slug
+            if ($request->has('activity_data') && $userType) {
                 $activityData = $request->input('activity_data');
 
-                switch ($userType->slug) {
-                    case 'student':
-                        if (!empty($activityData['title'])) {
-                            $user->projects()->create([
-                                'title' => $activityData['title'],
-                                'description' => $activityData['description'] ?? '',
-                                'project_type' => 'academic',
-                                'course' => $activityData['course'] ?? null,
-                            ]);
-                        }
-                        break;
+                // Add null check for userType->slug before the switch
+                if ($userType->slug) {
+                    switch ($userType->slug) {
+                        case 'student':
+                            if (!empty($activityData['title'])) {
+                                $user->projects()->create([
+                                    'title' => $activityData['title'],
+                                    'description' => $activityData['description'] ?? '',
+                                    'project_type' => 'academic',
+                                    'course' => $activityData['course'] ?? null,
+                                ]);
+                            }
+                            break;
 
-                    case 'teacher':
-                        if (!empty($activityData['title'])) {
-                            $user->teachingMaterials()->create([
-                                'title' => $activityData['title'],
-                                'description' => $activityData['description'] ?? '',
-                                'subject' => $activityData['subject'] ?? null,
-                                'grade_level' => $activityData['grade_level'] ?? null,
-                            ]);
-                        }
-                        break;
+                        case 'teacher':
+                            if (!empty($activityData['title'])) {
+                                $user->teachingMaterials()->create([
+                                    'title' => $activityData['title'],
+                                    'description' => $activityData['description'] ?? '',
+                                    'subject' => $activityData['subject'] ?? null,
+                                    'grade_level' => $activityData['grade_level'] ?? null,
+                                ]);
+                            }
+                            break;
 
-                    case 'professional':
-                        if (!empty($activityData['title'])) {
-                            $user->portfolioProjects()->create([
-                                'title' => $activityData['title'],
-                                'description' => $activityData['description'] ?? '',
-                                'client' => $activityData['client'] ?? null,
-                                'service_url' => $activityData['service_url'] ?? null,
-                                'services' => $activityData['services'] ?? [],
-                            ]);
-                        }
-                        break;
+                        case 'professional':
+                            if (!empty($activityData['title'])) {
+                                $user->portfolioProjects()->create([
+                                    'title' => $activityData['title'],
+                                    'description' => $activityData['description'] ?? '',
+                                    'client' => $activityData['client'] ?? null,
+                                    'service_url' => $activityData['service_url'] ?? null,
+                                    'services' => $activityData['services'] ?? [],
+                                ]);
+                            }
+                            break;
 
-                    case 'freelancer':
-                        if (!empty($activityData['title'])) {
-                            $user->freelancerProjects()->create([
-                                'title' => $activityData['title'],
-                                'description' => $activityData['description'] ?? '',
-                                'client' => $activityData['client'] ?? null,
-                                'project_url' => $activityData['project_url'] ?? null,
-                                'technologies' => $activityData['technologies'] ?? [],
-                            ]);
-                        }
+                        case 'freelancer':
+                            if (!empty($activityData['title'])) {
+                                $user->freelancerProjects()->create([
+                                    'title' => $activityData['title'],
+                                    'description' => $activityData['description'] ?? '',
+                                    'client' => $activityData['client'] ?? null,
+                                    'project_url' => $activityData['project_url'] ?? null,
+                                    'technologies' => $activityData['technologies'] ?? [],
+                                ]);
+                            }
+                            break;
+                    }
                 }
             }
+
             // Prepare base profile data
             $profileData = [
                 'email' => $user->email,
@@ -216,11 +222,11 @@ class OnboardingController extends Controller
                 $profileData
             );
 
-            // Handle type-specific entity creation
-            $this->handleTypeSpecificEntities($user, $request, $userType);
-
-            // Handle user type specific additional data
-            $this->handleTypeSpecificData($user, $request, $userType);
+            // Handle type-specific entity creation (with null check)
+            if ($userType) {
+                $this->handleTypeSpecificEntities($user, $request, $userType);
+                $this->handleTypeSpecificData($user, $request, $userType);
+            }
 
             $user->completedOnboarding();
         });

@@ -133,4 +133,35 @@ class User extends Authenticatable
     {
         return $this->userType?->slug === 'freelancer';
     }
+
+    /**
+     * Mark the user as having completed onboarding
+     */
+    public function completedOnboarding()
+    {
+        $this->update([
+            'onboarding_completed_at' => now(),
+            'onboarding_completed' => true,
+        ]);
+
+        return $this;
+    }
+
+    /**
+     * Check if user has completed onboarding
+     */
+    public function hasCompletedOnboarding()
+    {
+        return !is_null($this->onboarding_completed_at) || $this->onboarding_completed;
+    }
+
+    /**
+     * Scope for users who have completed onboarding
+     */
+    public function scopeHasCompletedOnboarding($query)
+    {
+        return $query->where('onboarding_completed', true)
+            ->orWhereNotNull('onboarding_completed_at');
+    }
+
 }

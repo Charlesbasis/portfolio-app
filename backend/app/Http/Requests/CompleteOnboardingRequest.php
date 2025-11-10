@@ -33,18 +33,18 @@ class CompleteOnboardingRequest extends FormRequest
                 'max:255',
                 Rule::unique('user_profiles', 'username')->ignore($user?->id, 'user_id')
             ],
-            'email' => 'sometimes|email|max:255', // Add email validation
-            'job_title' => 'required|string|max:255',
-            'company' => 'nullable|string|max:255',
+            'email' => 'sometimes|email', // Add email validation
+            'job_title' => 'required|string',
+            'company' => 'nullable|string',
             'location' => 'nullable|string|max:255',
             'tagline' => 'nullable|string|max:255',
             'bio' => 'nullable|string',
-            'project.title' => 'required|string|max:255',
-            'project.description' => 'required|string',
+            'project.title' => 'string',
+            'project.description' => 'string|max:1000',
             'project.technologies' => 'nullable|array',
             'project.technologies.*' => 'string|max:255',
-            'project.github_url' => 'nullable|url|max:255',
-            'project.live_url' => 'nullable|url|max:255',
+            'project.github_url' => 'nullable|url',
+            'project.live_url' => 'nullable|url',
             'skills' => 'nullable|array',
             'skills.*' => 'string|max:255',
         ];
