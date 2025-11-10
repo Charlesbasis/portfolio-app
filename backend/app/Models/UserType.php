@@ -13,13 +13,17 @@ class UserType extends Model
         'name',
         'slug',
         'description',
+        'icon',
+        'color',
         'allowed_fields',
         'is_active',
+        'display_order',
     ];
 
     protected $casts = [
         'allowed_fields' => 'array',
         'is_active' => 'boolean',
+        'display_order' => 'integer',
     ];
 
     /**
@@ -35,7 +39,7 @@ class UserType extends Model
      */
     public function fields()
     {
-        return $this->hasMany(UserTypeField::class);
+        return $this->hasMany(UserTypeField::class)->orderBy('display_order');
     }
 
     /**
@@ -44,5 +48,13 @@ class UserType extends Model
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
+    }
+
+    /**
+     * Scope to order by display order.
+     */
+    public function scopeOrdered($query)
+    {
+        return $query->orderBy('display_order', 'asc');
     }
 }

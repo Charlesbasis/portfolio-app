@@ -12,9 +12,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('institution');
-            $table->string('degree');
-            $table->string('field_of_study');
-            $table->date('start_date');
+            $table->string('degree')->nullable();
+            $table->string('field_of_study')->nullable();
+            $table->date('start_date')->nullable();
             $table->date('end_date')->nullable();
             $table->boolean('is_current')->default(false);
             $table->text('description')->nullable();

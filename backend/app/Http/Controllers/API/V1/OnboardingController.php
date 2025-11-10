@@ -23,29 +23,35 @@ class OnboardingController extends Controller
     public function getUserTypes(): JsonResponse
     {
         try {
-            $userTypes = UserType::with(['fields' => function($query) {
-                $query->where('is_active', true);
+            $userTypes = UserType::with(['fields' => function ($query) {
+                $query->where('is_active', true)->orderBy('display_order');
             }])
-            ->where('is_active', true)
-            ->get()
-            ->map(function ($type) {
-                return [
-                    'id' => $type->id,
-                    'name' => $type->name,
-                    'slug' => $type->slug,
-                    'description' => $type->description,
-                    'allowed_fields' => $this->getDefaultAllowedFields($type->slug),
-                    'fields' => $type->fields->map(function($field) {
-                        return [
-                            'field_name' => $field->field_name,
-                            'field_slug' => $field->field_slug,
-                            'data_type' => $field->data_type,
-                            'validation_rules' => $field->validation_rules,
-                            'is_required' => (bool)$field->is_required,
-                        ];
-                    })
-                ];
-            });
+                ->where('is_active', true)
+                ->orderBy('display_order')
+                ->get()
+                ->map(function ($type) {
+                    return [
+                        'id' => $type->id,
+                        'name' => $type->name,
+                        'slug' => $type->slug,
+                        'description' => $type->description,
+                        'icon' => $type->icon ?? 'Users',
+                        'color' => $type->color ?? 'blue',
+                        'fields' => $type->fields->map(function ($field) {
+                            return [
+                                'id' => $field->id,
+                                'field_name' => $field->field_name,
+                                'field_slug' => $field->field_slug,
+                                'data_type' => $field->data_type,
+                                'validation_rules' => $field->validation_rules,
+                                'is_required' => (bool)$field->is_required,
+                                'placeholder' => $field->placeholder ?? '',
+                                'options' => $field->options ?? null,
+                                'description' => $field->description ?? '',
+                            ];
+                        })
+                    ];
+                });
 
             return response()->json([
                 'success' => true,
@@ -53,7 +59,7 @@ class OnboardingController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to fetch user types: ' . $e->getMessage());
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch user types'

@@ -13,8 +13,8 @@ use App\Http\Controllers\API\V1\ProfileController;
 use App\Http\Controllers\API\V1\ServiceController;
 use App\Http\Controllers\API\V1\SettingsController;
 use App\Http\Controllers\API\V1\TestimonialController;
+use App\Http\Controllers\API\V1\UserTypeController as V1UserTypeController;
 use App\Http\Middleware\EnsureOnboardingCompleted;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -48,6 +48,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/education/role/{role}', [EducationController::class, 'userEducationByRole']); // New route
         Route::get('/certifications', [CertificationController::class, 'userCertifications']);
         Route::get('/user-types', [ProfileController::class, 'getUserTypes']);
+        Route::get('/user-types', [V1UserTypeController::class . 'index']);
     });
     
     // Auth routes

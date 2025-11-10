@@ -9,6 +9,7 @@ use App\Models\UserProfile;
 use App\Models\UserType;
 use App\Models\UserTypeField;
 use App\Models\UserFieldValue;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -271,41 +272,43 @@ class ProfileController extends Controller
     /**
      * Get public stats
      */
-    public function publicStats($username)
+    public function publicStats(string $username): JsonResponse
     {
         try {
-            $user = User::with(['profile', 'userType'])
-                ->whereHas('profile', function ($query) use ($username) {
-                    $query->where('username', $username);
-                })
-                ->firstOrFail();
+            // Find user by profile username instead of user table
+            $profile = UserProfile::where('username', $username)->first();
 
-            $profile = $user->profile;
+            if (!$profile) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Profile not found'
+                ], 404);
+            }
+
+            $user = $profile->user;
+
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not found'
+                ], 404);
+            }
 
             $stats = [
-                'total_projects' => $user->projects()->where('status', 'published')->count(),
+                'total_projects' => $user->projects()->count(),
                 'total_skills' => $user->skills()->count(),
                 'years_experience' => $profile->years_experience ?? 0,
-                'total_experiences' => $user->experiences()->count(),
+                'happy_clients' => $user->testimonials()->count(),
                 'profile_views' => $profile->profile_views ?? 0,
-                'user_type' => $user->userType->name ?? 'Not set',
-                'headline' => $profile->headline,
-                'current_status' => $profile->current_status,
-                'institution' => $profile->institution,
-                'field_of_interest' => $profile->field_of_interest,
             ];
 
-            return response()->json([
-                'success' => true,
-                'data' => $stats,
-            ]);
-
+            return response()->json($stats);
         } catch (\Exception $e) {
             Log::error('Error fetching public stats: ' . $e->getMessage());
-            
+
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to fetch profile stats',
+                'message' => 'Failed to fetch stats'
             ], 500);
         }
     }

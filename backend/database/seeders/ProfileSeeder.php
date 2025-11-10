@@ -56,7 +56,7 @@ class ProfileSeeder extends Seeder
                 'email' => $user->email,
                 
                 // Existing fields (now nullable)
-                'job_title' => 'Senior Full Stack Developer',
+                // 'job_title' => 'Senior Full Stack Developer',
                 'company' => 'Tech Corp',
                 'years_experience' => 5,
                 
@@ -126,8 +126,8 @@ class ProfileSeeder extends Seeder
         Education::create([
             'user_id' => $user->id,
             'institution' => 'University of California',
-            'degree' => 'Bachelor of Science',
-            'field_of_study' => 'Computer Science',
+            'title' => 'Bachelor of Science',
+            'field_or_department' => 'Computer Science',
             'start_date' => '2015-09-01',
             'end_date' => '2019-05-31',
             'is_current' => false,
