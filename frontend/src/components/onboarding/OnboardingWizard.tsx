@@ -1,26 +1,25 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/src/hooks/useAuth';
 import { useCompleteOnboarding } from '@/src/hooks/useApi';
+import { useAuth } from '@/src/hooks/useAuth';
 import { useUserTypeConfig } from '@/src/hooks/useUserTypeConfig';
-import { DynamicField, TechnologySelector } from './DynamicFormFields';
 import api from '@/src/lib/api';
 import {
   ArrowLeft,
   ArrowRight,
+  Briefcase,
   Check,
+  Code,
   Loader2,
   Rocket,
   Sparkles,
   User,
   Users,
-  Briefcase,
-  Code,
-  X,
-  AlertCircle,
+  X
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { DynamicField } from './DynamicFormFields';
 
 // helper to dynamically import icons
 const getIconComponent = (iconName: string) => {
@@ -75,6 +74,11 @@ export default function OnboardingWizard() {
   // Username checking
   const handleUsernameChange = (username: string) => {
     updateFormData('username', username);
+    
+    // Clear existing username errors when user types
+    if (errors.username) {
+      setErrors(prev => ({ ...prev, username: undefined }));
+    }
     
     if (usernameCheckTimeout) {
       clearTimeout(usernameCheckTimeout);
@@ -146,13 +150,24 @@ export default function OnboardingWizard() {
       if (!formData.full_name.trim()) {
         newErrors.full_name = 'Full name is required';
       }
+
+      // FIXED: Username validation
       if (!formData.username.trim()) {
         newErrors.username = 'Username is required';
+      } else if (formData.username.length < 3) {
+        newErrors.username = 'Username must be at least 3 characters';
+      } else if (!/^[a-zA-Z0-9_-]+$/.test(formData.username)) {
+        newErrors.username = 'Only letters, numbers, hyphens and underscores allowed';
       } else if (usernameStatus === 'taken') {
         newErrors.username = 'Username is already taken';
       } else if (usernameStatus === 'checking') {
         newErrors.username = 'Please wait while we check username availability';
+      } else if (usernameStatus === 'idle') {
+        // THIS IS THE KEY FIX: If username is valid but hasn't been checked yet
+        newErrors.username = 'Please wait for username validation to complete';
       }
+      // Only allow progression if usernameStatus is 'available'
+
       if (!formData.job_title.trim()) {
         newErrors.job_title = 'Job title is required';
       }
@@ -176,6 +191,17 @@ export default function OnboardingWizard() {
   };
 
   const handleNext = () => {
+    // BLOCK navigation if we're on step 2 and username isn't confirmed available
+    if (currentStep === 2) {
+      if (usernameStatus !== 'available' && formData.username.trim().length >= 3) {
+        setErrors(prev => ({
+          ...prev,
+          username: 'Username must be available to continue'
+        }));
+        return; // STOP here
+      }
+    }
+
     if (validateStep() && currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     }
@@ -245,6 +271,14 @@ export default function OnboardingWizard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
       <div className="max-w-4xl mx-auto">
+        
+        {/* Add this debug section temporarily */}
+        {/* <div className="fixed top-4 right-4 bg-red-100 p-4 rounded text-xs">
+          <div>Step: {currentStep}</div>
+          <div>Username Status: {usernameStatus}</div>
+          <div>Errors: {Object.keys(errors).join(', ')}</div>
+        </div> */}
+        
         {/* Progress Bar */}
         <div className="mb-8">
           <div className="flex justify-between items-center">
