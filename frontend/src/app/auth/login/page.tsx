@@ -43,25 +43,25 @@ export default function LoginPage() {
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (isAuthenticated && user && !isRedirecting) {
-      console.log('🔄 User is authenticated, redirecting...', { 
-        isAuthenticated, 
-        user: user.name,
-        onboarding: user.onboarding_completed 
+    if (isAuthenticated && user) {
+      console.log('🔄 from login page Auth redirect check:', {
+        onboarding: user.onboarding_completed,
+        isRedirecting
       });
-      
-      setIsRedirecting(true);
-      
-      const returnUrl = searchParams.get('returnUrl');
-      if (returnUrl) {
-        router.push(decodeURIComponent(returnUrl));
-      } else if (!user.onboarding_completed) {
-        router.push('/onboarding');
-      } else {
-        router.push('/dashboard');
-      }
+
+      // Small delay to ensure state is consistent
+      const redirectTimer = setTimeout(() => {
+        const returnUrl = searchParams.get('returnUrl');
+        const destination = returnUrl ? decodeURIComponent(returnUrl) :
+          (user.onboarding_completed ? '/dashboard' : '/onboarding');
+
+        console.log('🎯 Final destination:', destination);
+        router.push(destination);
+      }, 100);
+
+      return () => clearTimeout(redirectTimer);
     }
-  }, [isAuthenticated, user, router, searchParams, isRedirecting]);
+  }, [isAuthenticated, user, router, searchParams]);
 
   // Clear error when component unmounts
   useEffect(() => {

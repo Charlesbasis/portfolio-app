@@ -12,7 +12,8 @@ class EnsureOnboardingCompleted
     {
         $user = $request->user();
 
-        if ($user && !$user->onboarding_completed_at) {
+        if ($user && !$user->onboarding_completed) {
+        // if ($user && !$user->onboarding_completed_at) {
             return response()->json([
                 'success' => false,
                 'message' => 'Please complete onboarding first',
