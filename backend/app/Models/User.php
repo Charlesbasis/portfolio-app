@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Log;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
@@ -136,15 +137,45 @@ class User extends Authenticatable
 
     /**
      * Mark the user as having completed onboarding
-     */
+     */    
     public function completedOnboarding()
     {
-        $this->update([
-            'onboarding_completed_at' => now(),
-            'onboarding_completed' => true,
+        Log::info('Attempting to complete onboarding for user', [
+            'user_id' => $this->id,
+            'current_onboarding_completed' => $this->onboarding_completed,
+            'current_onboarding_completed_at' => $this->onboarding_completed_at
         ]);
 
-        return $this;
+        try {
+            $result = $this->update([
+                'onboarding_completed' => true,
+                'onboarding_completed_at' => now(),
+            ]);
+
+            Log::info('Onboarding completion update result', [
+                'user_id' => $this->id,
+                'update_result' => $result,
+                'updated_onboarding_completed' => $this->onboarding_completed,
+                'updated_onboarding_completed_at' => $this->onboarding_completed_at
+            ]);
+
+            // Refresh the model to get updated attributes
+            $this->refresh();
+
+            Log::info('After refresh', [
+                'user_id' => $this->id,
+                'onboarding_completed' => $this->onboarding_completed,
+                'onboarding_completed_at' => $this->onboarding_completed_at
+            ]);
+
+            return $this;
+        } catch (\Exception $e) {
+            Log::error('Failed to complete onboarding', [
+                'user_id' => $this->id,
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
+        }
     }
 
     /**

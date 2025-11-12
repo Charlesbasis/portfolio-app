@@ -56,6 +56,9 @@ export const useOnboarding = () => {
 
       const response = await completeOnboardingMutation.mutateAsync(data);
 
+      console.log('📧 Complete onboarding response:', response);
+      await completeOnboardingMutation.reset();
+
       // Redirect to dashboard or portfolio
       if (response.success) {
         router.push('/dashboard');

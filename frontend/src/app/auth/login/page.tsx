@@ -43,25 +43,69 @@ export default function LoginPage() {
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (isAuthenticated && user) {
-      console.log('🔄 from login page Auth redirect check:', {
-        onboarding: user.onboarding_completed,
-        isRedirecting
+    if (isAuthenticated && user && !isRedirecting) {
+      console.log('🔄 Auth Redirect Effect - FULL STATE:', {
+        isAuthenticated,
+        user: user ? {
+          id: user.id,
+          name: user.name,
+          onboarding_completed: user.onboarding_completed,
+          onboarding_completed_at: user.onboarding_completed_at,
+          typeof_onboarding: typeof user.onboarding_completed
+        } : null,
+        isRedirecting,
+        hasUser: !!user
       });
 
-      // Small delay to ensure state is consistent
-      const redirectTimer = setTimeout(() => {
-        const returnUrl = searchParams.get('returnUrl');
-        const destination = returnUrl ? decodeURIComponent(returnUrl) :
-          (user.onboarding_completed ? '/dashboard' : '/onboarding');
+      setIsRedirecting(true);
 
-        console.log('🎯 Final destination:', destination);
-        router.push(destination);
-      }, 100);
+      const returnUrl = searchParams.get('returnUrl');
 
-      return () => clearTimeout(redirectTimer);
+      // Check BOTH completion indicators (aligns with your backend logic)
+      const isOnboardingCompleted =
+        user.onboarding_completed === true ||
+        user.onboarding_completed === 1 ||
+        user.onboarding_completed_at !== null;
+
+      console.log('📊 Onboarding status:', {
+        raw_completed: user.onboarding_completed,
+        completed_at: user.onboarding_completed_at,
+        isComplete: isOnboardingCompleted
+      });
+
+      if (returnUrl) {
+        router.push(decodeURIComponent(returnUrl));
+      } else if (!isOnboardingCompleted) {
+        router.push('/onboarding');
+      } else {
+        router.push('/dashboard');
+      }
     }
-  }, [isAuthenticated, user, router, searchParams]);
+  }, [isAuthenticated, user, router, searchParams, isRedirecting]);
+
+  // Add this to track router changes
+  useEffect(() => {
+    const handleRouteChange = (url: string) => {
+      console.log('🔄 Router changing to:', url);
+    };
+
+    // If using Next.js 13+ app router, you might need to use events
+    console.log('📍 Current path:', window.location.pathname);
+  }, [router]);
+
+  // Add this temporary debug effect
+  useEffect(() => {
+    if (user) {
+      console.log('🔬 USER OBJECT DEBUG:', {
+        raw_onboarding: user.onboarding_completed,
+        boolean_conversion: Boolean(user.onboarding_completed),
+        double_boolean: !!user.onboarding_completed,
+        strict_check: user.onboarding_completed === 1,
+        zero_check: user.onboarding_completed === 0,
+        greater_than_zero: user.onboarding_completed > 0
+      });
+    }
+  }, [user]);  
 
   // Clear error when component unmounts
   useEffect(() => {
@@ -94,7 +138,7 @@ export default function LoginPage() {
       </div>
     );
   }
-
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">

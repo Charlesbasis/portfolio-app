@@ -89,154 +89,195 @@ class OnboardingController extends Controller
     {
         $user = $request->user();
 
-        DB::transaction(function () use ($user, $request) {
-            // Update user type if provided
-            if ($request->has('user_type_id')) {
-                $userType = UserType::find($request->input('user_type_id'));
+        // try {
+
+            DB::transaction(function () use ($user, $request) {
+                // Update user type if provided
+                if ($request->has('user_type_id')) {
+                    $userType = UserType::find($request->input('user_type_id'));
+                    if ($userType) {
+                        $user->update(['user_type_id' => $userType->id]);
+                        $user->refresh(); // Refresh to get updated user type
+                    }
+                }
+
+                $userType = $user->userType;
+
+                // Validate against user type specific rules if user type exists
                 if ($userType) {
-                    $user->update(['user_type_id' => $userType->id]);
-                    $user->refresh(); // Refresh to get updated user type
-                }
-            }
+                    $validationRules = $this->getUserTypeValidationRules($userType);
+                    $validator = Validator::make($request->all(), $validationRules);
 
-            $userType = $user->userType;
-
-            // Validate against user type specific rules if user type exists
-            if ($userType) {
-                $validationRules = $this->getUserTypeValidationRules($userType);
-                $validator = Validator::make($request->all(), $validationRules);
-
-                if ($validator->fails()) {
-                    throw new \Illuminate\Validation\ValidationException($validator);
-                }
-            }
-
-            // Get allowed fields for this user type
-            $allowedFields = $userType ? $this->getDefaultAllowedFields($userType->slug) : [
-                'full_name',
-                'username',
-                'job_title',
-                'company',
-                'location',
-                'tagline',
-                'bio'
-            ];
-
-            // Handle activity_data only if userType exists and has a slug
-            if ($request->has('activity_data') && $userType) {
-                $activityData = $request->input('activity_data');
-
-                // Add null check for userType->slug before the switch
-                if ($userType->slug) {
-                    switch ($userType->slug) {
-                        case 'student':
-                            if (!empty($activityData['title'])) {
-                                $user->projects()->create([
-                                    'title' => $activityData['title'],
-                                    'description' => $activityData['description'] ?? '',
-                                    'project_type' => 'academic',
-                                    'course' => $activityData['course'] ?? null,
-                                ]);
-                            }
-                            break;
-
-                        case 'teacher':
-                            if (!empty($activityData['title'])) {
-                                $user->teachingMaterials()->create([
-                                    'title' => $activityData['title'],
-                                    'description' => $activityData['description'] ?? '',
-                                    'subject' => $activityData['subject'] ?? null,
-                                    'grade_level' => $activityData['grade_level'] ?? null,
-                                ]);
-                            }
-                            break;
-
-                        case 'professional':
-                            if (!empty($activityData['title'])) {
-                                $user->portfolioProjects()->create([
-                                    'title' => $activityData['title'],
-                                    'description' => $activityData['description'] ?? '',
-                                    'client' => $activityData['client'] ?? null,
-                                    'service_url' => $activityData['service_url'] ?? null,
-                                    'services' => $activityData['services'] ?? [],
-                                ]);
-                            }
-                            break;
-
-                        case 'freelancer':
-                            if (!empty($activityData['title'])) {
-                                $user->freelancerProjects()->create([
-                                    'title' => $activityData['title'],
-                                    'description' => $activityData['description'] ?? '',
-                                    'client' => $activityData['client'] ?? null,
-                                    'project_url' => $activityData['project_url'] ?? null,
-                                    'technologies' => $activityData['technologies'] ?? [],
-                                ]);
-                            }
-                            break;
-                    }
-                }
-            }
-
-            // Prepare base profile data
-            $profileData = [
-                'email' => $user->email,
-                'is_public' => $request->input('is_public', true),
-            ];
-
-            // Add standard fields that exist in both request and allowed fields
-            $standardFields = ['full_name', 'username', 'job_title', 'company', 'location', 'tagline', 'bio'];
-            foreach ($standardFields as $field) {
-                if (in_array($field, $allowedFields) && $request->has($field)) {
-                    $profileData[$field] = $request->input($field);
-                }
-            }
-
-            // Handle custom fields for user type
-            $customFields = [];
-            if ($userType) {
-                $typeSpecificFields = array_diff($allowedFields, $standardFields);
-                foreach ($typeSpecificFields as $field) {
-                    if ($request->has($field)) {
-                        $customFields[$field] = $request->input($field);
+                    if ($validator->fails()) {
+                        throw new \Illuminate\Validation\ValidationException($validator);
                     }
                 }
 
-                // Also include fields from UserTypeField that might not be in allowed_fields
-                $userTypeFieldSlugs = $userType->fields->pluck('field_slug')->toArray();
-                foreach ($userTypeFieldSlugs as $fieldSlug) {
-                    if ($request->has($fieldSlug) && !in_array($fieldSlug, $standardFields)) {
-                        $customFields[$fieldSlug] = $request->input($fieldSlug);
+                // Get allowed fields for this user type
+                $allowedFields = $userType ? $this->getDefaultAllowedFields($userType->slug) : [
+                    'full_name',
+                    'username',
+                    'job_title',
+                    'company',
+                    'location',
+                    'tagline',
+                    'bio'
+                ];
+
+                // Handle activity_data only if userType exists and has a slug
+                if ($request->has('activity_data') && $userType) {
+                    $activityData = $request->input('activity_data');
+
+                    // Add null check for userType->slug before the switch
+                    if ($userType->slug) {
+                        switch ($userType->slug) {
+                            case 'student':
+                                if (!empty($activityData['title'])) {
+                                    $user->projects()->create([
+                                        'title' => $activityData['title'],
+                                        'description' => $activityData['description'] ?? '',
+                                        'project_type' => 'academic',
+                                        'course' => $activityData['course'] ?? null,
+                                    ]);
+                                }
+                                break;
+
+                            case 'teacher':
+                                if (!empty($activityData['title'])) {
+                                    $user->teachingMaterials()->create([
+                                        'title' => $activityData['title'],
+                                        'description' => $activityData['description'] ?? '',
+                                        'subject' => $activityData['subject'] ?? null,
+                                        'grade_level' => $activityData['grade_level'] ?? null,
+                                    ]);
+                                }
+                                break;
+
+                            case 'professional':
+                                if (!empty($activityData['title'])) {
+                                    $user->portfolioProjects()->create([
+                                        'title' => $activityData['title'],
+                                        'description' => $activityData['description'] ?? '',
+                                        'client' => $activityData['client'] ?? null,
+                                        'service_url' => $activityData['service_url'] ?? null,
+                                        'services' => $activityData['services'] ?? [],
+                                    ]);
+                                }
+                                break;
+
+                            case 'freelancer':
+                                if (!empty($activityData['title'])) {
+                                    $user->freelancerProjects()->create([
+                                        'title' => $activityData['title'],
+                                        'description' => $activityData['description'] ?? '',
+                                        'client' => $activityData['client'] ?? null,
+                                        'project_url' => $activityData['project_url'] ?? null,
+                                        'technologies' => $activityData['technologies'] ?? [],
+                                    ]);
+                                }
+                                break;
+                        }
                     }
                 }
-            }
 
-            // Store custom fields as JSON
-            if (!empty($customFields)) {
-                $profileData['custom_fields'] = $customFields;
-            }
+                // Prepare base profile data
+                $profileData = [
+                    'email' => $user->email,
+                    'is_public' => $request->input('is_public', true),
+                ];
 
-            // Update user profile with filtered data
-            $user->profile()->updateOrCreate(
-                ['user_id' => $user->id],
-                $profileData
-            );
+                // Add standard fields that exist in both request and allowed fields
+                $standardFields = ['full_name', 'username', 'job_title', 'company', 'location', 'tagline', 'bio'];
+                foreach ($standardFields as $field) {
+                    if (in_array($field, $allowedFields) && $request->has($field)) {
+                        $profileData[$field] = $request->input($field);
+                    }
+                }
 
-            // Handle type-specific entity creation (with null check)
-            if ($userType) {
-                $this->handleTypeSpecificEntities($user, $request, $userType);
-                $this->handleTypeSpecificData($user, $request, $userType);
-            }
+                // Handle custom fields for user type
+                $customFields = [];
+                if ($userType) {
+                    $typeSpecificFields = array_diff($allowedFields, $standardFields);
+                    foreach ($typeSpecificFields as $field) {
+                        if ($request->has($field)) {
+                            $customFields[$field] = $request->input($field);
+                        }
+                    }
 
-            $user->completedOnboarding();
-        });
+                    // Also include fields from UserTypeField that might not be in allowed_fields
+                    $userTypeFieldSlugs = $userType->fields->pluck('field_slug')->toArray();
+                    foreach ($userTypeFieldSlugs as $fieldSlug) {
+                        if ($request->has($fieldSlug) && !in_array($fieldSlug, $standardFields)) {
+                            $customFields[$fieldSlug] = $request->input($fieldSlug);
+                        }
+                    }
+                }
 
-        $user->load(['profile', 'projects', 'skills', 'userType']);
+                // Store custom fields as JSON
+                if (!empty($customFields)) {
+                    $profileData['custom_fields'] = $customFields;
+                }
+
+                // Update user profile with filtered data
+                $user->profile()->updateOrCreate(
+                    ['user_id' => $user->id],
+                    $profileData
+                );
+
+                // Handle type-specific entity creation (with null check)
+                if ($userType) {
+                    $this->handleTypeSpecificEntities($user, $request, $userType);
+                    $this->handleTypeSpecificData($user, $request, $userType);
+                }
+
+                // Log::info('Before completing onboarding', [
+                //     'user_id' => $user->id,
+                //     'has_user_type' => !is_null($user->userType)
+                // ]);
+
+                // $user->completedOnboarding();
+
+                $user->update([
+                    'onboarding_completed' => true,
+                    'onboarding_completed_at' => now(),
+                ]);
+
+                Log::info('Direct update completed', [
+                    'user_id' => $user->id,
+                    'onboarding_completed' => $user->onboarding_completed,
+                    'onboarding_completed_at' => $user->onboarding_completed_at
+                ]);
+            });
+
+            $user->refresh();
+
+            // Add logging to verify completion
+            // Log::info('Onboarding completed for user', [
+            //     'user_id' => $user->id,
+            //     'onboarding_completed' => $user->onboarding_completed,
+            //     'onboarding_completed_at' => $user->onboarding_completed_at,
+            //     'timestamp' => now()
+            // ]);
+        // } catch (\Exception $e) {
+
+        //     Log::error('Onboarding completion failed', [
+        //         'user_id' => $user->id,
+        //         'error' => $e->getMessage(),
+        //         'trace' => $e->getTraceAsString()
+        //     ]);
+
+        //     return response()->json([
+        //         'message' => 'Failed to complete onboarding: ' . $e->getMessage()
+        //     ], 500);
+        // }
+
+        // $user->load(['profile', 'projects', 'skills', 'userType']);
 
         return response()->json([
             'message' => 'Onboarding completed successfully',
             'user' => $user,
-            'user_type' => $user->userType
+            'onboarding_completed' => $user->onboarding_completed,
+            'onboarding_completed_at' => $user->onboarding_completed_at
         ]);
     }
 
