@@ -61,7 +61,7 @@ export default function Header() {
           <Link
             href="/"
             className={`text-2xl font-bold transition-colors ${
-              isScrolled ? 'text-blue-600' : 'text-white'
+              isScrolled ? 'text-blue-200' : 'text-blue-600'
             }`}
           >
             Portfolio
@@ -76,11 +76,11 @@ export default function Header() {
                 className={`font-semibold transition-colors ${
                   pathname === link.href
                     ? isScrolled
-                      ? 'text-blue-600'
-                      : 'text-white'
+                      ? 'text-blue-200'
+                      : 'text-blue-600'
                     : isScrolled
-                    ? 'text-gray-700 hover:text-blue-600'
-                    : 'text-gray-100 hover:text-white'
+                    ? 'text-gray-200 hover:text-blue-600'
+                    : 'text-gray-600 hover:text-blue-600'
                 }`}
               >
                 {link.label}
@@ -127,8 +127,8 @@ export default function Header() {
                   href="/auth/login"
                   className={`px-4 py-2 rounded-lg font-semibold transition-all ${
                     isScrolled
-                      ? 'text-gray-700 hover:bg-gray-100'
-                      : 'text-white hover:bg-white/10'
+                      ? 'bg-blue-600 text-white hover:bg-blue-700'
+                      : 'bg-white text-blue-600 hover:bg-blue-50'
                   }`}
                 >
                   Sign In
