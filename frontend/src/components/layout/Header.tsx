@@ -127,8 +127,8 @@ export default function Header() {
                   href="/auth/login"
                   className={`px-4 py-2 rounded-lg font-semibold transition-all ${
                     isScrolled
-                      ? 'bg-blue-600 text-white hover:bg-blue-700'
-                      : 'bg-white text-blue-600 hover:bg-blue-50'
+                      ? 'bg-green-600 text-white hover:bg-blue-700'
+                      : 'bg-white text-green-600 hover:bg-blue-50'
                   }`}
                 >
                   Sign In
