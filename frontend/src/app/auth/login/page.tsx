@@ -63,8 +63,8 @@ export default function LoginPage() {
 
       // Check BOTH completion indicators (aligns with your backend logic)
       const isOnboardingCompleted =
-        user.onboarding_completed === true ||
-        user.onboarding_completed === 1 ||
+        !!user.onboarding_completed || // Covers all truthy values
+        // user.onboarding_completed === 1 ||
         user.onboarding_completed_at !== null;
 
       console.log('📊 Onboarding status:', {
@@ -118,6 +118,8 @@ export default function LoginPage() {
       const result = await login(data.email, data.password);
       
       console.log('✅ Login result:', result);
+
+      console.log('API User Object:', JSON.stringify(result, null, 2));
 
       // Don't manually redirect - let the useEffect handle it
       // This prevents race conditions
