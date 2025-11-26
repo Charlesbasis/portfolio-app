@@ -275,8 +275,10 @@ class OnboardingController extends Controller
 
         return response()->json([
             'message' => 'Onboarding completed successfully',
-            'user' => $user,
-            'onboarding_completed' => $user->onboarding_completed,
+            'user' => array_merge($user->toArray(), [
+                'onboarding_completed' => (bool)$user->onboarding_completed
+            ]),
+            'onboarding_completed' => (bool)$user->onboarding_completed,
             'onboarding_completed_at' => $user->onboarding_completed_at
         ]);
     }

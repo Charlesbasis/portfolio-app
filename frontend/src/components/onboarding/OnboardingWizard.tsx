@@ -39,7 +39,6 @@ export default function OnboardingWizard() {
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedUserType, setSelectedUserType] = useState('');
   
-  // Fetch user types from API
   const { userTypes, currentConfig, isLoading: userTypesLoading } = useUserTypeConfig(selectedUserType);
   
   const [formData, setFormData] = useState({
@@ -71,13 +70,11 @@ export default function OnboardingWizard() {
     { id: 5, title: 'Launch', icon: Rocket },
   ];
 
-  // Username checking
   const handleUsernameChange = (username: string) => {
     updateFormData('username', username);
     
-    // Clear existing username errors when user types
     if (errors.username) {
-      setErrors(prev => ({ ...prev, username: undefined }));
+      setErrors(prev => ({ ...prev, username: 'username' }));
     }
     
     if (usernameCheckTimeout) {
@@ -121,7 +118,7 @@ export default function OnboardingWizard() {
   const updateFormData = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: undefined }));
+      setErrors(prev => ({ ...prev, [field]: 'field' }));
     }
   };
 
@@ -217,30 +214,25 @@ export default function OnboardingWizard() {
     setCurrentStep(steps.length - 1);
   };
 
+  const isValidUser = (user: any): user is User => {
+    return user && typeof user.onboarding_completed === 'boolean' &&
+      typeof user.username === 'string';
+  }
+  
   const handleComplete = async () => {
     if (!validateStep()) return;
 
     try {
-      // Find the user type ID
-      const userType = userTypes.find(ut => ut.value === selectedUserType);
-      
-      await completeOnboarding.mutateAsync({
-        user_type_id: userType?.id,
-        user_type: selectedUserType,
-        full_name: formData.full_name,
-        username: formData.username,
-        job_title: formData.job_title,
-        company: formData.company || undefined,
-        location: formData.location || undefined,
-        tagline: formData.tagline || undefined,
-        bio: formData.bio || undefined,
-        profile_data: formData.profile_data,
-        activity_data: formData.activity_data,
-        skills: formData.skills,
-      });
+      // const userType = userTypes.find(ut => ut.value === selectedUserType);
 
-      await checkAuth();
-      router.push(`/portfolio/${formData.username}`);
+      await completeOnboarding.mutateAsync({ user_type: selectedUserType, full_name: formData.full_name, username: formData.username, job_title: formData.job_title, company: formData.company, location: formData.location, tagline: formData.tagline, bio: formData.bio, project_title: formData.project_title, project_description: formData.project_description, project_technologies: formData.project_technologies, skills: formData.skills, profile_data: formData.profile_data, activity_data: formData.activity_data });
+
+      const updatedUser = await checkAuth() as User;
+
+      // if (updatedUser?.onboarding_completed) {
+      if (isValidUser(updatedUser) && updatedUser.onboarding_completed) {
+        router.push(`/portfolio/${formData.username}`);
+      }
     } catch (error: any) {
       console.error('Onboarding failed:', error);
       alert(error.response?.data?.message || 'Failed to complete onboarding');

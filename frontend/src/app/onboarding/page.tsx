@@ -24,7 +24,7 @@ export default function OnboardingPage() {
     }
     
     // If onboarding already completed, redirect to dashboard
-    if (user?.onboarding_completed) {
+    if (user?.onboarding_completed === true || user?.onboarding_completed === 1) {
       console.log('✅ Onboarding already completed, redirecting to dashboard');
       router.push('/dashboard');
       return;

@@ -46,7 +46,7 @@ export interface User {
   id: number;
   name: string;
   email: string;
-  username?: string;
+  username: string;
   job_title?: string;
   company?: string;
   location?: string;
@@ -54,7 +54,7 @@ export interface User {
   bio?: string;
   email_verified_at?: string;
   onboarding_completed_at?: string;
-  onboarding_completed?: boolean; 
+  onboarding_completed: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -387,6 +387,7 @@ export interface EducationCertificationsProps {
 }
 
 export interface OnboardingData {
+  user_type_id: any;
   user_type: string;
   full_name: string;
   username: string;
@@ -509,6 +510,7 @@ export interface PortfolioSection {
 }
 
 export interface UserTypeConfig {
+  id: number;
   value: string;
   label: string;
   description: string;

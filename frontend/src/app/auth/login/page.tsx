@@ -21,7 +21,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { login, isAuthenticated, user, isLoading, error, clearError } = useAuth();
+  const { login, isAuthenticated, user, isLoading, error, clearError, needs_onboarding } = useAuth();
   const [showSuccess, setShowSuccess] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
 
@@ -61,11 +61,10 @@ export default function LoginPage() {
 
       const returnUrl = searchParams.get('returnUrl');
 
-      // Check BOTH completion indicators (aligns with your backend logic)
       const isOnboardingCompleted =
-        !!user.onboarding_completed || // Covers all truthy values
-        // user.onboarding_completed === 1 ||
-        user.onboarding_completed_at !== null;
+        user.onboarding_completed === true ||  
+        user.onboarding_completed === 1 ||     
+        (user.onboarding_completed_at !== null && user.onboarding_completed_at !== undefined);
 
       console.log('📊 Onboarding status:', {
         raw_completed: user.onboarding_completed,

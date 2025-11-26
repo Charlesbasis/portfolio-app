@@ -18,7 +18,7 @@ export const useUserTypeConfig = (userTypeSlug?: string) => {
     data: apiUserTypes, 
     isLoading, 
     error,
-    isError 
+    isError,
   } = useUserTypes();
 
   /**

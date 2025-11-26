@@ -17,6 +17,9 @@ class User extends Authenticatable
         'email',
         'password',
         'user_type_id',
+        'onboarding_completed',
+        'onboarding_completed_at',
+        'onboarding_data',
     ];
 
     protected $hidden = [

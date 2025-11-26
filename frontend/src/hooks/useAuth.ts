@@ -12,11 +12,12 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
-  isInitialized: boolean; // NEW: Track if auth has been initialized
+  isInitialized: boolean;
+  needs_onboarding: boolean;
   
   login: (email: string, password: string) => Promise<{ 
     user: User; 
-    needs_onboarding: boolean;
+    needs_onboarding: any;
     token: string;
   }>;
   logout: () => Promise<void>;
@@ -25,7 +26,7 @@ interface AuthState {
   setToken: (token: string | null) => void;
   checkAuth: () => Promise<void>;
   clearError: () => void;
-  initialize: () => Promise<void>; // NEW: Initialize auth on app load
+  initialize: () => Promise<void>; 
 }
 
 export const useAuth = create<AuthState>()(
@@ -37,8 +38,8 @@ export const useAuth = create<AuthState>()(
       isLoading: false,
       error: null,
       isInitialized: false,
+      needs_onboarding: false,
 
-      // NEW: Initialize authentication state
       initialize: async () => {
         const token = get().token;
         
@@ -67,7 +68,7 @@ export const useAuth = create<AuthState>()(
               token: null, 
               isAuthenticated: false, 
               isInitialized: true,
-              isLoading: false 
+              isLoading: false,
             });
           }
         } catch (error) {
@@ -98,7 +99,8 @@ export const useAuth = create<AuthState>()(
             isAuthenticated: true,
             isLoading: false,
             error: null,
-            isInitialized: true // Mark as initialized after successful login
+            isInitialized: true,
+            needs_onboarding: false,
           });
 
           console.log('✅ Login successful:', { user, needs_onboarding });

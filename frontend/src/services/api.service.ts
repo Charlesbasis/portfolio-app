@@ -255,7 +255,7 @@ export const contactService = {
 
 // ============= Auth Service =============
 export const authService = {
-  login: async (credentials: LoginCredentials): Promise<{ user: User; token: string }> => {
+  login: async (credentials: LoginCredentials): Promise<{ user: User; token: string; needs_onboarding: any }> => {
     // const { data } = await api.post('/auth/login', credentials);
     const { data } = await api.post('/login', credentials);
     
