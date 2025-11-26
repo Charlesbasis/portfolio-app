@@ -27,12 +27,10 @@ class DashboardController extends Controller
         $cacheKey = 'dashboard:stats:' . $user->id;
 
         $stats = Cache::remember($cacheKey, 600, function () use ($user) {
-            // Load user with user_type relationship
             $user->load('userType');
             
             $userTypeSlug = $user->userType?->slug ?? 'professional';
 
-            // Return stats based on user type
             return match($userTypeSlug) {
                 'student' => $this->getStudentStats($user),
                 'teacher' => $this->getTeacherStats($user),
@@ -217,16 +215,18 @@ class DashboardController extends Controller
                     ->count(),
             ],
             'tech_stack' => [
-                'total_skills' => UserSkill::where('user_id', $userId)->count(),
-                'by_proficiency' => UserSkill::where('user_id', $userId)
+                'total_skills' => UserSkill::forUser($userId)->count(),
+                'by_proficiency' => UserSkill::forUser($userId)
                     ->select('proficiency', DB::raw('count(*) as count'))
                     ->groupBy('proficiency')
                     ->pluck('count', 'proficiency'),
-                'top_skills' => UserSkill::where('user_id', $userId)
-                    ->join('skills', 'user_skills.skill_id', '=', 'skills.id')
-                    ->orderByDesc('user_skills.years_experience')
+                'top_skills' => UserSkill::forUser($userId)
+                    ->with('skill')
+                    ->orderByExperience('desc')
                     ->limit(5)
-                    ->pluck('skills.name'),
+                    ->get()
+                    ->pluck('skill.name')
+                    ->filter(), // Remove any null values
             ],
             'experience' => [
                 'total' => Experience::where('user_id', $userId)->count(),

@@ -19,6 +19,7 @@ class Skill extends Model
         'icon_url',
         'years_of_experience',
         'order',
+        'description',
     ];
 
     protected $casts = [
@@ -37,7 +38,7 @@ class Skill extends Model
         static::creating(function ($skill) {
             if (empty($skill->slug)) {
                 $skill->slug = Str::slug($skill->name);
-                
+
                 // Make sure slug is unique
                 $originalSlug = $skill->slug;
                 $count = 1;
@@ -50,7 +51,7 @@ class Skill extends Model
         static::updating(function ($skill) {
             if ($skill->isDirty('name') && empty($skill->getOriginal('slug'))) {
                 $skill->slug = Str::slug($skill->name);
-                
+
                 // Make sure slug is unique
                 $originalSlug = $skill->slug;
                 $count = 1;
@@ -69,5 +70,26 @@ class Skill extends Model
     public function scopeByCategory($query, $category)
     {
         return $query->where('category', $category);
+    }
+
+    public function userSkills()
+    {
+        return $this->hasMany(UserSkill::class);
+    }
+
+    public static function getTopSkillsForUser($userId, $limit = 5)
+    {
+        return static::whereHas('userSkills', function ($query) use ($userId) {
+            $query->where('user_id', $userId);
+        })
+            ->with(['userSkills' => function ($query) use ($userId) {
+                $query->where('user_id', $userId);
+            }])
+            ->get()
+            ->sortByDesc(function ($skill) {
+                return $skill->userSkills->first()->years_experience ?? 0;
+            })
+            ->take($limit)
+            ->pluck('name');
     }
 }

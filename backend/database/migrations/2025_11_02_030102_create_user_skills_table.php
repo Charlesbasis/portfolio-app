@@ -17,6 +17,9 @@ return new class extends Migration
             $table->timestamps();
             
             $table->unique(['user_id', 'skill_id']);
+
+            $table->index(['user_id', 'years_experience']);
+            $table->index('proficiency');
         });
     }
 

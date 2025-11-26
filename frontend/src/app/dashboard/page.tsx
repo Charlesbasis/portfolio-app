@@ -113,25 +113,25 @@ export default function DashboardPage() {
     },
     {
       label: 'Total Skills',
-      value: stats?.skills.total || 0,
+      value: stats?.skills?.total || 0,
       icon: Award,
       color: 'green',
-      detail: Object.keys(stats?.skills.by_category || {}).length + ' categories',
+      detail: Object.keys(stats?.skills?.by_category || {}).length + ' categories',
     },
     {
       label: 'Messages',
-      value: stats?.messages.total || 0,
+      value: stats?.messages?.total || 0,
       icon: Mail,
       color: 'purple',
-      detail: `${stats?.messages.unread || 0} unread`,
-      badge: stats?.messages.unread,
+      detail: `${stats?.messages?.unread || 0} unread`,
+      badge: stats?.messages?.unread,
     },
     {
       label: 'Experiences',
-      value: stats?.experiences.total || 0,
+      value: stats?.experiences?.total || 0,
       icon: Briefcase,
       color: 'orange',
-      detail: `${stats?.experiences.current || 0} current`,
+      detail: `${stats?.experiences?.current || 0} current`,
     },
   ];
 
