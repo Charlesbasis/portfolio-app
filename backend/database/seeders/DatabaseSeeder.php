@@ -26,6 +26,7 @@ class DatabaseSeeder extends Seeder
             UserDataSeeder::class,
             UserTypeSeeder::class,
             ProfileSeeder::class,
+            UserSkillSeeder::class,
             // Add more seeders here as needed
         ]);
 
