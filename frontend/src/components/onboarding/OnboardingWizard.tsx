@@ -38,9 +38,9 @@ export default function OnboardingWizard() {
   const { user, checkAuth } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedUserType, setSelectedUserType] = useState('');
-  
+
   const { userTypes, currentConfig, isLoading: userTypesLoading } = useUserTypeConfig(selectedUserType);
-  
+
   const [formData, setFormData] = useState({
     full_name: user?.name || '',
     username: '',
@@ -53,7 +53,7 @@ export default function OnboardingWizard() {
     activity_data: {} as Record<string, any>,
     skills: [] as string[],
   });
-  
+
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
   const [usernameCheckTimeout, setUsernameCheckTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -72,11 +72,11 @@ export default function OnboardingWizard() {
 
   const handleUsernameChange = (username: string) => {
     updateFormData('username', username);
-    
+
     if (errors.username) {
       setErrors(prev => ({ ...prev, username: 'username' }));
     }
-    
+
     if (usernameCheckTimeout) {
       clearTimeout(usernameCheckTimeout);
     }
@@ -214,23 +214,51 @@ export default function OnboardingWizard() {
     setCurrentStep(steps.length - 1);
   };
 
-  const isValidUser = (user: any): user is User => {
-    return user && typeof user.onboarding_completed === 'boolean' &&
-      typeof user.username === 'string';
-  }
-  
+  // const isValidUser = (user: any): user is User => {
+  //   return user && typeof user.onboarding_completed === 'boolean' &&
+  //     typeof user.username === 'string';
+  // }
+
   const handleComplete = async () => {
     if (!validateStep()) return;
 
     try {
-      // const userType = userTypes.find(ut => ut.value === selectedUserType);
+      const userType = userTypes.find(ut => ut.value === selectedUserType);
 
-      await completeOnboarding.mutateAsync({ user_type: selectedUserType, full_name: formData.full_name, username: formData.username, job_title: formData.job_title, company: formData.company, location: formData.location, tagline: formData.tagline, bio: formData.bio, project_title: formData.project_title, project_description: formData.project_description, project_technologies: formData.project_technologies, skills: formData.skills, profile_data: formData.profile_data, activity_data: formData.activity_data });
+      console.log('📤 Sending onboarding data:', {
+        user_type_id: userType?.id,
+        username: formData.username,
+        skills: formData.skills.length
+      });
 
-      const updatedUser = await checkAuth() as User;
+      console.log('✅ Onboarding API call succeeded');
 
-      // if (updatedUser?.onboarding_completed) {
-      if (isValidUser(updatedUser) && updatedUser.onboarding_completed) {
+      await completeOnboarding.mutateAsync({
+        user_type_id: userType?.id,
+        user_type: selectedUserType,
+        full_name: formData.full_name,
+        username: formData.username,
+        job_title: formData.job_title,
+        company: formData.company || undefined,
+        location: formData.location || undefined,
+        tagline: formData.tagline || undefined,
+        bio: formData.bio || undefined,
+        profile_data: formData.profile_data,
+        activity_data: formData.activity_data,
+        skills: formData.skills,
+      });
+
+      const updatedUser = await checkAuth();
+
+      console.log('🔍 Updated user after checkAuth:', {
+        user: updatedUser?.name,
+        onboarding_completed: updatedUser?.onboarding_completed,
+        username: updatedUser?.username
+      });
+
+      if (updatedUser?.onboarding_completed) {
+        // if (isValidUser(updatedUser) && updatedUser.onboarding_completed) {
+        console.log('✅ Redirecting to portfolio');
         router.push(`/portfolio/${formData.username}`);
       }
     } catch (error: any) {
@@ -248,7 +276,6 @@ export default function OnboardingWizard() {
     );
   };
 
-  // Show loading while fetching user types
   if (userTypesLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -263,14 +290,14 @@ export default function OnboardingWizard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
       <div className="max-w-4xl mx-auto">
-        
+
         {/* Add this debug section temporarily */}
         {/* <div className="fixed top-4 right-4 bg-red-100 p-4 rounded text-xs">
           <div>Step: {currentStep}</div>
           <div>Username Status: {usernameStatus}</div>
           <div>Errors: {Object.keys(errors).join(', ')}</div>
         </div> */}
-        
+
         {/* Progress Bar */}
         <div className="mb-8">
           <div className="flex justify-between items-center">
@@ -283,13 +310,12 @@ export default function OnboardingWizard() {
                 <div key={step.id} className="flex items-center flex-1">
                   <div className="flex flex-col items-center">
                     <div
-                      className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
-                        isActive
+                      className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${isActive
                           ? 'bg-blue-600 text-white scale-110'
                           : isCompleted
-                          ? 'bg-green-500 text-white'
-                          : 'bg-gray-200 text-gray-400'
-                      }`}
+                            ? 'bg-green-500 text-white'
+                            : 'bg-gray-200 text-gray-400'
+                        }`}
                     >
                       {isCompleted ? <Check size={20} /> : <Icon size={20} />}
                     </div>
@@ -299,9 +325,8 @@ export default function OnboardingWizard() {
                   </div>
                   {idx < steps.length - 1 && (
                     <div
-                      className={`h-1 flex-1 mx-2 transition-all ${
-                        isCompleted ? 'bg-green-500' : 'bg-gray-200'
-                      }`}
+                      className={`h-1 flex-1 mx-2 transition-all ${isCompleted ? 'bg-green-500' : 'bg-gray-200'
+                        }`}
                     />
                   )}
                 </div>
@@ -343,11 +368,10 @@ export default function OnboardingWizard() {
                         setSelectedUserType(type.value);
                         setErrors({});
                       }}
-                      className={`p-6 border-2 rounded-xl text-left transition-all ${
-                        selectedUserType === type.value
+                      className={`p-6 border-2 rounded-xl text-left transition-all ${selectedUserType === type.value
                           ? `border-${type.color}-500 bg-${type.color}-50`
                           : 'border-gray-200 hover:border-gray-300'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-start space-x-4">
                         <div className={`w-12 h-12 rounded-lg bg-${type.color}-100 flex items-center justify-center`}>
@@ -365,7 +389,7 @@ export default function OnboardingWizard() {
                   );
                 })}
               </div>
-              
+
               {errors.user_type && (
                 <p className="text-red-500 text-sm mt-4 text-center">{errors.user_type}</p>
               )}
@@ -383,12 +407,12 @@ export default function OnboardingWizard() {
               <div className="space-y-4">
                 {/* Standard fields */}
                 <DynamicField
-                  field={{ 
-                    name: 'full_name', 
-                    label: 'Full Name', 
-                    type: 'text', 
-                    required: true, 
-                    placeholder: 'John Doe' 
+                  field={{
+                    name: 'full_name',
+                    label: 'Full Name',
+                    type: 'text',
+                    required: true,
+                    placeholder: 'John Doe'
                   }}
                   value={formData.full_name}
                   onChange={(v) => updateFormData('full_name', v)}
@@ -404,12 +428,11 @@ export default function OnboardingWizard() {
                       type="text"
                       value={formData.username}
                       onChange={(e) => handleUsernameChange(e.target.value)}
-                      className={`w-full px-4 py-3 pr-10 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                        errors.username ? 'border-red-500' : 
-                        usernameStatus === 'available' ? 'border-green-500' :
-                        usernameStatus === 'taken' ? 'border-red-500' :
-                        'border-gray-300'
-                      }`}
+                      className={`w-full px-4 py-3 pr-10 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.username ? 'border-red-500' :
+                          usernameStatus === 'available' ? 'border-green-500' :
+                            usernameStatus === 'taken' ? 'border-red-500' :
+                              'border-gray-300'
+                        }`}
                       placeholder="johndoe"
                     />
                     <div className="absolute right-3 top-3">
@@ -433,12 +456,12 @@ export default function OnboardingWizard() {
                 </div>
 
                 <DynamicField
-                  field={{ 
-                    name: 'job_title', 
-                    label: 'Job Title', 
-                    type: 'text', 
-                    required: true, 
-                    placeholder: 'Developer' 
+                  field={{
+                    name: 'job_title',
+                    label: 'Job Title',
+                    type: 'text',
+                    required: true,
+                    placeholder: 'Developer'
                   }}
                   value={formData.job_title}
                   onChange={(v) => updateFormData('job_title', v)}
@@ -457,12 +480,12 @@ export default function OnboardingWizard() {
                 ))}
 
                 <DynamicField
-                  field={{ 
-                    name: 'bio', 
-                    label: 'Bio', 
-                    type: 'textarea', 
-                    required: false, 
-                    placeholder: 'Tell us about yourself...' 
+                  field={{
+                    name: 'bio',
+                    label: 'Bio',
+                    type: 'textarea',
+                    required: false,
+                    placeholder: 'Tell us about yourself...'
                   }}
                   value={formData.bio}
                   onChange={(v) => updateFormData('bio', v)}
@@ -510,11 +533,10 @@ export default function OnboardingWizard() {
                   <button
                     key={section}
                     onClick={() => setActiveSkillSection(section)}
-                    className={`px-4 py-2 font-medium border-b-2 ${
-                      activeSkillSection === section
+                    className={`px-4 py-2 font-medium border-b-2 ${activeSkillSection === section
                         ? 'border-blue-600 text-blue-600'
                         : 'border-transparent text-gray-500'
-                    }`}
+                      }`}
                   >
                     {section.charAt(0).toUpperCase() + section.slice(1)}
                     <span className="ml-2 text-xs">
@@ -531,11 +553,10 @@ export default function OnboardingWizard() {
                   <button
                     key={skill}
                     onClick={() => toggleSkill(skill)}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                      formData.skills.includes(skill)
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${formData.skills.includes(skill)
                         ? 'bg-blue-600 text-white shadow-md'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
+                      }`}
                   >
                     {skill}
                   </button>

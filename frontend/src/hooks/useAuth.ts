@@ -181,6 +181,7 @@ export const useAuth = create<AuthState>()(
               isLoading: false,
               isInitialized: true 
             });
+            return user;
           } else {
             // Token is invalid
             tokenManager.remove();
@@ -191,6 +192,7 @@ export const useAuth = create<AuthState>()(
               isLoading: false,
               isInitialized: true 
             });
+            return null;
           }
         } catch (error) {
           console.error('Auth check failed:', error);
@@ -202,6 +204,7 @@ export const useAuth = create<AuthState>()(
             isLoading: false,
             isInitialized: true 
           });
+          return null;
         }
       },
 
