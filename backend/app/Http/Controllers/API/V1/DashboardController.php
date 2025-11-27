@@ -25,8 +25,9 @@ class DashboardController extends Controller
     {
         $user = $request->user();
         $cacheKey = 'dashboard:stats:' . $user->id;
+        $ttl = app()->environment('local') ? 0 : 600; // Disable caching in local environment
 
-        $stats = Cache::remember($cacheKey, 600, function () use ($user) {
+        $stats = Cache::remember($cacheKey, $ttl, function () use ($user) {
             $user->load('userType');
             
             $userTypeSlug = $user->userType?->slug ?? 'professional';
@@ -142,8 +143,12 @@ class DashboardController extends Controller
                 'subjects' => $teachingSubjects ? explode(',', $teachingSubjects) : [],
             ],
             'students' => [
-                'total' => Contact::where('status', '!=', 'spam')->count(), // Approximate
-                'active_inquiries' => Contact::where('status', 'unread')->count(),
+                'total' => Contact::where('teacher_id', $userId)
+                    ->where('status', '!=', 'spam')
+                    ->count(),
+                'active_inquiries' => Contact::where('teacher_id', $userId)
+                    ->where('status', 'unread')
+                    ->count(),
             ],
             'materials' => [
                 'total' => Projects::where('user_id', $userId)
@@ -276,9 +281,9 @@ class DashboardController extends Controller
         ];
 
         $stats['inquiries'] = [
-            'total' => Contact::count(),
-            'unread' => Contact::where('status', 'unread')->count(),
-            'replied' => Contact::where('status', 'replied')->count(),
+            'total' => Contact::where('user_id', $userId)->count(),
+            'unread' => Contact::where('user_id', $userId)->where('status', 'unread')->count(),
+            'replied' => Contact::where('user_id', $userId)->where('status', 'replied')->count(),
         ];
 
         return $stats;
@@ -377,8 +382,10 @@ class DashboardController extends Controller
     public function recentMessages(Request $request)
     {
         $limit = $request->get('limit', 10);
+        $userId = $request->user()->id;
 
-        $messages = Contact::orderBy('created_at', 'desc')
+        $messages = Contact::where('user_id', $userId)
+            ->orderBy('created_at', 'desc')
             ->limit($limit)
             ->get(['id', 'name', 'email', 'subject', 'status', 'created_at']);
 
@@ -432,22 +439,11 @@ class DashboardController extends Controller
                 ];
             });
 
-        // Recent messages
-        $recentMessages = Contact::orderBy('created_at', 'desc')
+        $recentMessages = Contact::where('user_id', $userId)  // ADD THIS
+            ->orderBy('created_at', 'desc')
             ->limit($limit)
-            ->get()
-            ->map(function ($contact) {
-                return [
-                    'type' => 'message',
-                    'action' => 'received',
-                    'title' => $contact->subject,
-                    'description' => "New message from {$contact->name}",
-                    'status' => $contact->status,
-                    'created_at' => $contact->created_at,
-                ];
-            });
+            ->get();
 
-        // Merge and sort all activities
         $activities = $activities
             ->merge($recentProjects)
             ->merge($recentSkills)
@@ -548,7 +544,8 @@ class DashboardController extends Controller
                 'last_project' => Projects::where('user_id', $userId)
                     ->latest()
                     ->first(['title', 'type', 'created_at']),
-                'last_message' => Contact::latest()
+                'last_message' => Contact::where('user_id', $userId)
+                    ->latest()
                     ->first(['name', 'subject', 'created_at']),
             ],
             'profile_completion' => $this->calculateProfileCompletion($user),

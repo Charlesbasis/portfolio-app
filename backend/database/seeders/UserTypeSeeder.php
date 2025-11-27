@@ -62,6 +62,24 @@ class UserTypeSeeder extends Seeder
                         'placeholder' => '2025',
                         'display_order' => 4,
                     ],
+                    [
+                        'field_name' => 'GPA',
+                        'field_slug' => 'gpa', // Matches getStudentStats()
+                        'data_type' => 'number',
+                        'validation_rules' => 'nullable|numeric|min:0|max:4.0',
+                        'is_required' => false,
+                        'placeholder' => '3.8',
+                        'display_order' => 5,
+                    ],
+                    [
+                        'field_name' => 'Current Semester',
+                        'field_slug' => 'current_semester', // Matches getStudentStats()
+                        'data_type' => 'number',
+                        'validation_rules' => 'nullable|integer|min:1|max:12',
+                        'is_required' => false,
+                        'placeholder' => '5',
+                        'display_order' => 6,
+                    ],
                 ],
             ],
             [
