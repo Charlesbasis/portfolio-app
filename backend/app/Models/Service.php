@@ -3,7 +3,9 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache as FacadesCache;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpKernel\Attribute\Cache;
 
 class Service extends Model
 {
@@ -33,9 +35,13 @@ class Service extends Model
         parent::boot();
 
         static::creating(function ($service) {
+            FacadesCache::forget('dashboard:stats:' . $service->user->id);
             if (empty($service->slug)) {
                 $service->slug = Str::slug($service->title);
             }
+        });
+        static::updating(function ($service) {
+            FacadesCache::forget('dashboard:stats:' . $service->user->id);
         });
     }
 }

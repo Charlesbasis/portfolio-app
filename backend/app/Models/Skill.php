@@ -4,7 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache as FacadesCache;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpKernel\Attribute\Cache;
 
 class Skill extends Model
 {
@@ -36,6 +38,7 @@ class Skill extends Model
         parent::boot();
 
         static::creating(function ($skill) {
+            FacadesCache::forget('dashboard:stats:' . $skill->user->id);
             if (empty($skill->slug)) {
                 $skill->slug = Str::slug($skill->name);
 
@@ -49,6 +52,7 @@ class Skill extends Model
         });
 
         static::updating(function ($skill) {
+            FacadesCache::forget('dashboard:stats:' . $skill->user->id);
             if ($skill->isDirty('name') && empty($skill->getOriginal('slug'))) {
                 $skill->slug = Str::slug($skill->name);
 

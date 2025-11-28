@@ -75,7 +75,7 @@ class EducationSeeder extends Seeder
             'responsibilities' => 'Develop curriculum, create video content, mentor students, conduct code reviews, and host live Q&A sessions',
             'location' => 'Remote',
             'role' => 'teacher',
-            'order' => 4,
+            'order' => 4
         ]);
     }
 }

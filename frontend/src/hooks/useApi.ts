@@ -46,7 +46,7 @@ export const queryKeys = {
 // ============= Default Query Options =============
 const defaultQueryOptions = {
   staleTime: 5 * 60 * 1000, // 5 minutes
-  gcTime: 30 * 60 * 1000, // 30 minutes (formerly cacheTime in v4)
+  gcTime: 5 * 60 * 1000, // 5 minutes (formerly cacheTime in v4)
   refetchOnWindowFocus: false,
   retry: 1,
 };

@@ -43,7 +43,7 @@ export const profileQueryKeys = {
 // ============= Default Options =============
 const defaultQueryOptions = {
   staleTime: 5 * 60 * 1000, // 5 minutes
-  gcTime: 30 * 60 * 1000, // 30 minutes
+  gcTime: 5 * 60 * 1000, // 5 minutes
   refetchOnWindowFocus: false,
   retry: 1,
 };

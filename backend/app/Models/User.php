@@ -37,7 +37,7 @@ class User extends Authenticatable
      */
     public function userType()
     {
-        return $this->belongsTo(UserType::class);
+        return $this->belongsTo(UserType::class, 'user_type_id');
     }
 
     /**
@@ -196,6 +196,11 @@ class User extends Authenticatable
     {
         return $query->where('onboarding_completed', true)
             ->orWhereNotNull('onboarding_completed_at');
+    }
+
+    public function userSkills()
+    {
+        return $this->hasMany(UserSkill::class);
     }
 
 }

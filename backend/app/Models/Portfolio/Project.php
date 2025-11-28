@@ -6,6 +6,7 @@ use App\Traits\HasSlug;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class Project extends Model
@@ -52,9 +53,13 @@ class Project extends Model
         parent::boot();
         
         static::creating(function ($project) {
+            Cache::forget('dashboard:stats:' . $project->user->id);
             if (empty($project->slug)) {
                 $project->slug = Str::slug($project->title);
             }
+        });
+        static::updating(function ($project) {
+            Cache::forget('dashboard:stats:' . $project->user->id);
         });
     }
 

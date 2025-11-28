@@ -23,10 +23,11 @@ class DatabaseSeeder extends Seeder
             SkillSeeder::class,
             TestimonialSeeder::class,
             ServiceSeeder::class,
-            UserDataSeeder::class,
             UserTypeSeeder::class,
+            UserDataSeeder::class,
             ProfileSeeder::class,
             UserSkillSeeder::class,
+            EducationSeeder::class,
             // Add more seeders here as needed
         ]);
 

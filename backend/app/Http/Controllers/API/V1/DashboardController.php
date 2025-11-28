@@ -25,8 +25,7 @@ class DashboardController extends Controller
     {
         $user = $request->user();
         $cacheKey = 'dashboard:stats:' . $user->id;
-        $ttl = app()->environment('local') ? 0 : 600; // Disable caching in local environment
-
+        $ttl = app()->environment('local') ? 600 : 0; 
         $stats = Cache::remember($cacheKey, $ttl, function () use ($user) {
             $user->load('userType');
             
@@ -198,10 +197,10 @@ class DashboardController extends Controller
             'projects' => [
                 'total' => Projects::where('user_id', $userId)->count(),
                 'published' => Projects::where('user_id', $userId)
-                    ->where('status', 'published')
+                    ->where('status', 'published')  // ✅ Fixed: using 'status' column
                     ->count(),
                 'draft' => Projects::where('user_id', $userId)
-                    ->where('status', 'draft')
+                    ->where('status', 'draft')      // ✅ Fixed: using 'status' column
                     ->count(),
                 'featured' => Projects::where('user_id', $userId)
                     ->where('featured', true)
@@ -209,7 +208,8 @@ class DashboardController extends Controller
                 'by_type' => Projects::where('user_id', $userId)
                     ->select('type', DB::raw('count(*) as count'))
                     ->groupBy('type')
-                    ->pluck('count', 'type'),
+                    ->pluck('count', 'type')
+                    ->toArray(),
             ],
             'contributions' => [
                 'total_projects' => Projects::where('user_id', $userId)
@@ -220,18 +220,22 @@ class DashboardController extends Controller
                     ->count(),
             ],
             'tech_stack' => [
-                'total_skills' => UserSkill::forUser($userId)->count(),
-                'by_proficiency' => UserSkill::forUser($userId)
+                'total_skills' => UserSkill::where('user_id', $userId)->count(),
+                'by_proficiency' => UserSkill::where('user_id', $userId)
                     ->select('proficiency', DB::raw('count(*) as count'))
                     ->groupBy('proficiency')
-                    ->pluck('count', 'proficiency'),
-                'top_skills' => UserSkill::forUser($userId)
+                    ->pluck('count', 'proficiency')
+                    ->toArray(),
+                'top_skills' => UserSkill::where('user_id', $userId)
                     ->with('skill')
-                    ->orderByExperience('desc')
+                    ->orderBy('years_experience', 'desc')
                     ->limit(5)
                     ->get()
-                    ->pluck('skill.name')
-                    ->filter(), // Remove any null values
+                    ->map(function ($userSkill) {
+                        return $userSkill->skill?->name;
+                    })
+                    ->filter()
+                    ->toArray(),
             ],
             'experience' => [
                 'total' => Experience::where('user_id', $userId)->count(),

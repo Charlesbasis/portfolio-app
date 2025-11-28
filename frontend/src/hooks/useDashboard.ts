@@ -18,7 +18,7 @@ export function useDashboardStats(): UseQueryResult<DashboardStats> {
     queryFn: dashboardApi.getStats,
     staleTime: 0, // 0 minutes
     refetchOnWindowFocus: true,
-    // gcTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 5 * 60 * 1000, // 5 minutes
   });
 }
 
