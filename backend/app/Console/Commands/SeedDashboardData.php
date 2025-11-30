@@ -20,12 +20,9 @@ use Illuminate\Support\Str;
 
 class SeedDashboardData extends Command
 {
-    /**
-     * The name and signature of the console command.
-     */
     protected $signature = 'dashboard:seed 
                             {email? : User email to seed data for}
-                            {--type=student : User type (student, teacher, professional, freelancer)}
+                            {--type=professional : User type (student, teacher, professional, freelancer)}
                             {--projects=10 : Number of projects to create}
                             {--skills=8 : Number of skills to create}
                             {--contacts=15 : Number of contacts to create}
@@ -34,14 +31,8 @@ class SeedDashboardData extends Command
                             {--clear-cache : Clear dashboard cache after seeding}
                             {--fresh : Delete existing data before seeding}';
 
-    /**
-     * The console command description.
-     */
     protected $description = 'Seed dashboard data dynamically for testing';
 
-    /**
-     * Execute the console command.
-     */
     public function handle()
     {
         $this->info('🚀 Starting Dashboard Data Seeding...');
@@ -57,6 +48,7 @@ class SeedDashboardData extends Command
 
         $this->info("👤 User: {$user->name} ({$user->email})");
         $this->info("📋 Type: {$user->userType?->name}");
+        $this->info("🆔 User ID: {$user->id}");
         $this->newLine();
 
         // Clear existing data if requested
@@ -64,16 +56,19 @@ class SeedDashboardData extends Command
             $this->clearUserData($user);
         }
 
-        // Clear cache if requested
-        if ($this->option('clear-cache')) {
-            $this->clearCache($user);
-        }
+        // Test database connection and model
+        $this->testDatabaseConnection($user);
 
         // Seed all data types
         $this->seedAllData($user);
 
+        // Clear cache AFTER seeding
+        if ($this->option('clear-cache')) {
+            $this->clearCache($user);
+        }
+
         $this->newLine();
-        $this->info('✅ Dashboard data seeded successfully!');
+        $this->info('✅ Dashboard data seeding completed!');
         $this->newLine();
         
         // Show summary
@@ -86,9 +81,63 @@ class SeedDashboardData extends Command
         return 0;
     }
 
-    /**
-     * Get or create user
-     */
+    private function testDatabaseConnection($user)
+    {
+        $this->line('🔍 Testing database connection and model configuration...');
+        
+        try {
+            // Test Projects model
+            $testProject = new Projects();
+            $fillable = $testProject->getFillable();
+            $guarded = $testProject->getGuarded();
+            
+            if (empty($fillable) && empty($guarded)) {
+                $this->error('❌ Projects model has NO fillable or guarded properties!');
+                $this->error('   Add this to your Projects model:');
+                $this->error('   protected $guarded = [];');
+                return;
+            }
+            
+            $this->info('✓ Projects model configuration OK');
+            $this->line('  Fillable: ' . json_encode($fillable));
+            $this->line('  Guarded: ' . json_encode($guarded));
+            
+            // Try to create a test project
+            $testData = [
+                'user_id' => $user->id,
+                'title' => 'Test Project',
+                'slug' => 'test-project-' . uniqid(),
+                'description' => 'Test description',
+                'status' => 'draft',
+                'type' => 'personal_project',
+                'featured' => false,
+                'technologies' => ['PHP', 'Laravel'],
+            ];
+            
+            $this->line('  Testing project creation with data:');
+            $this->line('  ' . json_encode($testData, JSON_PRETTY_PRINT));
+            
+            $project = Projects::create($testData);
+            
+            if ($project->id) {
+                $this->info('✓ Successfully created test project with ID: ' . $project->id);
+                // Delete test project
+                $project->delete();
+                $this->info('✓ Test project deleted');
+            }
+            
+        } catch (\Exception $e) {
+            $this->error('❌ Database test failed!');
+            $this->error('   Error: ' . $e->getMessage());
+            $this->error('   File: ' . $e->getFile() . ':' . $e->getLine());
+            $this->newLine();
+            $this->error('🛑 Fix the error above before continuing!');
+            exit(1);
+        }
+        
+        $this->newLine();
+    }
+
     private function getOrCreateUser()
     {
         $email = $this->argument('email');
@@ -108,28 +157,41 @@ class SeedDashboardData extends Command
             $userTypeSlug = $this->option('type');
             $userType = UserType::where('slug', $userTypeSlug)->first();
 
+            if (!$userType) {
+                $this->error("❌ User type '{$userTypeSlug}' not found!");
+                $this->info("Available types: student, teacher, professional, freelancer");
+                return null;
+            }
+
             $user = User::create([
                 'name' => $name,
                 'email' => $email,
                 'password' => bcrypt('password'),
                 'email_verified_at' => now(),
-                'user_type_id' => $userType?->id,
+                'user_type_id' => $userType->id,
+                'onboarding_completed' => true,
+                'onboarding_completed_at' => now(),
             ]);
 
-            $this->info("✅ User created successfully");
+            $this->info("✅ User created successfully with ID: {$user->id}");
             
             // Seed user type fields
             if ($userType) {
                 $this->seedUserTypeFields($user, $userType);
             }
+        } else {
+            if (!$user->onboarding_completed) {
+                $this->warn("⚠️  User hasn't completed onboarding. Marking as completed...");
+                $user->update([
+                    'onboarding_completed' => true,
+                    'onboarding_completed_at' => now(),
+                ]);
+            }
         }
 
-        return $user;
+        return $user->fresh();
     }
 
-    /**
-     * Seed user type specific fields
-     */
     private function seedUserTypeFields($user, $userType)
     {
         $fields = match($userType->slug) {
@@ -173,9 +235,6 @@ class SeedDashboardData extends Command
         }
     }
 
-    /**
-     * Clear existing user data
-     */
     private function clearUserData($user)
     {
         if (!$this->confirm('⚠️  This will delete all existing data for this user. Continue?', false)) {
@@ -197,9 +256,6 @@ class SeedDashboardData extends Command
         $this->newLine();
     }
 
-    /**
-     * Clear dashboard cache
-     */
     private function clearCache($user)
     {
         Cache::forget('dashboard:stats:' . $user->id);
@@ -208,9 +264,6 @@ class SeedDashboardData extends Command
         $this->newLine();
     }
 
-    /**
-     * Seed all data types
-     */
     private function seedAllData($user)
     {
         $projectCount = (int) $this->option('projects');
@@ -228,11 +281,10 @@ class SeedDashboardData extends Command
         $this->seedTestimonials($user, $testimonialCount);
     }
 
-    /**
-     * Seed projects
-     */
     private function seedProjects($user, $count)
     {
+        $this->line('📁 Creating projects...');
+        
         $userTypeSlug = $user->userType?->slug ?? 'professional';
         
         $types = match($userTypeSlug) {
@@ -254,36 +306,43 @@ class SeedDashboardData extends Command
 
         $bar = $this->output->createProgressBar($count);
         $bar->setFormat('verbose');
-        $this->line('📁 Creating projects...');
         $bar->start();
 
+        $createdCount = 0;
+
         for ($i = 1; $i <= $count; $i++) {
-            $type = $types[array_rand($types)];
-            
-            Projects::create([
-                'user_id' => $user->id,
-                'title' => $this->generateProjectTitle($type, $i),
-                'slug' => 'project-' . $i . '-' . uniqid(),
-                'description' => $this->generateProjectDescription($type),
-                'status' => $statuses[array_rand($statuses)],
-                'type' => $type,
-                'featured' => rand(0, 3) === 0, // 25% chance
-                'technologies' => $technologies[array_rand($technologies)],
-            ]);
-            
-            $bar->advance();
-            usleep(10000); // Small delay for visual effect
+            try {
+                $type = $types[array_rand($types)];
+                
+                $project = Projects::create([
+                    'user_id' => $user->id,
+                    'title' => $this->generateProjectTitle($type, $i),
+                    'slug' => 'project-' . $i . '-' . uniqid(),
+                    'description' => $this->generateProjectDescription($type),
+                    'status' => $statuses[array_rand($statuses)],
+                    'type' => $type,
+                    'featured' => rand(0, 3) === 0,
+                    'technologies' => $technologies[array_rand($technologies)],
+                ]);
+                
+                $createdCount++;
+                $bar->advance();
+                usleep(10000);
+            } catch (\Exception $e) {
+                $bar->clear();
+                $this->newLine();
+                $this->error("Failed to create project #{$i}: {$e->getMessage()}");
+                $this->error("File: {$e->getFile()}:{$e->getLine()}");
+                $bar->display();
+            }
         }
 
         $bar->finish();
         $this->newLine();
-        $this->info("  ✓ Created {$count} projects");
+        $this->info("  ✓ Created {$createdCount} projects");
         $this->newLine();
     }
 
-    /**
-     * Generate project title based on type
-     */
     private function generateProjectTitle($type, $number)
     {
         $titles = [
@@ -328,9 +387,6 @@ class SeedDashboardData extends Command
         return $typesTitles[($number - 1) % count($typesTitles)] . " #{$number}";
     }
 
-    /**
-     * Generate project description
-     */
     private function generateProjectDescription($type)
     {
         $descriptions = [
@@ -344,11 +400,10 @@ class SeedDashboardData extends Command
         return $descriptions[$type] ?? 'A comprehensive project demonstrating technical expertise.';
     }
 
-    /**
-     * Seed skills
-     */
     private function seedSkills($user, $count)
     {
+        $this->line('🎯 Creating skills...');
+        
         $skillsData = [
             ['name' => 'PHP', 'category' => 'backend'],
             ['name' => 'Laravel', 'category' => 'backend'],
@@ -376,33 +431,34 @@ class SeedDashboardData extends Command
         ];
 
         $bar = $this->output->createProgressBar(min($count, count($skillsData)));
-        $this->line('🎯 Creating skills...');
         $bar->start();
 
         $createdCount = 0;
 
         for ($i = 0; $i < $count && $i < count($skillsData); $i++) {
             $skillData = $skillsData[$i];
+            $proficiency = $proficiencies[array_rand($proficiencies)];
+            $yearsExperience = rand(1, 10);
 
             try {
-                // Create or get the skill
                 $skill = Skills::firstOrCreate(
-                    ['slug' => strtolower($skillData['name'])],
+                    ['slug' => Str::slug($skillData['name'])],
                     [
                         'name' => $skillData['name'],
                         'category' => $skillData['category'],
-                        'user_id' => $user->id, // Add user_id here
-                        'proficiency' => $proficiencyMap[$proficiencies[array_rand($proficiencies)]],
-                        'years_of_experience' => rand(1, 10),
+                        'proficiency' => $proficiencyMap[$proficiency],
+                        'years_of_experience' => $yearsExperience,
                     ]
                 );
 
-                // If you're using a pivot table, create the relationship
-                UserSkill::firstOrCreate(
-                    ['user_id' => $user->id, 'skill_id' => $skill->id],
+                UserSkill::updateOrCreate(
                     [
-                        'proficiency' => $proficiencies[array_rand($proficiencies)],
-                        'years_experience' => rand(1, 10),
+                        'user_id' => $user->id,
+                        'skill_id' => $skill->id
+                    ],
+                    [
+                        'proficiency' => $proficiency,
+                        'years_experience' => $yearsExperience,
                     ]
                 );
 
@@ -410,8 +466,10 @@ class SeedDashboardData extends Command
                 $bar->advance();
                 usleep(10000);
             } catch (\Exception $e) {
+                $bar->clear();
+                $this->newLine();
                 $this->error("Failed to create skill {$skillData['name']}: {$e->getMessage()}");
-                continue;
+                $bar->display();
             }
         }
 
@@ -421,11 +479,10 @@ class SeedDashboardData extends Command
         $this->newLine();
     }
 
-    /**
-     * Seed contacts
-     */
     private function seedContacts($user, $count)
     {
+        $this->line('💬 Creating contact messages...');
+        
         $statuses = ['unread', 'read', 'replied', 'archived'];
         $subjects = [
             'Project Inquiry',
@@ -439,35 +496,43 @@ class SeedDashboardData extends Command
         ];
 
         $bar = $this->output->createProgressBar($count);
-        $this->line('💬 Creating contact messages...');
         $bar->start();
 
+        $createdCount = 0;
+
         for ($i = 1; $i <= $count; $i++) {
-            Contact::create([
-                'user_id' => $user->id,
-                'name' => "Contact Person #{$i}",
-                'email' => "contact{$i}@example.com",
-                'subject' => $subjects[array_rand($subjects)],
-                'message' => "This is a sample inquiry message from contact #{$i}. I would like to discuss potential opportunities.",
-                'status' => $statuses[array_rand($statuses)],
-                'slug' => 'contact-' . $i . '-' . uniqid(),
-            ]);
-            
-            $bar->advance();
-            usleep(10000);
+            try {
+                Contact::create([
+                    'user_id' => $user->id,
+                    'name' => "Contact Person #{$i}",
+                    'email' => "contact{$i}@example.com",
+                    'subject' => $subjects[array_rand($subjects)],
+                    'message' => "This is a sample inquiry message from contact #{$i}. I would like to discuss potential opportunities.",
+                    'status' => $statuses[array_rand($statuses)],
+                    'slug' => 'contact-' . $i . '-' . uniqid(),
+                ]);
+                
+                $createdCount++;
+                $bar->advance();
+                usleep(10000);
+            } catch (\Exception $e) {
+                $bar->clear();
+                $this->newLine();
+                $this->error("Failed to create contact #{$i}: {$e->getMessage()}");
+                $bar->display();
+            }
         }
 
         $bar->finish();
         $this->newLine();
-        $this->info("  ✓ Created {$count} contact messages");
+        $this->info("  ✓ Created {$createdCount} contact messages");
         $this->newLine();
     }
 
-    /**
-     * Seed experiences
-     */
     private function seedExperiences($user, $count)
     {
+        $this->line('💼 Creating work experiences...');
+        
         $companies = [
             'Tech Startup Inc.',
             'Global Software Solutions',
@@ -485,147 +550,164 @@ class SeedDashboardData extends Command
         ];
 
         $bar = $this->output->createProgressBar($count);
-        $this->line('💼 Creating work experiences...');
         $bar->start();
+
+        $createdCount = 0;
 
         for ($i = 0; $i < $count; $i++) {
-            $isCurrent = ($i === 0);
-            $startDate = now()->subYears($count - $i + 1);
-            $endDate = $isCurrent ? null : now()->subYears($count - $i);
-
-            Experience::create([
-                'user_id' => $user->id,
-                'company' => $companies[$i % count($companies)],
-                'position' => $positions[$i % count($positions)],
-                'description' => 'Developed and maintained web applications using modern technologies and best practices.',
-                'is_current' => $isCurrent,
-                'start_date' => $startDate,
-                'end_date' => $endDate,
-                'slug' => 'experience-' . $i . '-' . uniqid(),
-            ]);
-            
-            $bar->advance();
-            usleep(10000);
-        }
-
-        $bar->finish();
-        $this->newLine();
-        $this->info("  ✓ Created {$count} work experiences");
-        $this->newLine();
-    }
-
-    /**
-     * Seed education
-     */
-    private function seedEducation($user)
-    {
-        $userTypeSlug = $user->userType?->slug ?? 'professional';
-        
-        $role = match($userTypeSlug) {
-            'student' => 'student',
-            'teacher' => 'teacher',
-            default => 'student'
-        };
-
-        Education::firstOrCreate(
-            ['user_id' => $user->id, 'institution' => 'Tech University'],
-            [
-                'title' => 'Bachelor of Science in Computer Science',
-                'field_or_department' => 'Computer Science',
-                'role' => $role,
-                'is_current' => true,
-                'start_date' => now()->subYears(3),
-                'description' => 'Comprehensive computer science program with focus on software engineering.',
-            ]
-        );
-
-        $this->info('🎓 Created education record');
-        $this->newLine();
-    }
-
-    /**
-     * Seed services
-     */
-    private function seedServices($user)
-    {
-        $services = [
-            [
-                'title' => 'Web Development',
-                'slug' => 'web-development',
-                'description' => 'Full-stack web application development with modern technologies',
-                'features' => ['Custom Design', 'Responsive Layout', 'API Integration', 'SEO Optimization'],
-                'user_id' => $user->id, // Explicitly set user_id
-                'category' => 'development',
-            ],
-            [
-                'title' => 'Backend Development',
-                'slug' => 'backend-development',
-                'description' => 'Robust server-side solutions and database architecture',
-                'features' => ['REST API', 'Database Design', 'Authentication', 'Performance Optimization'],
-                'user_id' => $user->id, // Explicitly set user_id
-                'category' => 'development',
-            ],
-            [
-                'title' => 'Consulting',
-                'slug' => 'consulting',
-                'description' => 'Technical consulting and architecture guidance',
-                'features' => ['Technical Review', 'Architecture Design', 'Best Practices', 'Code Review'],
-                'user_id' => $user->id, // Explicitly set user_id
-                'category' => 'consulting',
-            ],
-        ];
-
-        $this->line('🛠️  Creating services...');
-        $bar = $this->output->createProgressBar(count($services));
-        $bar->start();
-
-        foreach ($services as $serviceData) {
             try {
-                Service::firstOrCreate(
-                    ['user_id' => $user->id, 'slug' => $serviceData['slug']],
-                    $serviceData
-                );
+                $isCurrent = ($i === 0);
+                $startDate = now()->subYears($count - $i + 1);
+                $endDate = $isCurrent ? null : now()->subYears($count - $i);
+
+                Experience::create([
+                    'user_id' => $user->id,
+                    'company' => $companies[$i % count($companies)],
+                    'position' => $positions[$i % count($positions)],
+                    'description' => 'Developed and maintained web applications using modern technologies and best practices.',
+                    'is_current' => $isCurrent,
+                    'start_date' => $startDate,
+                    'end_date' => $endDate,
+                    'slug' => 'experience-' . $i . '-' . uniqid(),
+                ]);
+                
+                $createdCount++;
                 $bar->advance();
                 usleep(10000);
             } catch (\Exception $e) {
-                $this->error("Failed to create service {$serviceData['title']}: {$e->getMessage()}");
+                $bar->clear();
+                $this->newLine();
+                $this->error("Failed to create experience #{$i}: {$e->getMessage()}");
+                $bar->display();
             }
         }
 
         $bar->finish();
         $this->newLine();
-        $this->info("  ✓ Created " . count($services) . " services");
+        $this->info("  ✓ Created {$createdCount} work experiences");
         $this->newLine();
     }
 
-    /**
-     * Seed testimonials with duplicate prevention
-     */
+    private function seedEducation($user)
+    {
+        $this->line('🎓 Creating education record...');
+        
+        try {
+            $userTypeSlug = $user->userType?->slug ?? 'professional';
+            
+            $role = match($userTypeSlug) {
+                'student' => 'student',
+                'teacher' => 'teacher',
+                default => 'student'
+            };
+
+            Education::firstOrCreate(
+                ['user_id' => $user->id, 'institution' => 'Tech University'],
+                [
+                    'title' => 'Bachelor of Science in Computer Science',
+                    'field_or_department' => 'Computer Science',
+                    'role' => $role,
+                    'is_current' => true,
+                    'start_date' => now()->subYears(3),
+                    'description' => 'Comprehensive computer science program with focus on software engineering.',
+                ]
+            );
+
+            $this->info('  ✓ Created education record');
+        } catch (\Exception $e) {
+            $this->error("Failed to create education: {$e->getMessage()}");
+        }
+        
+        $this->newLine();
+    }
+
+    private function seedServices($user)
+    {
+        $this->line('🛠️  Creating services...');
+        
+        $services = [
+            [
+                'title' => 'Web Development',
+                'slug' => 'web-development-' . $user->id,
+                'description' => 'Full-stack web application development with modern technologies',
+                'features' => ['Custom Design', 'Responsive Layout', 'API Integration', 'SEO Optimization'],
+                'user_id' => $user->id,
+                'category' => 'development',
+            ],
+            [
+                'title' => 'Backend Development',
+                'slug' => 'backend-development-' . $user->id,
+                'description' => 'Robust server-side solutions and database architecture',
+                'features' => ['REST API', 'Database Design', 'Authentication', 'Performance Optimization'],
+                'user_id' => $user->id,
+                'category' => 'development',
+            ],
+            [
+                'title' => 'Consulting',
+                'slug' => 'consulting-' . $user->id,
+                'description' => 'Technical consulting and architecture guidance',
+                'features' => ['Technical Review', 'Architecture Design', 'Best Practices', 'Code Review'],
+                'user_id' => $user->id,
+                'category' => 'consulting',
+            ],
+        ];
+
+        $bar = $this->output->createProgressBar(count($services));
+        $bar->start();
+
+        $createdCount = 0;
+
+        foreach ($services as $serviceData) {
+            try {
+                Service::updateOrCreate(
+                    ['user_id' => $user->id, 'slug' => $serviceData['slug']],
+                    $serviceData
+                );
+                $createdCount++;
+                $bar->advance();
+                usleep(10000);
+            } catch (\Exception $e) {
+                $bar->clear();
+                $this->newLine();
+                $this->error("Failed to create service {$serviceData['title']}: {$e->getMessage()}");
+                $bar->display();
+            }
+        }
+
+        $bar->finish();
+        $this->newLine();
+        $this->info("  ✓ Created {$createdCount} services");
+        $this->newLine();
+    }
+
     private function seedTestimonials($user, $count)
     {
+        $this->line('⭐ Creating testimonials...');
+        
         $names = ['Sarah Johnson', 'Michael Chen', 'Emily Davis', 'David Wilson', 'Lisa Anderson'];
         $roles = ['CEO', 'Project Manager', 'CTO', 'Product Owner', 'Tech Lead'];
         $companies = ['Tech Corp', 'StartupXYZ', 'Digital Agency', 'Innovation Labs', 'Cloud Systems'];
 
         $bar = $this->output->createProgressBar($count);
-        $this->line('⭐ Creating testimonials...');
         $bar->start();
 
+        $createdCount = 0;
+
         for ($i = 0; $i < $count; $i++) {
-            $name = $names[$i % count($names)];
-            $role = $roles[$i % count($roles)];
-            $company = $companies[$i % count($companies)];
-
-            $baseSlug = Str::slug($name);
-            $slug = $baseSlug;
-            $counter = 0;
-
-            while (Testimonial::where('slug', $slug)->exists()) {
-                $counter++;
-                $slug = $baseSlug . '-' . $counter;
-            }
-
             try {
+                $name = $names[$i % count($names)];
+                $role = $roles[$i % count($roles)];
+                $company = $companies[$i % count($companies)];
+
+                $baseSlug = Str::slug($name);
+                $slug = $baseSlug;
+                $counter = 0;
+
+                while (Testimonial::where('slug', $slug)->exists()) {
+                    $counter++;
+                    $slug = $baseSlug . '-' . $counter;
+                }
+
                 Testimonial::create([
                     'user_id' => $user->id,
                     'name' => $name,
@@ -637,55 +719,67 @@ class SeedDashboardData extends Command
                     'featured' => rand(0, 2) === 0,
                 ]);
 
+                $createdCount++;
                 $bar->advance();
                 usleep(10000);
             } catch (\Exception $e) {
-                $this->error("Failed to create testimonial {$name}: {$e->getMessage()}");
-                continue;
+                $bar->clear();
+                $this->newLine();
+                $this->error("Failed to create testimonial #{$i}: {$e->getMessage()}");
+                $bar->display();
             }
         }
 
         $bar->finish();
         $this->newLine();
-        $this->info("  ✓ Created {$count} testimonials");
+        $this->info("  ✓ Created {$createdCount} testimonials");
         $this->newLine();
     }
 
-/**
- * Generate dynamic testimonial content
- */
-private function generateTestimonialContent($name, $role, $company)
-{
-    $contents = [
-        "Working with {$name} was an absolute pleasure! They delivered exceptional results that exceeded our expectations.",
-        "{$name} demonstrated remarkable expertise and professionalism throughout our project. Highly recommended!",
-        "Outstanding work from {$name} at {$company}. Their attention to detail and technical skills are impressive.",
-        "We hired {$name} for a complex project and they delivered beyond our expectations. Truly exceptional!",
-        "{$name}'s work at {$company} speaks volumes about their capabilities. Professional, timely, and high-quality delivery."
-    ];
-    
-    return $contents[array_rand($contents)];
-}
+    private function generateTestimonialContent($name, $role, $company)
+    {
+        $contents = [
+            "Working with this professional was an absolute pleasure! They delivered exceptional results that exceeded our expectations.",
+            "Demonstrated remarkable expertise and professionalism throughout our project. Highly recommended!",
+            "Outstanding work. Their attention to detail and technical skills are impressive.",
+            "We hired them for a complex project and they delivered beyond our expectations. Truly exceptional!",
+            "Their work speaks volumes about their capabilities. Professional, timely, and high-quality delivery."
+        ];
+        
+        return $contents[array_rand($contents)];
+    }
 
-    /**
-     * Show summary of seeded data
-     */
     private function showSummary($user)
     {
         $this->info('📊 Data Summary:');
         $this->newLine();
         
+        $projectCount = Projects::where('user_id', $user->id)->count();
+        $skillCount = UserSkill::where('user_id', $user->id)->count();
+        $contactCount = Contact::where('user_id', $user->id)->count();
+        $experienceCount = Experience::where('user_id', $user->id)->count();
+        $educationCount = Education::where('user_id', $user->id)->count();
+        $serviceCount = Service::where('user_id', $user->id)->count();
+        $testimonialCount = Testimonial::where('user_id', $user->id)->count();
+
         $summary = [
             ['Type', 'Count'],
-            ['Projects', Projects::where('user_id', $user->id)->count()],
-            ['Skills', UserSkill::where('user_id', $user->id)->count()],
-            ['Contacts', Contact::where('user_id', $user->id)->count()],
-            ['Experiences', Experience::where('user_id', $user->id)->count()],
-            ['Education', Education::where('user_id', $user->id)->count()],
-            ['Services', Service::where('user_id', $user->id)->count()],
-            ['Testimonials', Testimonial::where('user_id', $user->id)->count()],
+            ['Projects', $projectCount],
+            ['Skills', $skillCount],
+            ['Contacts', $contactCount],
+            ['Experiences', $experienceCount],
+            ['Education', $educationCount],
+            ['Services', $serviceCount],
+            ['Testimonials', $testimonialCount],
         ];
 
         $this->table($summary[0], array_slice($summary, 1));
+        
+        $totalCount = $projectCount + $skillCount + $contactCount + $experienceCount + $educationCount + $serviceCount + $testimonialCount;
+        
+        if ($totalCount === 0) {
+            $this->newLine();
+            $this->error('⚠️  WARNING: No data was created! Check for errors above.');
+        }
     }
 }

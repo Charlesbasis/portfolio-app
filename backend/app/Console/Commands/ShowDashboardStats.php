@@ -204,58 +204,62 @@ class ShowDashboardStats extends Command
             $this->newLine();
         }
 
-    //     if (isset($stats['services'])) {
-    //         $this->line('🛠️  Services: {$stats['services']['total']}");
-    //         $this->newLine();
-    //     }
+        // ✅ FIXED: Uncommented services section
+        if (isset($stats['services'])) {
+            $this->line("🛠️  Services: {$stats['services']['total']}");
+            $this->newLine();
+        }
 
-    //     if (isset($stats['testimonials'])) {
-    //         $this->line('⭐ Testimonials:');
-    //         $this->line("  Total: {$stats['testimonials']['total']}");
-    //         $this->line("  Featured: {$stats['testimonials']['featured']}");
-    //     }
+        // ✅ FIXED: Uncommented testimonials section
+        if (isset($stats['testimonials'])) {
+            $this->line('⭐ Testimonials:');
+            $this->line("  Total: {$stats['testimonials']['total']}");
+            $this->line("  Featured: {$stats['testimonials']['featured']}");
+        }
     }
 
-    // private function displayFreelancerStats($stats)
-    // {
-    //     $this->displayProfessionalStats($stats);
+    // ✅ FIXED: Uncommented freelancer stats method
+    private function displayFreelancerStats($stats)
+    {
+        $this->displayProfessionalStats($stats);
         
-    //     $this->newLine();
+        $this->newLine();
         
-    //     if (isset($stats['client_work'])) {
-    //         $this->line('👔 Client Work:');
-    //         $this->line("  Total Projects: {$stats['client_work']['total_projects']}");
-    //         $this->line("  Completed: {$stats['client_work']['completed']}");
-    //         $this->line("  Testimonials: {$stats['client_work']['testimonials']}");
-    //         $this->newLine();
-    //     }
+        if (isset($stats['client_work'])) {
+            $this->line('👔 Client Work:');
+            $this->line("  Total Projects: {$stats['client_work']['total_projects']}");
+            $this->line("  Completed: {$stats['client_work']['completed']}");
+            $this->line("  Testimonials: {$stats['client_work']['testimonials']}");
+            $this->newLine();
+        }
 
-    //     if (isset($stats['inquiries'])) {
-    //         $this->line('💬 Inquiries:');
-    //         $this->line("  Total: {$stats['inquiries']['total']}");
-    //         $this->line("  Unread: {$stats['inquiries']['unread']}");
-    //         $this->line("  Replied: {$stats['inquiries']['replied']}");
-    //     }
-    // }
+        if (isset($stats['inquiries'])) {
+            $this->line('💬 Inquiries:');
+            $this->line("  Total: {$stats['inquiries']['total']}");
+            $this->line("  Unread: {$stats['inquiries']['unread']}");
+            $this->line("  Replied: {$stats['inquiries']['replied']}");
+        }
+    }
 
-    // private function displayGenericStats($stats)
-    // {
-    //     $this->info('📊 GENERIC DASHBOARD');
-    //     $this->newLine();
+    // ✅ FIXED: Uncommented generic stats method
+    private function displayGenericStats($stats)
+    {
+        $this->info('📊 GENERIC DASHBOARD');
+        $this->newLine();
 
-    //     foreach ($stats as $category => $data) {
-    //         if (!is_array($data)) {
-    //             continue;
-    //         }
+        foreach ($stats as $category => $data) {
+            if (!is_array($data)) {
+                continue;
+            }
 
-    //         $this->line(ucwords(str_replace('_', ' ', $category)) . ':');
-    //         foreach ($data as $key => $value) {
-    //             if (is_array($value)) {
-    //                 $value = json_encode($value);
-    //             }
-    //             $this->line("  " . ucwords(str_replace('_', ' ', $key)) . ": {$value}");
-    //         }
-    //         $this->newLine();
-    //     }
-    // }
+            $this->line(ucwords(str_replace('_', ' ', $category)) . ':');
+            foreach ($data as $key => $value) {
+                if (is_array($value)) {
+                    $value = json_encode($value);
+                }
+                $this->line("  " . ucwords(str_replace('_', ' ', $key)) . ": {$value}");
+            }
+            $this->newLine();
+        }
+    }
 }
