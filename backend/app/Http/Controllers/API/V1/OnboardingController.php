@@ -328,24 +328,22 @@ class OnboardingController extends Controller
 
         foreach ($skills as $skillData) {
             $skillName = is_array($skillData) ? ($skillData['name'] ?? null) : $skillData;
-            
+
             if (empty($skillName)) {
                 continue;
             }
 
-            // Find or create the skill
+            // ✅ Find or create GLOBAL skill (no user_id)
             $skill = Skills::firstOrCreate(
                 ['slug' => Str::slug($skillName)],
                 [
                     'name' => $skillName,
                     'category' => is_array($skillData) ? ($skillData['category'] ?? 'other') : 'other',
-                    'proficiency' => is_array($skillData) && isset($skillData['proficiency']) 
-                        ? $proficiencyMap[$skillData['proficiency']] ?? 50 
-                        : 50,
+                    'proficiency' => 50, // Default global proficiency
                 ]
             );
 
-            // Create user-skill relationship
+            // ✅ User's relationship with the skill
             UserSkill::updateOrCreate(
                 [
                     'user_id' => $user->id,
