@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache as FacadesCache;
 use Illuminate\Support\Str;
-use Symfony\Component\HttpKernel\Attribute\Cache;
 
 class Service extends Model
 {
@@ -14,6 +13,8 @@ class Service extends Model
         'description',
         'features',
         'category',
+        'user_id',
+        'slug', 
     ];
 
     protected $casts = [
@@ -35,13 +36,37 @@ class Service extends Model
         parent::boot();
 
         static::creating(function ($service) {
-            FacadesCache::forget('dashboard:stats:' . $service->user->id);
+            // Use user_id directly instead of through relationship
+            if ($service->user_id) {
+                FacadesCache::forget('dashboard:stats:' . $service->user_id);
+            }
+            
             if (empty($service->slug)) {
                 $service->slug = Str::slug($service->title);
             }
         });
+
         static::updating(function ($service) {
-            FacadesCache::forget('dashboard:stats:' . $service->user->id);
+            // Use user_id directly instead of through relationship
+            if ($service->user_id) {
+                FacadesCache::forget('dashboard:stats:' . $service->user_id);
+            }
         });
+
+        // Add deleting event for completeness
+        static::deleting(function ($service) {
+            if ($service->user_id) {
+                FacadesCache::forget('dashboard:stats:' . $service->user_id);
+            }
+        });
+    }
+
+    public function getUserAttribute()
+    {
+        if (!$this->relationLoaded('user') && $this->user_id) {
+            $this->load('user');
+        }
+
+        return $this->getRelationValue('user');
     }
 }

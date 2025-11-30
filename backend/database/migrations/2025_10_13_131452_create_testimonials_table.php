@@ -23,7 +23,7 @@ return new class extends Migration
             $table->boolean('featured')->default(false);
             $table->integer('order')->default(0);
             $table->index(['user_id', 'featured']);
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            // $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('slug')->unique();
         });
     }

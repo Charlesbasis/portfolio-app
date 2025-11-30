@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\Projects;
+use App\Observers\ProjectObserver;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -23,6 +25,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureRateLimiting();
+        Projects::observe(ProjectObserver::class);
     }
 
     /**

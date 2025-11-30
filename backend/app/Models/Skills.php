@@ -12,10 +12,12 @@ class Skills extends Model
     protected $fillable = [
         'name',
         'category',
-        'proficiency_level',
-        'user_id'
-        // 'skill_id',
-        // 'years_of_experience',
+        'proficiency',
+        'years_of_experience',
+        'user_id',
+        'slug',
+        'icon_url',
+        'order'
     ];
 
     public function user()

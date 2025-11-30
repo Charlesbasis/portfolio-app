@@ -25,7 +25,7 @@ return new class extends Migration
             $table->index('created_at');
             $table->index('email');
             $table->string('slug')->unique();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('user_id')->nullable()->constrained()->onDelete('cascade');
         });
     }
 

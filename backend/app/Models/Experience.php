@@ -22,6 +22,7 @@ class Experience extends Model
         'company_url',
         'technologies',
         'order',
+        'slug',
     ];
 
     protected $casts = [

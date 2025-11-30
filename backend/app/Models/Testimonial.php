@@ -14,6 +14,8 @@ class Testimonial extends Model
         'role',
         'content',
         'avatar_url',
+        'user_id',
+        'slug',
     ];
 
     protected $casts = [
