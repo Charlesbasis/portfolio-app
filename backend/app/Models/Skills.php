@@ -13,11 +13,11 @@ class Skills extends Model
         'name',
         'category',
         'proficiency',
+        'icon_url',
         'years_of_experience',
+        'order',
         'user_id',
         'slug',
-        'icon_url',
-        'order'
     ];
 
     public function user()

@@ -8,12 +8,19 @@ use App\Models\User;
 use App\Models\UserType;
 use App\Models\UserTypeField;
 use App\Models\UserProfile;
+use App\Models\Projects;
+use App\Models\Skills;
+use App\Models\UserSkill;
+use App\Models\Experience;
+use App\Models\Service;
+use App\Models\Education;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Cache;
 
 class OnboardingController extends Controller
 {
@@ -77,7 +84,7 @@ class OnboardingController extends Controller
         
         return response()->json([
             'completed' => $user->onboarding_completed,
-            'current_step' => $user->onboarding_step,
+            'current_step' => $user->onboarding_step ?? 1,
             'profile' => $user->profile,
             'user_type' => $userType,
             'user_type_fields' => $userTypeFields,
@@ -89,198 +96,354 @@ class OnboardingController extends Controller
     {
         $user = $request->user();
 
-        // try {
-
+        try {
             DB::transaction(function () use ($user, $request) {
-                // Update user type if provided
+                // 1. Update user type if provided
                 if ($request->has('user_type_id')) {
                     $userType = UserType::find($request->input('user_type_id'));
                     if ($userType) {
                         $user->update(['user_type_id' => $userType->id]);
-                        $user->refresh(); // Refresh to get updated user type
+                        $user->refresh();
                     }
                 }
 
                 $userType = $user->userType;
 
-                // Validate against user type specific rules if user type exists
-                if ($userType) {
-                    $validationRules = $this->getUserTypeValidationRules($userType);
-                    $validator = Validator::make($request->all(), $validationRules);
-
-                    if ($validator->fails()) {
-                        throw new \Illuminate\Validation\ValidationException($validator);
-                    }
+                // 2. Save User Type Fields (GPA, Institution, etc.)
+                if ($userType && $request->has('user_type_fields')) {
+                    $this->saveUserTypeFields($user, $request->input('user_type_fields'));
                 }
 
-                // Get allowed fields for this user type
-                $allowedFields = $userType ? $this->getDefaultAllowedFields($userType->slug) : [
-                    'full_name',
-                    'username',
-                    'job_title',
-                    'company',
-                    'location',
-                    'tagline',
-                    'bio'
-                ];
+                // 3. Create User Profile
+                $this->saveUserProfile($user, $request, $userType);
 
-                // Handle activity_data only if userType exists and has a slug
-                if ($request->has('activity_data') && $userType) {
-                    $activityData = $request->input('activity_data');
-
-                    // Add null check for userType->slug before the switch
-                    if ($userType->slug) {
-                        switch ($userType->slug) {
-                            case 'student':
-                                if (!empty($activityData['title'])) {
-                                    $user->projects()->create([
-                                        'title' => $activityData['title'],
-                                        'description' => $activityData['description'] ?? '',
-                                        'project_type' => 'academic',
-                                        'course' => $activityData['course'] ?? null,
-                                    ]);
-                                }
-                                break;
-
-                            case 'teacher':
-                                if (!empty($activityData['title'])) {
-                                    $user->teachingMaterials()->create([
-                                        'title' => $activityData['title'],
-                                        'description' => $activityData['description'] ?? '',
-                                        'subject' => $activityData['subject'] ?? null,
-                                        'grade_level' => $activityData['grade_level'] ?? null,
-                                    ]);
-                                }
-                                break;
-
-                            case 'professional':
-                                if (!empty($activityData['title'])) {
-                                    $user->portfolioProjects()->create([
-                                        'title' => $activityData['title'],
-                                        'description' => $activityData['description'] ?? '',
-                                        'client' => $activityData['client'] ?? null,
-                                        'service_url' => $activityData['service_url'] ?? null,
-                                        'services' => $activityData['services'] ?? [],
-                                    ]);
-                                }
-                                break;
-
-                            case 'freelancer':
-                                if (!empty($activityData['title'])) {
-                                    $user->freelancerProjects()->create([
-                                        'title' => $activityData['title'],
-                                        'description' => $activityData['description'] ?? '',
-                                        'client' => $activityData['client'] ?? null,
-                                        'project_url' => $activityData['project_url'] ?? null,
-                                        'technologies' => $activityData['technologies'] ?? [],
-                                    ]);
-                                }
-                                break;
-                        }
-                    }
+                // 4. Save Projects (CRITICAL - This was missing!)
+                if ($request->has('projects')) {
+                    $this->saveProjects($user, $request->input('projects'));
+                } elseif ($request->has('project')) {
+                    // Handle single project from onboarding
+                    $this->saveProjects($user, [$request->input('project')]);
                 }
 
-                // Prepare base profile data
-                $profileData = [
-                    'email' => $user->email,
-                    'is_public' => $request->input('is_public', true),
-                ];
-
-                // Add standard fields that exist in both request and allowed fields
-                $standardFields = ['full_name', 'username', 'job_title', 'company', 'location', 'tagline', 'bio'];
-                foreach ($standardFields as $field) {
-                    if (in_array($field, $allowedFields) && $request->has($field)) {
-                        $profileData[$field] = $request->input($field);
-                    }
+                // 5. Save Skills (CRITICAL - This was missing!)
+                if ($request->has('skills')) {
+                    $this->saveSkills($user, $request->input('skills'));
                 }
 
-                // Handle custom fields for user type
-                $customFields = [];
-                if ($userType) {
-                    $typeSpecificFields = array_diff($allowedFields, $standardFields);
-                    foreach ($typeSpecificFields as $field) {
-                        if ($request->has($field)) {
-                            $customFields[$field] = $request->input($field);
-                        }
-                    }
-
-                    // Also include fields from UserTypeField that might not be in allowed_fields
-                    $userTypeFieldSlugs = $userType->fields->pluck('field_slug')->toArray();
-                    foreach ($userTypeFieldSlugs as $fieldSlug) {
-                        if ($request->has($fieldSlug) && !in_array($fieldSlug, $standardFields)) {
-                            $customFields[$fieldSlug] = $request->input($fieldSlug);
-                        }
-                    }
+                // 6. Save Experience (CRITICAL - This was missing!)
+                if ($request->has('experiences')) {
+                    $this->saveExperiences($user, $request->input('experiences'));
+                } elseif ($request->has('experience')) {
+                    $this->saveExperiences($user, [$request->input('experience')]);
                 }
 
-                // Store custom fields as JSON
-                if (!empty($customFields)) {
-                    $profileData['custom_fields'] = $customFields;
+                // 7. Save Education
+                if ($request->has('education')) {
+                    $this->saveEducation($user, $request->input('education'));
                 }
 
-                // Update user profile with filtered data
-                $user->profile()->updateOrCreate(
-                    ['user_id' => $user->id],
-                    $profileData
-                );
+                // 8. Save Services
+                if ($request->has('services')) {
+                    $this->saveServices($user, $request->input('services'));
+                }
 
-                // Handle type-specific entity creation (with null check)
+                // 9. Handle type-specific data (legacy support)
                 if ($userType) {
                     $this->handleTypeSpecificEntities($user, $request, $userType);
-                    $this->handleTypeSpecificData($user, $request, $userType);
                 }
 
-                // Log::info('Before completing onboarding', [
-                //     'user_id' => $user->id,
-                //     'has_user_type' => !is_null($user->userType)
-                // ]);
-
-                // $user->completedOnboarding();
-
+                // 10. Mark onboarding as completed
                 $user->update([
                     'onboarding_completed' => true,
                     'onboarding_completed_at' => now(),
                 ]);
 
-                Log::info('Direct update completed', [
+                // 11. Clear any cached dashboard stats
+                Cache::forget('dashboard:stats:' . $user->id);
+
+                Log::info('Onboarding completed successfully', [
                     'user_id' => $user->id,
-                    'onboarding_completed' => $user->onboarding_completed,
-                    'onboarding_completed_at' => $user->onboarding_completed_at
+                    'projects_count' => Projects::where('user_id', $user->id)->count(),
+                    'skills_count' => UserSkill::where('user_id', $user->id)->count(),
+                    'experiences_count' => Experience::where('user_id', $user->id)->count(),
                 ]);
             });
 
             $user->refresh();
 
-            // Add logging to verify completion
-            // Log::info('Onboarding completed for user', [
-            //     'user_id' => $user->id,
-            //     'onboarding_completed' => $user->onboarding_completed,
-            //     'onboarding_completed_at' => $user->onboarding_completed_at,
-            //     'timestamp' => now()
-            // ]);
-        // } catch (\Exception $e) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Onboarding completed successfully',
+                'user' => array_merge($user->toArray(), [
+                    'onboarding_completed' => (bool)$user->onboarding_completed
+                ]),
+                'onboarding_completed' => (bool)$user->onboarding_completed,
+                'onboarding_completed_at' => $user->onboarding_completed_at,
+                'stats' => [
+                    'projects' => Projects::where('user_id', $user->id)->count(),
+                    'skills' => UserSkill::where('user_id', $user->id)->count(),
+                    'experiences' => Experience::where('user_id', $user->id)->count(),
+                ]
+            ]);
 
-        //     Log::error('Onboarding completion failed', [
-        //         'user_id' => $user->id,
-        //         'error' => $e->getMessage(),
-        //         'trace' => $e->getTraceAsString()
-        //     ]);
+        } catch (\Exception $e) {
+            Log::error('Onboarding completion failed', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
 
-        //     return response()->json([
-        //         'message' => 'Failed to complete onboarding: ' . $e->getMessage()
-        //     ], 500);
-        // }
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to complete onboarding: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 
-        // $user->load(['profile', 'projects', 'skills', 'userType']);
+    /**
+     * Save user type specific fields (GPA, institution, etc.)
+     */
+    private function saveUserTypeFields($user, $fields)
+    {
+        if (!$user->user_type_id || !is_array($fields)) {
+            return;
+        }
 
-        return response()->json([
-            'message' => 'Onboarding completed successfully',
-            'user' => array_merge($user->toArray(), [
-                'onboarding_completed' => (bool)$user->onboarding_completed
-            ]),
-            'onboarding_completed' => (bool)$user->onboarding_completed,
-            'onboarding_completed_at' => $user->onboarding_completed_at
-        ]);
+        foreach ($fields as $fieldSlug => $value) {
+            $fieldDef = UserTypeField::where('field_slug', $fieldSlug)
+                ->where('user_type_id', $user->user_type_id)
+                ->first();
+            
+            if ($fieldDef) {
+                DB::table('user_field_values')->updateOrInsert(
+                    [
+                        'user_id' => $user->id,
+                        'user_type_field_id' => $fieldDef->id
+                    ],
+                    [
+                        'value' => $value,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]
+                );
+            }
+        }
+    }
+
+    /**
+     * Save user profile
+     */
+    private function saveUserProfile($user, Request $request, $userType)
+    {
+        $allowedFields = $userType ? $this->getDefaultAllowedFields($userType->slug) : [
+            'full_name', 'username', 'job_title', 'company', 'location', 'tagline', 'bio'
+        ];
+
+        $profileData = [
+            'email' => $user->email,
+            'is_public' => $request->input('is_public', true),
+        ];
+
+        // Add standard fields
+        $standardFields = ['full_name', 'username', 'job_title', 'company', 'location', 'tagline', 'bio'];
+        foreach ($standardFields as $field) {
+            if (in_array($field, $allowedFields) && $request->has($field)) {
+                $profileData[$field] = $request->input($field);
+            }
+        }
+
+        // Handle custom fields
+        $customFields = [];
+        if ($userType) {
+            $typeSpecificFields = array_diff($allowedFields, $standardFields);
+            foreach ($typeSpecificFields as $field) {
+                if ($request->has($field)) {
+                    $customFields[$field] = $request->input($field);
+                }
+            }
+
+            $userTypeFieldSlugs = $userType->fields->pluck('field_slug')->toArray();
+            foreach ($userTypeFieldSlugs as $fieldSlug) {
+                if ($request->has($fieldSlug) && !in_array($fieldSlug, $standardFields)) {
+                    $customFields[$fieldSlug] = $request->input($fieldSlug);
+                }
+            }
+        }
+
+        if (!empty($customFields)) {
+            $profileData['custom_fields'] = $customFields;
+        }
+
+        $user->profile()->updateOrCreate(
+            ['user_id' => $user->id],
+            $profileData
+        );
+    }
+
+    /**
+     * Save projects from onboarding
+     */
+    private function saveProjects($user, $projects)
+    {
+        if (!is_array($projects)) {
+            return;
+        }
+
+        foreach ($projects as $projectData) {
+            // Skip if no title
+            if (empty($projectData['title'])) {
+                continue;
+            }
+
+            Projects::create([
+                'user_id' => $user->id,
+                'title' => $projectData['title'],
+                'slug' => Str::slug($projectData['title']) . '-' . uniqid(),
+                'description' => $projectData['description'] ?? null,
+                'status' => $projectData['status'] ?? 'published',
+                'type' => $projectData['type'] ?? 'personal_project',
+                'featured' => $projectData['featured'] ?? false,
+                'technologies' => $projectData['technologies'] ?? [],
+                'github_url' => $projectData['github_url'] ?? null,
+                'live_url' => $projectData['live_url'] ?? null,
+            ]);
+        }
+    }
+
+    /**
+     * Save skills from onboarding
+     */
+    private function saveSkills($user, $skills)
+    {
+        if (!is_array($skills)) {
+            return;
+        }
+
+        $proficiencyMap = [
+            'beginner' => 25,
+            'intermediate' => 50,
+            'advanced' => 75,
+            'expert' => 90
+        ];
+
+        foreach ($skills as $skillData) {
+            $skillName = is_array($skillData) ? ($skillData['name'] ?? null) : $skillData;
+            
+            if (empty($skillName)) {
+                continue;
+            }
+
+            // Find or create the skill
+            $skill = Skills::firstOrCreate(
+                ['slug' => Str::slug($skillName)],
+                [
+                    'name' => $skillName,
+                    'category' => is_array($skillData) ? ($skillData['category'] ?? 'other') : 'other',
+                    'proficiency' => is_array($skillData) && isset($skillData['proficiency']) 
+                        ? $proficiencyMap[$skillData['proficiency']] ?? 50 
+                        : 50,
+                ]
+            );
+
+            // Create user-skill relationship
+            UserSkill::updateOrCreate(
+                [
+                    'user_id' => $user->id,
+                    'skill_id' => $skill->id
+                ],
+                [
+                    'proficiency' => is_array($skillData) ? ($skillData['proficiency'] ?? 'intermediate') : 'intermediate',
+                    'years_experience' => is_array($skillData) ? ($skillData['years_experience'] ?? 0) : 0,
+                ]
+            );
+        }
+    }
+
+    /**
+     * Save work experiences from onboarding
+     */
+    private function saveExperiences($user, $experiences)
+    {
+        if (!is_array($experiences)) {
+            return;
+        }
+
+        foreach ($experiences as $index => $experienceData) {
+            if (empty($experienceData['company']) || empty($experienceData['position'])) {
+                continue;
+            }
+
+            Experience::create([
+                'user_id' => $user->id,
+                'company' => $experienceData['company'],
+                'position' => $experienceData['position'],
+                'description' => $experienceData['description'] ?? null,
+                'is_current' => $experienceData['is_current'] ?? false,
+                'start_date' => $experienceData['start_date'] ?? now()->subYear(),
+                'end_date' => $experienceData['end_date'] ?? null,
+                'slug' => Str::slug($experienceData['position'] . '-' . $experienceData['company']) . '-' . uniqid(),
+                'location' => $experienceData['location'] ?? null,
+                'company_url' => $experienceData['company_url'] ?? null,
+                'technologies' => $experienceData['technologies'] ?? [],
+                'order' => $index,
+            ]);
+        }
+    }
+
+    /**
+     * Save education from onboarding
+     */
+    private function saveEducation($user, $educations)
+    {
+        if (!is_array($educations)) {
+            return;
+        }
+
+        foreach ($educations as $index => $educationData) {
+            if (empty($educationData['institution'])) {
+                continue;
+            }
+
+            Education::create([
+                'user_id' => $user->id,
+                'institution' => $educationData['institution'],
+                'title' => $educationData['title'] ?? 'Degree',
+                'field_or_department' => $educationData['field_or_department'] ?? $educationData['field'] ?? null,
+                'role' => $educationData['role'] ?? 'student',
+                'is_current' => $educationData['is_current'] ?? false,
+                'start_date' => $educationData['start_date'] ?? now()->subYears(2),
+                'end_date' => $educationData['end_date'] ?? null,
+                'description' => $educationData['description'] ?? null,
+                'grade' => $educationData['grade'] ?? null,
+                'location' => $educationData['location'] ?? null,
+                'order' => $index,
+            ]);
+        }
+    }
+
+    /**
+     * Save services from onboarding
+     */
+    private function saveServices($user, $services)
+    {
+        if (!is_array($services)) {
+            return;
+        }
+
+        foreach ($services as $serviceData) {
+            if (empty($serviceData['title'])) {
+                continue;
+            }
+
+            Service::create([
+                'user_id' => $user->id,
+                'title' => $serviceData['title'],
+                'slug' => Str::slug($serviceData['title']) . '-' . $user->id . '-' . uniqid(),
+                'description' => $serviceData['description'] ?? '',
+                'features' => $serviceData['features'] ?? [],
+                'category' => $serviceData['category'] ?? 'general',
+            ]);
+        }
     }
 
     public function checkUsername($username): JsonResponse
@@ -308,333 +471,26 @@ class OnboardingController extends Controller
     }
 
     /**
-     * Get validation rules for a specific user type
-     */
-    private function getUserTypeValidationRules(UserType $userType): array
-    {
-        $baseRules = [
-            'user_type_id' => 'sometimes|exists:user_types,id',
-            'full_name' => 'sometimes|string|max:255',
-            'username' => 'sometimes|string|max:255|unique:user_profiles,username',
-            'job_title' => 'sometimes|string|max:255',
-            'company' => 'sometimes|string|max:255',
-            'location' => 'sometimes|string|max:255',
-            'tagline' => 'sometimes|string|max:255',
-            'bio' => 'sometimes|string',
-            'is_public' => 'sometimes|boolean',
-        ];
-
-        // Get rules from user type fields
-        $typeRules = [];
-        $userTypeFields = $userType->fields()->where('is_active', true)->get();
-        
-        foreach ($userTypeFields as $field) {
-            $rule = $field->validation_rules;
-            
-            // Add required rule if field is marked as required
-            if ($field->is_required) {
-                if (strpos($rule, 'required') === false) {
-                    $rule = 'required|' . $rule;
-                }
-            } else {
-                if (strpos($rule, 'required') === false) {
-                    $rule = 'sometimes|' . $rule;
-                }
-            }
-            
-            $typeRules[$field->field_slug] = $rule;
-        }
-
-        return array_merge($baseRules, $typeRules);
-    }
-
-    /**
-     * Handle creation of type-specific entities
+     * Handle creation of type-specific entities (legacy support)
      */
     private function handleTypeSpecificEntities(User $user, Request $request, ?UserType $userType): void
     {
         if (!$userType) return;
 
+        // This is kept for backward compatibility but the new save methods above are preferred
         switch ($userType->slug) {
             case 'student':
-                $this->handleStudentEntities($user, $request);
+                // Additional student-specific logic if needed
                 break;
             case 'teacher':
-                $this->handleTeacherEntities($user, $request);
+                // Additional teacher-specific logic if needed
                 break;
             case 'professional':
-                $this->handleProfessionalEntities($user, $request);
+                // Additional professional-specific logic if needed
                 break;
             case 'freelancer':
-                $this->handleFreelancerEntities($user, $request);
+                // Additional freelancer-specific logic if needed
                 break;
         }
-    }
-
-    private function handleStudentEntities(User $user, Request $request): void
-    {
-        // Handle student-specific entities
-        if ($request->has('courses')) {
-            $courses = $request->input('courses');
-            foreach ($courses as $courseData) {
-                $user->studentCourses()->create([
-                    'course_name' => $courseData['name'],
-                    'institution' => $courseData['institution'] ?? null,
-                    'start_date' => $courseData['start_date'] ?? null,
-                    'end_date' => $courseData['end_date'] ?? null,
-                ]);
-            }
-        }
-
-        // Academic projects for students
-        if ($request->has('academic_projects')) {
-            $projects = $request->input('academic_projects');
-            foreach ($projects as $projectData) {
-                $user->academicProjects()->create([
-                    'title' => $projectData['title'],
-                    'description' => $projectData['description'] ?? null,
-                    'subject' => $projectData['subject'] ?? null,
-                    'grade' => $projectData['grade'] ?? null,
-                ]);
-            }
-        }
-    }
-
-    private function handleTeacherEntities(User $user, Request $request): void
-    {
-        // Handle teacher-specific entities
-        if ($request->has('subjects')) {
-            $subjects = $request->input('subjects');
-            foreach ($subjects as $subjectData) {
-                $user->teacherSubjects()->create([
-                    'name' => $subjectData['name'],
-                    'level' => $subjectData['level'] ?? $request->input('teaching_level', 'general'),
-                ]);
-            }
-        }
-
-        if ($request->has('classes')) {
-            $classes = $request->input('classes');
-            foreach ($classes as $classData) {
-                $user->teacherClasses()->create([
-                    'name' => $classData['name'],
-                    'grade_level' => $classData['grade_level'] ?? null,
-                    'subject' => $classData['subject'] ?? null,
-                ]);
-            }
-        }
-    }
-
-    private function handleProfessionalEntities(User $user, Request $request): void
-    {
-        // Handle professional-specific entities
-        if ($request->has('skills')) {
-            $skills = $request->input('skills');
-            if (is_array($skills)) {
-                foreach ($skills as $skillName) {
-                    $user->skills()->create([
-                        'name' => $skillName,
-                        'category' => 'professional',
-                        'proficiency' => 80,
-                    ]);
-                }
-            }
-        }
-
-        // Professional experience
-        if ($request->has('experience')) {
-            $experienceData = $request->input('experience');
-            $user->experiences()->create([
-                'title' => $experienceData['title'] ?? 'Current Role',
-                'company' => $experienceData['company'] ?? $request->input('company'),
-                'description' => $experienceData['description'] ?? null,
-                'start_date' => $experienceData['start_date'] ?? null,
-                'end_date' => $experienceData['end_date'] ?? null,
-                'is_current' => $experienceData['is_current'] ?? true,
-            ]);
-        }
-    }
-
-    private function handleFreelancerEntities(User $user, Request $request): void
-    {
-        // Handle freelancer-specific entities
-        if ($request->has('services')) {
-            $services = $request->input('services');
-            foreach ($services as $serviceData) {
-                $user->freelancerServices()->create([
-                    'name' => $serviceData['name'],
-                    'description' => $serviceData['description'] ?? null,
-                    'category' => $serviceData['category'] ?? 'general',
-                    'rate_type' => $serviceData['rate_type'] ?? 'hourly',
-                    'rate' => $serviceData['rate'] ?? $request->input('hourly_rate'),
-                ]);
-            }
-        }
-
-        // Freelancer portfolio projects
-        if ($request->has('portfolio_projects')) {
-            $projects = $request->input('portfolio_projects');
-            foreach ($projects as $projectData) {
-                $user->portfolioProjects()->create([
-                    'title' => $projectData['title'],
-                    'description' => $projectData['description'] ?? null,
-                    'client' => $projectData['client'] ?? null,
-                    'project_url' => $projectData['project_url'] ?? null,
-                    'technologies' => $projectData['technologies'] ?? [],
-                ]);
-            }
-        }
-    }
-
-    private function handleTypeSpecificData(User $user, Request $request, ?UserType $userType): void
-    {
-        // This method can be used for additional data processing
-        // that doesn't fit into entity creation
-        if (!$userType) return;
-
-        // Store any type-specific data in custom fields if needed
-        $typeSpecificData = [];
-        
-        switch ($userType->slug) {
-            case 'student':
-                if ($request->has('grade_level')) {
-                    $typeSpecificData['grade_level'] = $request->input('grade_level');
-                }
-                break;
-                
-            case 'teacher':
-                if ($request->has('subject_specialty')) {
-                    $typeSpecificData['subject_specialty'] = $request->input('subject_specialty');
-                }
-                break;
-                
-            case 'professional':
-                if ($request->has('current_role')) {
-                    $typeSpecificData['current_role'] = $request->input('current_role');
-                }
-                if ($request->has('skills')) {
-                    $typeSpecificData['skills_list'] = is_array($request->input('skills')) 
-                        ? $request->input('skills') 
-                        : explode(',', $request->input('skills'));
-                }
-                break;
-                
-            case 'freelancer':
-                if ($request->has('hourly_rate')) {
-                    $typeSpecificData['hourly_rate'] = $request->input('hourly_rate');
-                }
-                if ($request->has('portfolio_url')) {
-                    $typeSpecificData['portfolio_url'] = $request->input('portfolio_url');
-                }
-                break;
-        }
-
-        // Update custom fields with type-specific data
-        if (!empty($typeSpecificData)) {
-            $profile = $user->profile;
-            $currentCustomFields = $profile->custom_fields ?? [];
-            $profile->custom_fields = array_merge($currentCustomFields, $typeSpecificData);
-            $profile->save();
-        }
-    }
-
-    /**
-     * Get step configuration for multi-step onboarding
-     */
-    public function getStepConfiguration(Request $request, $step): JsonResponse
-    {
-        $user = $request->user();
-        $userType = $user->userType;
-        
-        $stepConfiguration = $this->getStepConfig($userType, $step);
-        
-        if (!$stepConfiguration) {
-            return response()->json([
-                'message' => 'Step not found'
-            ], 404);
-        }
-
-        return response()->json([
-            'step' => $stepConfiguration,
-            'available_fields' => $userType ? $this->getDefaultAllowedFields($userType->slug) : [],
-            'validation_rules' => $userType ? $this->getUserTypeValidationRules($userType) : [],
-        ]);
-    }
-
-    /**
-     * Get configuration for specific step
-     */
-    private function getStepConfig(?UserType $userType, int $step): ?array
-    {
-        if (!$userType) return null;
-
-        $steps = match($userType->slug) {
-            'student' => [
-                1 => [
-                    'step' => 1,
-                    'title' => 'Basic Information',
-                    'description' => 'Tell us about yourself',
-                    'fields' => ['full_name', 'username', 'location', 'bio']
-                ],
-                2 => [
-                    'step' => 2,
-                    'title' => 'Academic Details',
-                    'description' => 'Share your educational background',
-                    'fields' => ['grade_level']
-                ]
-            ],
-            'teacher' => [
-                1 => [
-                    'step' => 1,
-                    'title' => 'Basic Information',
-                    'description' => 'Tell us about yourself',
-                    'fields' => ['full_name', 'username', 'job_title', 'location', 'bio']
-                ],
-                2 => [
-                    'step' => 2,
-                    'title' => 'Teaching Details',
-                    'description' => 'Share your teaching expertise',
-                    'fields' => ['subject_specialty']
-                ]
-            ],
-            'professional' => [
-                1 => [
-                    'step' => 1,
-                    'title' => 'Basic Information',
-                    'description' => 'Tell us about yourself',
-                    'fields' => ['full_name', 'username', 'job_title', 'company', 'location', 'tagline', 'bio']
-                ],
-                2 => [
-                    'step' => 2,
-                    'title' => 'Professional Details',
-                    'description' => 'Share your professional background',
-                    'fields' => ['current_role', 'skills']
-                ]
-            ],
-            'freelancer' => [
-                1 => [
-                    'step' => 1,
-                    'title' => 'Basic Information',
-                    'description' => 'Tell us about yourself',
-                    'fields' => ['full_name', 'username', 'job_title', 'company', 'location', 'tagline', 'bio']
-                ],
-                2 => [
-                    'step' => 2,
-                    'title' => 'Freelance Details',
-                    'description' => 'Share your freelance information',
-                    'fields' => ['hourly_rate', 'portfolio_url']
-                ]
-            ],
-            default => [
-                1 => [
-                    'step' => 1,
-                    'title' => 'Basic Information',
-                    'description' => 'Tell us about yourself',
-                    'fields' => ['full_name', 'username', 'job_title', 'company', 'location', 'tagline', 'bio']
-                ]
-            ]
-        };
-
-        return $steps[$step] ?? null;
     }
 }

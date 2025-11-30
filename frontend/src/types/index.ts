@@ -388,7 +388,7 @@ export interface EducationCertificationsProps {
 
 export interface OnboardingData {
   user_type_id: any;
-  user_type: string;
+  // user_type: string;
   full_name: string;
   username: string;
   job_title: string;
@@ -399,12 +399,22 @@ export interface OnboardingData {
   project?: {
     title: string;
     description: string;
+    type: string;
     technologies: string[];
+    status: 'draft' | 'published';
+    github_url?: string;
+    live_url?: string;
   };
   skills: string[];
   profile_data: Record<string, any>;
   activity_data: Record<string, any>;
-  skills: string[];
+  experience?: {
+    company: string;
+    position: string;
+    description?: string;
+    start_date: string;
+    is_current: boolean;
+  }
 }
 
 export interface OnboardingStatusResponse {
