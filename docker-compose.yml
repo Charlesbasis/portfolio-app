@@ -1,0 +1,56 @@
+services:
+  db:
+    image: mariadb:latest
+    command: --default-authentication-plugin=mysql_native_password
+    volumes:
+      - db_data:/var/lib/mysql
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=wordpress
+      - MYSQL_USER=wordpress
+      - MYSQL_PASSWORD=wordpress
+    ports:
+      - 3307:3306
+    expose:
+      - 3306
+
+  wordpress:
+    build:
+      context: ./wordpress
+    ports:
+      - 8080:80
+    restart: always
+    environment:
+      - WORDPRESS_DB_HOST=db
+      - WORDPRESS_DB_USER=wordpress
+      - WORDPRESS_DB_PASSWORD=wordpress
+      - WORDPRESS_DB_NAME=wordpress
+      - WORDPRESS_URL=http://localhost:8080
+      - NEXTJS_URL=http://nextjs:3000
+      - WORDPRESS_WEBHOOK_SECRET=${WORDPRESS_WEBHOOK_SECRET}
+      - WORDPRESS_CONFIG_EXTRA=define( 'WP_ENVIRONMENT_TYPE', 'local' ); define( 'WP_IS_APPLICATION_PASSWORDS_AVAILABLE_FOR_HTTP', true );
+    depends_on:
+      - db
+
+  nextjs:
+    build:
+      context: .
+      args:
+        - WORDPRESS_URL=http://wordpress
+        - WORDPRESS_HOSTNAME=localhost
+    ports:
+      - 3000:3000
+    restart: always
+    environment:
+      - WORDPRESS_URL=${WORDPRESS_URL}
+      - WORDPRESS_HOSTNAME=${WORDPRESS_HOSTNAME}
+      - WORDPRESS_WEBHOOK_SECRET=${WORDPRESS_WEBHOOK_SECRET}
+      - WP_USER=${WP_USER}
+      - WP_APPLICATION_PASSWORD=${WP_APPLICATION_PASSWORD}
+      - DATABASE_URL=mysql://wordpress:wordpress@db:3306/wordpress
+    depends_on:
+      - wordpress
+
+volumes:
+  db_data:
