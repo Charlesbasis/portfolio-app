@@ -29,7 +29,7 @@ export default function AuthPage() {
           toast.error(error);
         } else {
           toast.success("Signed in successfully");
-          router.push("/admin/new");
+          router.push("/pages/setup");
         }
       } else {
         const { error } = await signUp(name, email, password);
@@ -37,7 +37,7 @@ export default function AuthPage() {
           toast.error(error);
         } else {
           toast.success("Account created successfully");
-          router.push("/admin/new");
+          router.push("/pages/setup");
         }
       }
     } catch (error) {

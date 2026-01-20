@@ -11,6 +11,7 @@ import { Toaster } from "sonner";
 import { siteConfig } from "@/site.config";
 import { cn } from "@/lib/utils";
 import { AuthProvider } from "@/hooks/useAuth";
+import QueryProvider from "@/components/providers/query-provider";
 
 import type { Metadata } from "next";
 
@@ -65,12 +66,14 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <AuthProvider>
-            <Nav />
-            {children}
-            <Footer />
-            <Toaster />
-          </AuthProvider>
+          <QueryProvider>
+            <AuthProvider>
+              <Nav />
+              {children}
+              <Footer />
+              <Toaster />
+            </AuthProvider>
+          </QueryProvider>
         </ThemeProvider>
         <Analytics />
       </body>
