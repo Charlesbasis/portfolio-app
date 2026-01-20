@@ -27,7 +27,7 @@ export default function Setup() {
       router.push('/auth');
     }
     if (profile) {
-      router.push('/');
+      router.push('/pages/dashboard');
     }
   }, [user, authLoading, profile, router]);
 
@@ -69,7 +69,7 @@ export default function Setup() {
     try {
       await createProfile.mutateAsync({ username, full_name: fullName.trim() });
       toast.success('Profile created! Welcome to Profolio.');
-      router.push('/');
+      router.push('/pages/dashboard');
     } catch (error: any) {
       if (error.message?.includes('taken') || error.message?.includes('duplicate')) {
         toast.error('This username was just claimed. Please try another.');

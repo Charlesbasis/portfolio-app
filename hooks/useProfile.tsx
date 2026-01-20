@@ -22,6 +22,38 @@ export interface Profile {
   updated_at: string;
 }
 
+export interface Skill {
+  id: number | string;
+  profile_id: number | string;
+  skill_name: string;
+}
+
+export interface Experience {
+  id: number | string;
+  profile_id: number | string;
+  company: string;
+  role: string;
+  start_date: string;
+  end_date: string | null;
+  is_current: boolean;
+  bullets: string[];
+  sort_order: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Project {
+  id: number | string;
+  profile_id: number | string;
+  name: string;
+  description: string | null;
+  tech_stack: string[];
+  url: string | null;
+  sort_order: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export function useCurrentProfile() {
   const { user } = useAuth();
 
@@ -64,8 +96,8 @@ export function useUpdateProfile() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, ...updates }: Partial<Profile> & { id: string }) => {
-      return await actions.updateProfile(id, updates) as unknown as Profile;
+    mutationFn: async ({ id, ...updates }: Partial<Profile> & { id: string | number }) => {
+      return await actions.updateProfile(id.toString(), updates) as unknown as Profile;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
@@ -86,5 +118,145 @@ export function useCheckUsername() {
   });
 }
 
-// Skills, Experience, and Project hooks remain but would need similar action implementations if they were used.
-// For now focusing on what is needed for the Setup page.
+export function useProfileSkills(profileId: string | number | undefined) {
+  return useQuery({
+    queryKey: ['skills', profileId],
+    queryFn: async () => {
+      if (!profileId) return [];
+      return await actions.getSkills(profileId.toString()) as unknown as Skill[];
+    },
+    enabled: !!profileId,
+  });
+}
+
+export function useProfileExperiences(profileId: string | number | undefined) {
+  return useQuery({
+    queryKey: ['experiences', profileId],
+    queryFn: async () => {
+      if (!profileId) return [];
+      return await actions.getExperiences(profileId.toString()) as unknown as Experience[];
+    },
+    enabled: !!profileId,
+  });
+}
+
+export function useProfileProjects(profileId: string | number | undefined) {
+  return useQuery({
+    queryKey: ['projects', profileId],
+    queryFn: async () => {
+      if (!profileId) return [];
+      return await actions.getProjects(profileId.toString()) as unknown as Project[];
+    },
+    enabled: !!profileId,
+  });
+}
+
+// Skills mutations
+export function useAddSkill() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ profile_id, skill_name }: { profile_id: string | number; skill_name: string }) => {
+      return await actions.addSkill(profile_id.toString(), skill_name) as unknown as Skill;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['skills', data.profile_id] });
+    },
+  });
+}
+
+export function useDeleteSkill() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, profile_id }: { id: string | number; profile_id: string | number }) => {
+      await actions.deleteSkill(id.toString());
+      return { profile_id };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['skills', data.profile_id] });
+    },
+  });
+}
+
+// Experience mutations
+export function useAddExperience() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (experience: Omit<Experience, 'id' | 'created_at' | 'updated_at'>) => {
+      return await actions.addExperience(experience) as unknown as Experience;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['experiences', data.profile_id] });
+    },
+  });
+}
+
+export function useUpdateExperience() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<Experience> & { id: string | number; profile_id: string | number }) => {
+      return await actions.updateExperience(id.toString(), updates) as unknown as Experience;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['experiences', data.profile_id] });
+    },
+  });
+}
+
+export function useDeleteExperience() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, profile_id }: { id: string | number; profile_id: string | number }) => {
+      await actions.deleteExperience(id.toString());
+      return { profile_id };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['experiences', data.profile_id] });
+    },
+  });
+}
+
+// Project mutations
+export function useAddProject() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (project: Omit<Project, 'id' | 'created_at' | 'updated_at'>) => {
+      return await actions.addProject(project) as unknown as Project;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['projects', data.profile_id] });
+    },
+  });
+}
+
+export function useUpdateProject() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<Project> & { id: string | number; profile_id: string | number }) => {
+      return await actions.updateProject(id.toString(), updates) as unknown as Project;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['projects', data.profile_id] });
+    },
+  });
+}
+
+export function useDeleteProject() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, profile_id }: { id: string | number; profile_id: string | number }) => {
+      await actions.deleteProject(id.toString());
+      return { profile_id };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['projects', data.profile_id] });
+    },
+  });
+}

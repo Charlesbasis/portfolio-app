@@ -49,3 +49,63 @@ export async function checkUsername(username: string) {
   const available = await profileLib.checkUsernameAvailable(username);
   return { available };
 }
+
+// Skills
+export async function getSkills(profileId: string) {
+  return await profileLib.getSkillsByProfileId(profileId);
+}
+
+export async function addSkill(profileId: string, skillName: string) {
+  const skill = await profileLib.addSkill(profileId, skillName);
+  revalidatePath("/dashboard");
+  return skill;
+}
+
+export async function deleteSkill(id: string) {
+  await profileLib.deleteSkill(id);
+  revalidatePath("/dashboard");
+}
+
+// Experiences
+export async function getExperiences(profileId: string) {
+  return await profileLib.getExperiencesByProfileId(profileId);
+}
+
+export async function addExperience(experience: any) {
+  const newExperience = await profileLib.addExperience(experience);
+  revalidatePath("/dashboard");
+  return newExperience;
+}
+
+export async function updateExperience(id: string, updates: any) {
+  const experience = await profileLib.updateExperience(id, updates);
+  revalidatePath("/dashboard");
+  return experience;
+}
+
+export async function deleteExperience(id: string) {
+  await profileLib.deleteExperience(id);
+  revalidatePath("/dashboard");
+}
+
+// Projects
+export async function getProjects(profileId: string) {
+  return await profileLib.getProjectsByProfileId(profileId);
+}
+
+export async function addProject(project: any) {
+  const newProject = await profileLib.addProject(project);
+  revalidatePath("/dashboard");
+  return newProject;
+}
+
+export async function updateProject(id: string, updates: any) {
+  const project = await profileLib.updateProject(id, updates);
+  revalidatePath("/dashboard");
+  return project;
+}
+
+export async function deleteProject(id: string) {
+  await profileLib.deleteProject(id);
+  revalidatePath("/dashboard");
+}
