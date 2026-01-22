@@ -7,6 +7,7 @@ import {
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import PublicProfile from "./PublicProfile";
+import { headers } from "next/headers";
 
 export async function generateMetadata({
   params,
@@ -57,12 +58,18 @@ export default async function PublicProfilePage({
     getProjectsByProfileId(profile.id.toString()),
   ]);
 
+  const headersList = await headers();
+  const host = headersList.get("host");
+  const protocol = headersList.get("x-forwarded-proto") || "http";
+  const baseUrl = `${protocol}://${host}`;
+
   return (
     <PublicProfile 
       profile={profile} 
       skills={skills} 
       experiences={experiences} 
-      projects={projects} 
+      projects={projects}
+      baseUrl={baseUrl}
     />
   );
 }

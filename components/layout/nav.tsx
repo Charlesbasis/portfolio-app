@@ -9,6 +9,9 @@ import Logo from "@/public/logo.svg";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
+import { useCurrentProfile } from "@/hooks/useProfile";
+import { useRouter } from "next/navigation";
+import { LogOut, ExternalLink, LayoutDashboard } from "lucide-react";
 
 interface NavProps {
   className?: string;
@@ -17,8 +20,15 @@ interface NavProps {
 }
 
 export function Nav({ className, children, id }: NavProps) {
-  const { user } = useAuth();
-  
+  const { user, signOut } = useAuth();
+  const { data: profile } = useCurrentProfile();
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.push("/auth");
+  };
+
   return (
     <nav
       className={cn("sticky z-50 top-0 bg-background", "border-b", className)}
@@ -57,9 +67,26 @@ export function Nav({ className, children, id }: NavProps) {
           </div>
           <div className="flex items-center gap-4">
             {user ? (
-              <Button asChild>
-                <Link href="/admin/new">Go to Admin</Link>
-              </Button>
+              <div className="flex items-center gap-2">
+                {profile && (
+                  <Button variant="outline" size="sm" asChild className="hidden sm:flex">
+                    <Link href={`/${profile.username}`} target="_blank">
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      View Profile
+                    </Link>
+                  </Button>
+                )}
+                <Button variant="ghost" size="sm" asChild className="hidden sm:flex">
+                  <Link href="/pages/dashboard">
+                    <LayoutDashboard className="h-4 w-4 mr-2" />
+                    Dashboard
+                  </Link>
+                </Button>
+                <Button variant="ghost" size="sm" onClick={handleSignOut}>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Sign out</span>
+                </Button>
+              </div>
             ) : (
               <>
                 <Button variant="ghost" asChild>

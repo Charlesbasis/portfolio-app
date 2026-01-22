@@ -5,18 +5,26 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ProfileJsonLd } from '@/components/profile/ProfileJsonLd';
 import Link from 'next/link';
+import Image from 'next/image';
+import { Profile, Skill, Experience, Project } from '@/lib/types';
 
 interface PublicProfileProps {
-  profile: any;
-  skills: any[];
-  experiences: any[];
-  projects: any[];
+  profile: Profile;
+  skills: Skill[];
+  experiences: Experience[];
+  projects: Project[];
+  baseUrl?: string;
 }
 
-export default function PublicProfile({ profile, skills, experiences, projects }: PublicProfileProps) {
+export default function PublicProfile({ profile, skills, experiences, projects, baseUrl }: PublicProfileProps) {
   return (
     <div className="min-h-screen bg-background">
-      <ProfileJsonLd profile={profile} skills={skills || []} experiences={experiences || []} />
+      <ProfileJsonLd 
+        profile={profile} 
+        skills={skills || []} 
+        experiences={experiences || []} 
+        baseUrl={baseUrl}
+      />
 
       {/* Sticky Contact Bar */}
       <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border p-4 md:hidden z-50">
@@ -25,26 +33,38 @@ export default function PublicProfile({ profile, skills, experiences, projects }
 
       <main className="container mx-auto px-4 py-12 max-w-2xl pb-24 md:pb-12">
         {/* Header Section */}
-        <header className="mb-10">
-          <h1 className="text-3xl md:text-4xl font-semibold text-foreground">
-            {profile.full_name}
-          </h1>
-          {profile.role && (
-            <p className="text-xl text-muted-foreground mt-1">{profile.role}</p>
+        <header className="mb-10 flex flex-col md:flex-row gap-6 md:items-center">
+          {profile.avatar_url && (
+            <div className="relative w-24 h-24 shrink-0">
+              <Image
+                src={profile.avatar_url}
+                alt={profile.full_name}
+                fill
+                className="rounded-full object-cover border-2 border-primary/10"
+              />
+            </div>
           )}
-          {profile.location && (
-            <p className="text-muted-foreground mt-2 flex items-center gap-1">
-              <MapPin className="h-4 w-4" />
-              {profile.location}
-            </p>
-          )}
-          {profile.headline && (
-            <p className="text-foreground mt-4 text-lg">{profile.headline}</p>
-          )}
-          
-          {/* Desktop Contact Button */}
-          <div className="hidden md:block mt-6">
-            <ContactButton profile={profile} />
+          <div className="flex-1">
+            <h1 className="text-3xl md:text-4xl font-semibold text-foreground">
+              {profile.full_name}
+            </h1>
+            {profile.role && (
+              <p className="text-xl text-muted-foreground mt-1">{profile.role}</p>
+            )}
+            {profile.location && (
+              <p className="text-muted-foreground mt-2 flex items-center gap-1">
+                <MapPin className="h-4 w-4" />
+                {profile.location}
+              </p>
+            )}
+            {profile.headline && (
+              <p className="text-foreground mt-4 text-lg">{profile.headline}</p>
+            )}
+            
+            {/* Desktop Contact Button */}
+            <div className="hidden md:block mt-6">
+              <ContactButton profile={profile} />
+            </div>
           </div>
         </header>
 

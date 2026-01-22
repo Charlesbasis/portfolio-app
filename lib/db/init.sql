@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   user_id VARCHAR(255) NOT NULL UNIQUE,
   username VARCHAR(255) NOT NULL UNIQUE,
   full_name VARCHAR(255) NOT NULL,
+  avatar_url TEXT,
   role VARCHAR(255) DEFAULT '',
   location VARCHAR(255) DEFAULT '',
   headline VARCHAR(255) DEFAULT '',

@@ -6,7 +6,7 @@ import Link, { LinkProps } from "next/link";
 import { useRouter } from "next/navigation";
 
 // Utility Imports
-import { Menu, ArrowRightSquare } from "lucide-react";
+import { Menu, ArrowRightSquare, LogOut, ExternalLink, LayoutDashboard } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Component Imports
@@ -23,9 +23,20 @@ import { Separator } from "@/components/ui/separator";
 
 import { mainMenu, contentMenu } from "@/menu.config";
 import { siteConfig } from "@/site.config";
+import { useAuth } from "@/hooks/useAuth";
+import { useCurrentProfile } from "@/hooks/useProfile";
 
 export function MobileNav() {
   const [open, setOpen] = React.useState(false);
+  const { user, signOut } = useAuth();
+  const { data: profile } = useCurrentProfile();
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    await signOut();
+    setOpen(false);
+    router.push("/auth");
+  };
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -60,6 +71,31 @@ export function MobileNav() {
                 {key.charAt(0).toUpperCase() + key.slice(1)}
               </MobileLink>
             ))}
+
+            {user && (
+              <>
+                <h3 className="text-small pt-6">Account</h3>
+                <Separator />
+                {profile && (
+                  <MobileLink href={`/${profile.username}`} onOpenChange={setOpen} className="flex items-center">
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    View Profile
+                  </MobileLink>
+                )}
+                <MobileLink href="/pages/dashboard" onOpenChange={setOpen} className="flex items-center">
+                  <LayoutDashboard className="mr-2 h-4 w-4" />
+                  Dashboard
+                </MobileLink>
+                <button
+                  onClick={handleSignOut}
+                  className="flex items-center text-lg text-left"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign out
+                </button>
+              </>
+            )}
+
             <h3 className="text-small pt-6">Blog Menu</h3>
             <Separator />
             {Object.entries(contentMenu).map(([key, href]) => (

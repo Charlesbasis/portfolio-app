@@ -1,50 +1,11 @@
 import { db } from './db';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
+import { Profile as IProfile, Skill as ISkill, Experience as IExperience, Project as IProject } from './types';
 
-export interface Profile extends RowDataPacket {
-  id: number;
-  user_id: string;
-  username: string;
-  full_name: string;
-  role: string;
-  location: string | null;
-  headline: string | null;
-  summary: string | null;
-  contact_email: string | null;
-  linkedin_url: string | null;
-  github_url: string | null;
-  portfolio_url: string | null;
-  created_at: Date;
-  updated_at: Date;
-}
-
-export interface Skill extends RowDataPacket {
-  id: number;
-  profile_id: number;
-  skill_name: string;
-}
-
-export interface Experience extends RowDataPacket {
-  id: number;
-  profile_id: number;
-  company: string;
-  role: string;
-  start_date: string;
-  end_date: string | null;
-  is_current: boolean;
-  bullets: string[];
-  sort_order: number;
-}
-
-export interface Project extends RowDataPacket {
-  id: number;
-  profile_id: number;
-  name: string;
-  description: string | null;
-  tech_stack: string[];
-  url: string | null;
-  sort_order: number;
-}
+export interface Profile extends IProfile, RowDataPacket {}
+export interface Skill extends ISkill, RowDataPacket {}
+export interface Experience extends IExperience, RowDataPacket {}
+export interface Project extends IProject, RowDataPacket {}
 
 export async function getProfileByUserId(userId: string): Promise<Profile | undefined> {
   const [rows] = await db.query<Profile[]>(
@@ -104,6 +65,13 @@ export async function checkUsernameAvailable(username: string): Promise<boolean>
     [username]
   );
   return rows.length === 0;
+}
+
+export async function getFirstProfile(): Promise<Profile | undefined> {
+  const [rows] = await db.query<Profile[]>(
+    'SELECT * FROM profiles ORDER BY created_at DESC LIMIT 1'
+  );
+  return rows[0];
 }
 
 // Skills

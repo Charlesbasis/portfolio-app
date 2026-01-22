@@ -4,55 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './useAuth';
 import { toast } from "sonner";
 import * as actions from '@/app/actions/profile';
-
-export interface Profile {
-  id: number;
-  user_id: string;
-  username: string;
-  full_name: string;
-  role: string;
-  location: string | null;
-  headline: string | null;
-  summary: string | null;
-  contact_email: string | null;
-  linkedin_url: string | null;
-  github_url: string | null;
-  portfolio_url: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Skill {
-  id: number | string;
-  profile_id: number | string;
-  skill_name: string;
-}
-
-export interface Experience {
-  id: number | string;
-  profile_id: number | string;
-  company: string;
-  role: string;
-  start_date: string;
-  end_date: string | null;
-  is_current: boolean;
-  bullets: string[];
-  sort_order: number;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface Project {
-  id: number | string;
-  profile_id: number | string;
-  name: string;
-  description: string | null;
-  tech_stack: string[];
-  url: string | null;
-  sort_order: number;
-  created_at?: string;
-  updated_at?: string;
-}
+import { Profile, Skill, Experience, Project } from '@/lib/types';
 
 export function useCurrentProfile() {
   const { user } = useAuth();
