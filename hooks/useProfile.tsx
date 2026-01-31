@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import * as actions from '@/app/actions/profile';
 import { Profile, Skill, Experience, Project } from '@/lib/types';
 
+export type { Profile, Skill, Experience, Project };
+
 export function useCurrentProfile() {
   const { user } = useAuth();
 

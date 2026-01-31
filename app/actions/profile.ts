@@ -16,6 +16,13 @@ export async function getPublicProfile(username: string) {
   return await profileLib.getProfileByUsername(username);
 }
 
+async function revalidateProfilePaths(username: string) {
+  revalidatePath("/");
+  revalidatePath("/portfolio");
+  revalidatePath(`/${username}`);
+  revalidatePath("/dashboard");
+}
+
 export async function createProfile(data: { username: string; full_name: string }) {
   const user = await getCurrentUser();
   if (!user) throw new Error("Not authenticated");
@@ -26,7 +33,7 @@ export async function createProfile(data: { username: string; full_name: string 
       username: data.username,
       full_name: data.full_name,
     });
-    revalidatePath("/");
+    await revalidateProfilePaths(profile.username);
     return profile;
   } catch (error: any) {
     if (error.code === 'ER_DUP_ENTRY') {
@@ -41,7 +48,7 @@ export async function updateProfile(id: string, updates: any) {
   if (!user) throw new Error("Not authenticated");
 
   const profile = await profileLib.updateProfile(id, updates);
-  revalidatePath("/");
+  await revalidateProfilePaths(profile.username);
   return profile;
 }
 
@@ -56,14 +63,21 @@ export async function getSkills(profileId: string) {
 }
 
 export async function addSkill(profileId: string, skillName: string) {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Not authenticated");
+  
   const skill = await profileLib.addSkill(profileId, skillName);
-  revalidatePath("/dashboard");
+  const profile = await getCurrentProfile();
+  if (profile) await revalidateProfilePaths(profile.username);
+  else revalidatePath("/dashboard");
   return skill;
 }
 
 export async function deleteSkill(id: string) {
   await profileLib.deleteSkill(id);
-  revalidatePath("/dashboard");
+  const profile = await getCurrentProfile();
+  if (profile) await revalidateProfilePaths(profile.username);
+  else revalidatePath("/dashboard");
 }
 
 // Experiences
@@ -72,20 +86,29 @@ export async function getExperiences(profileId: string) {
 }
 
 export async function addExperience(experience: any) {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Not authenticated");
+
   const newExperience = await profileLib.addExperience(experience);
-  revalidatePath("/dashboard");
+  const profile = await getCurrentProfile();
+  if (profile) await revalidateProfilePaths(profile.username);
+  else revalidatePath("/dashboard");
   return newExperience;
 }
 
 export async function updateExperience(id: string, updates: any) {
   const experience = await profileLib.updateExperience(id, updates);
-  revalidatePath("/dashboard");
+  const profile = await getCurrentProfile();
+  if (profile) await revalidateProfilePaths(profile.username);
+  else revalidatePath("/dashboard");
   return experience;
 }
 
 export async function deleteExperience(id: string) {
   await profileLib.deleteExperience(id);
-  revalidatePath("/dashboard");
+  const profile = await getCurrentProfile();
+  if (profile) await revalidateProfilePaths(profile.username);
+  else revalidatePath("/dashboard");
 }
 
 // Projects
@@ -94,18 +117,27 @@ export async function getProjects(profileId: string) {
 }
 
 export async function addProject(project: any) {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Not authenticated");
+
   const newProject = await profileLib.addProject(project);
-  revalidatePath("/dashboard");
+  const profile = await getCurrentProfile();
+  if (profile) await revalidateProfilePaths(profile.username);
+  else revalidatePath("/dashboard");
   return newProject;
 }
 
 export async function updateProject(id: string, updates: any) {
   const project = await profileLib.updateProject(id, updates);
-  revalidatePath("/dashboard");
+  const profile = await getCurrentProfile();
+  if (profile) await revalidateProfilePaths(profile.username);
+  else revalidatePath("/dashboard");
   return project;
 }
 
 export async function deleteProject(id: string) {
   await profileLib.deleteProject(id);
-  revalidatePath("/dashboard");
+  const profile = await getCurrentProfile();
+  if (profile) await revalidateProfilePaths(profile.username);
+  else revalidatePath("/dashboard");
 }

@@ -74,6 +74,13 @@ export async function getFirstProfile(): Promise<Profile | undefined> {
   return rows[0];
 }
 
+export async function getPrimaryProfile(): Promise<Profile | undefined> {
+  const [rows] = await db.query<Profile[]>(
+    'SELECT * FROM profiles ORDER BY created_at ASC LIMIT 1'
+  );
+  return rows[0];
+}
+
 // Skills
 export async function getSkillsByProfileId(profileId: string): Promise<Skill[]> {
   const [rows] = await db.query<Skill[]>(

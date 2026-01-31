@@ -1,11 +1,13 @@
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   getExperiencesByProfileId,
-  getFirstProfile,
+  getPrimaryProfile,
+  getProfileByUsername,
   getProjectsByProfileId,
   getSkillsByProfileId
 } from "@/lib/profile";
+
+export const dynamic = "force-dynamic";
+
 import {
   getAllExperiences,
   getAllProjects,
@@ -18,6 +20,10 @@ import { Briefcase, Calendar, ExternalLink, Github, MapPin } from "lucide-react"
 import Image from "next/image";
 import Link from "next/link";
 import { Experience, Project, Skill, Profile } from "@/lib/types";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import PublicProfile from "../[username]/PublicProfile";
+import { headers } from "next/headers";
 
 export const metadata = {
   title: "Portfolio | Profolio",
@@ -26,66 +32,56 @@ export const metadata = {
 
 export default async function PortfolioPage() {
   // Try to get the custom profile first
-  const customProfile = await getFirstProfile();
+  let customProfile = null;
   
-  let projects: any[], experiences: any[], skills: Skill[], profileData: Partial<Profile> & { full_name: string } | null;
-
+  if (siteConfig.portfolio_username) {
+    customProfile = await getProfileByUsername(siteConfig.portfolio_username);
+  }
+  
+  if (!customProfile) {
+    customProfile = await getPrimaryProfile();
+  }
+  
   if (customProfile) {
-    const [p, e, s] = await Promise.all([
+    const [projects, experiences, skills] = await Promise.all([
       getProjectsByProfileId(customProfile.id.toString()),
       getExperiencesByProfileId(customProfile.id.toString()),
       getSkillsByProfileId(customProfile.id.toString()),
     ]);
-    
-    // Map to local types for JSON-LD and UI
-    projects = p.map(proj => ({
-      ...proj,
-      title: { rendered: proj.name },
-      excerpt: { rendered: proj.description || "" },
-      acf: {
-        description: proj.description,
-        tech_stack: proj.tech_stack,
-        project_url: proj.url,
-        repo_url: ""
-      }
-    }));
-    
-    experiences = e.map(exp => ({
-      ...exp,
-      title: { rendered: exp.role },
-      content: { rendered: exp.bullets.length > 0 ? `<ul class="list-disc pl-5 space-y-1">${exp.bullets.map(b => `<li>${b}</li>`).join("")}</ul>` : "" },
-      acf: {
-        company: exp.company,
-        position: exp.role,
-        start_date: exp.start_date,
-        end_date: exp.end_date,
-        is_current: exp.is_current,
-        location: "",
-        technologies: []
-      }
-    }));
-    
-    skills = s;
-    profileData = customProfile as unknown as Profile;
-  } else {
-    // Fallback to WordPress
-    const [wpProjects, wpExperiences, wpSkills, wpProfile] = await Promise.all([
-      getAllProjects(),
-      getAllExperiences(),
-      getAllSkills(),
-      getWpProfile(),
-    ]);
-    
-    projects = wpProjects;
-    experiences = wpExperiences;
-    skills = wpSkills.map(s => ({ id: s.id, profile_id: 0, skill_name: s.name }));
-    profileData = wpProfile ? {
-      full_name: wpProfile.name,
-      summary: wpProfile.description,
-      avatar_url: null,
-      role: "Professional",
-    } : null;
+
+    const headersList = await headers();
+    const host = headersList.get("host");
+    const protocol = headersList.get("x-forwarded-proto") || "http";
+    const baseUrl = `${protocol}://${host}`;
+
+    return (
+      <PublicProfile 
+        profile={customProfile as unknown as Profile} 
+        skills={skills} 
+        experiences={experiences} 
+        projects={projects}
+        baseUrl={baseUrl}
+      />
+    );
   }
+
+  // Fallback to WordPress
+  const [wpProjects, wpExperiences, wpSkills, wpProfile] = await Promise.all([
+    getAllProjects(),
+    getAllExperiences(),
+    getAllSkills(),
+    getWpProfile(),
+  ]);
+  
+  const projects = wpProjects;
+  const experiences = wpExperiences;
+  const skills = wpSkills.map(s => ({ id: s.id, profile_id: 0, skill_name: s.name }));
+  const profileData = wpProfile ? {
+    full_name: wpProfile.name,
+    summary: wpProfile.description,
+    avatar_url: null,
+    role: "Professional",
+  } : null;
 
   if (!profileData) {
     return <div className="container py-20 text-center">No profile found.</div>;
@@ -118,7 +114,7 @@ export default async function PortfolioPage() {
           <p className="text-xl text-primary font-medium mb-4">{profileData.role}</p>
         )}
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-          {profileData.summary || profileData.headline || "Welcome to my professional portfolio."}
+          {profileData.summary || "Welcome to my professional portfolio."}
         </p>
       </section>
 

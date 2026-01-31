@@ -9,6 +9,8 @@ import type { Metadata } from "next";
 import PublicProfile from "./PublicProfile";
 import { headers } from "next/headers";
 
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata({
   params,
 }: {
