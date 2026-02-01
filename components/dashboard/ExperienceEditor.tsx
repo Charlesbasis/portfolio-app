@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card';
 import { Plus, Trash2, Edit2, X, Check } from 'lucide-react';
 import { Textarea } from '../ui/textarea';
 import { toast } from "sonner";
+import { useRouter } from 'next/navigation';
 
 interface ExperienceEditorProps {
   profileId: string | number;
@@ -33,6 +34,7 @@ const emptyForm: ExperienceFormData = {
 };
 
 export function ExperienceEditor({ profileId, experiences }: ExperienceEditorProps) {
+  const router = useRouter();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | number | null>(null);
   const [formData, setFormData] = useState<ExperienceFormData>(emptyForm);
@@ -50,7 +52,7 @@ export function ExperienceEditor({ profileId, experiences }: ExperienceEditorPro
     }
 
     const bullets = formData.bullets.split('\n').filter(b => b.trim());
-    
+
     addExperience.mutate({
       profile_id: profileId,
       company: formData.company,
@@ -64,6 +66,7 @@ export function ExperienceEditor({ profileId, experiences }: ExperienceEditorPro
       onSuccess: () => {
         setIsAdding(false);
         setFormData(emptyForm);
+        router.refresh();
       }
     });
   };
@@ -91,6 +94,7 @@ export function ExperienceEditor({ profileId, experiences }: ExperienceEditorPro
       onSuccess: () => {
         setEditingId(null);
         setFormData(emptyForm);
+        router.refresh();
       }
     });
   };
@@ -108,7 +112,14 @@ export function ExperienceEditor({ profileId, experiences }: ExperienceEditorPro
   };
 
   const handleDelete = (exp: Experience) => {
-    deleteExperience.mutate({ id: exp.id, profile_id: profileId });
+    deleteExperience.mutate(
+      { id: exp.id, profile_id: profileId },
+      {
+        onSuccess: () => {
+          router.refresh();
+        }
+      }
+    );
   };
 
   const handleCancel = () => {
@@ -179,7 +190,7 @@ export function ExperienceEditor({ profileId, experiences }: ExperienceEditorPro
           <X className="h-4 w-4 mr-1" />
           Cancel
         </Button>
-        <Button 
+        <Button
           onClick={() => isEdit && id ? handleUpdate(id) : handleAdd()}
           disabled={addExperience.isPending || updateExperience.isPending}
         >
@@ -216,9 +227,9 @@ export function ExperienceEditor({ profileId, experiences }: ExperienceEditorPro
                 <Button variant="ghost" size="icon" onClick={() => handleEdit(exp)}>
                   <Edit2 className="h-4 w-4" />
                 </Button>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
+                <Button
+                  variant="ghost"
+                  size="icon"
                   onClick={() => handleDelete(exp)}
                   disabled={deleteExperience.isPending}
                 >

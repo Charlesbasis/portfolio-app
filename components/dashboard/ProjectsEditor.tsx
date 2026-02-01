@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { Plus, Trash2, Edit2, X, Check, Globe } from 'lucide-react';
 import { toast } from "sonner";
+import { useRouter } from 'next/navigation';
 
 interface ProjectsEditorProps {
   profileId: string | number;
@@ -28,6 +29,7 @@ const emptyForm: ProjectFormData = {
 };
 
 export function ProjectsEditor({ profileId, projects }: ProjectsEditorProps) {
+  const router = useRouter();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | number | null>(null);
   const [formData, setFormData] = useState<ProjectFormData>(emptyForm);
@@ -45,7 +47,7 @@ export function ProjectsEditor({ profileId, projects }: ProjectsEditorProps) {
     }
 
     const tech_stack = formData.tech_stack.split(',').map(t => t.trim()).filter(Boolean);
-    
+
     addProject.mutate({
       profile_id: profileId,
       name: formData.name,
@@ -57,6 +59,7 @@ export function ProjectsEditor({ profileId, projects }: ProjectsEditorProps) {
       onSuccess: () => {
         setIsAdding(false);
         setFormData(emptyForm);
+        router.refresh();
       }
     });
   };
@@ -82,6 +85,7 @@ export function ProjectsEditor({ profileId, projects }: ProjectsEditorProps) {
       onSuccess: () => {
         setEditingId(null);
         setFormData(emptyForm);
+        router.refresh();
       }
     });
   };
@@ -97,7 +101,14 @@ export function ProjectsEditor({ profileId, projects }: ProjectsEditorProps) {
   };
 
   const handleDelete = (project: Project) => {
-    deleteProject.mutate({ id: project.id, profile_id: profileId });
+    deleteProject.mutate(
+      { id: project.id, profile_id: profileId },
+      {
+        onSuccess: () => {
+          router.refresh();
+        }
+      }
+    );
   };
 
   const handleCancel = () => {
@@ -147,7 +158,7 @@ export function ProjectsEditor({ profileId, projects }: ProjectsEditorProps) {
           <X className="h-4 w-4 mr-1" />
           Cancel
         </Button>
-        <Button 
+        <Button
           onClick={() => isEdit && id ? handleUpdate(id) : handleAdd()}
           disabled={addProject.isPending || updateProject.isPending}
         >
@@ -170,9 +181,9 @@ export function ProjectsEditor({ profileId, projects }: ProjectsEditorProps) {
                 <div className="flex items-center gap-2">
                   <h4 className="font-semibold">{project.name}</h4>
                   {project.url && (
-                    <a 
-                      href={project.url} 
-                      target="_blank" 
+                    <a
+                      href={project.url}
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="text-primary hover:text-link-hover"
                     >
@@ -197,9 +208,9 @@ export function ProjectsEditor({ profileId, projects }: ProjectsEditorProps) {
                 <Button variant="ghost" size="icon" onClick={() => handleEdit(project)}>
                   <Edit2 className="h-4 w-4" />
                 </Button>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
+                <Button
+                  variant="ghost"
+                  size="icon"
                   onClick={() => handleDelete(project)}
                   disabled={deleteProject.isPending}
                 >

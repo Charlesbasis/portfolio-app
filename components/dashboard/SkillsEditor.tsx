@@ -3,6 +3,7 @@ import { Skill, useAddSkill, useDeleteSkill } from '@/hooks/useProfile';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { X, Plus } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 interface SkillsEditorProps {
   profileId: string | number;
@@ -10,6 +11,7 @@ interface SkillsEditorProps {
 }
 
 export function SkillsEditor({ profileId, skills }: SkillsEditorProps) {
+  const router = useRouter();
   const [newSkill, setNewSkill] = useState('');
   const addSkill = useAddSkill();
   const deleteSkill = useDeleteSkill();
@@ -17,14 +19,21 @@ export function SkillsEditor({ profileId, skills }: SkillsEditorProps) {
   const handleAddSkill = () => {
     const skillName = newSkill.trim();
     if (!skillName) return;
-    
+
     // Check for duplicates
     if (skills.some(s => s.skill_name.toLowerCase() === skillName.toLowerCase())) {
       return;
     }
 
-    addSkill.mutate({ profile_id: profileId, skill_name: skillName });
-    setNewSkill('');
+    addSkill.mutate(
+      { profile_id: profileId, skill_name: skillName },
+      {
+        onSuccess: () => {
+          setNewSkill('');
+          router.refresh();
+        }
+      }
+    );
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -35,7 +44,14 @@ export function SkillsEditor({ profileId, skills }: SkillsEditorProps) {
   };
 
   const handleDelete = (skill: Skill) => {
-    deleteSkill.mutate({ id: skill.id, profile_id: profileId });
+    deleteSkill.mutate(
+      { id: skill.id, profile_id: profileId },
+      {
+        onSuccess: () => {
+          router.refresh();
+        }
+      }
+    );
   };
 
   return (
@@ -57,7 +73,7 @@ export function SkillsEditor({ profileId, skills }: SkillsEditorProps) {
           <Plus className="h-4 w-4" />
         </Button>
       </div>
-      
+
       {skills.length > 0 ? (
         <div className="flex flex-wrap gap-2">
           {skills.map((skill) => (

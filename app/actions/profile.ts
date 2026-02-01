@@ -7,7 +7,7 @@ import { revalidatePath } from "next/cache";
 export async function getCurrentProfile() {
   const user = await getCurrentUser();
   if (!user) return null;
-  
+
   const profile = await profileLib.getProfileByUserId(user.id);
   return profile || null;
 }
@@ -17,10 +17,15 @@ export async function getPublicProfile(username: string) {
 }
 
 async function revalidateProfilePaths(username: string) {
-  revalidatePath("/");
-  revalidatePath("/portfolio");
-  revalidatePath(`/${username}`);
-  revalidatePath("/dashboard");
+  // Await revalidation to ensure it's processed
+  await Promise.all([
+    revalidatePath("/"),
+    revalidatePath("/portfolio"),
+    revalidatePath(`/${username}`),
+    revalidatePath("/pages/dashboard"),
+    // Also revalidate the main dynamic path to be safe
+    revalidatePath("/[username]", "layout"),
+  ]);
 }
 
 export async function createProfile(data: { username: string; full_name: string }) {
@@ -65,7 +70,7 @@ export async function getSkills(profileId: string) {
 export async function addSkill(profileId: string, skillName: string) {
   const user = await getCurrentUser();
   if (!user) throw new Error("Not authenticated");
-  
+
   const skill = await profileLib.addSkill(profileId, skillName);
   const profile = await getCurrentProfile();
   if (profile) await revalidateProfilePaths(profile.username);

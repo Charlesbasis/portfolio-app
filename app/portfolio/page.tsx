@@ -7,6 +7,7 @@ import {
 } from "@/lib/profile";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 import {
   getAllExperiences,
@@ -24,24 +25,60 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import PublicProfile from "../[username]/PublicProfile";
 import { headers } from "next/headers";
+import type { Metadata } from "next";
 
-export const metadata = {
-  title: "Portfolio | Profolio",
-  description: "My professional experience, projects, and skills.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  let profile = null;
+  if (siteConfig.portfolio_username) {
+    profile = await getProfileByUsername(siteConfig.portfolio_username);
+  }
+  if (!profile) {
+    profile = await getPrimaryProfile();
+  }
+
+  const title = profile
+    ? `${profile.full_name} | Portfolio`
+    : "Portfolio | Profolio";
+  const description = profile?.summary?.slice(0, 160) || "My professional experience, projects, and skills.";
+
+  const headersList = await headers();
+  const host = headersList.get("host");
+  const protocol = headersList.get("x-forwarded-proto") || "http";
+  const baseUrl = `${protocol}://${host}`;
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: `${baseUrl}/portfolio`,
+    },
+    openGraph: {
+      title,
+      description,
+      url: `${baseUrl}/portfolio`,
+      images: [
+        {
+          url: `${baseUrl}/api/og?title=${encodeURIComponent(title)}&description=${encodeURIComponent(description)}`,
+          width: 1200,
+          height: 630,
+        },
+      ],
+    },
+  };
+}
 
 export default async function PortfolioPage() {
   // Try to get the custom profile first
   let customProfile = null;
-  
+
   if (siteConfig.portfolio_username) {
     customProfile = await getProfileByUsername(siteConfig.portfolio_username);
   }
-  
+
   if (!customProfile) {
     customProfile = await getPrimaryProfile();
   }
-  
+
   if (customProfile) {
     const [projects, experiences, skills] = await Promise.all([
       getProjectsByProfileId(customProfile.id.toString()),
@@ -55,10 +92,10 @@ export default async function PortfolioPage() {
     const baseUrl = `${protocol}://${host}`;
 
     return (
-      <PublicProfile 
-        profile={customProfile as unknown as Profile} 
-        skills={skills} 
-        experiences={experiences} 
+      <PublicProfile
+        profile={customProfile as unknown as Profile}
+        skills={skills}
+        experiences={experiences}
         projects={projects}
         baseUrl={baseUrl}
       />
@@ -72,7 +109,7 @@ export default async function PortfolioPage() {
     getAllSkills(),
     getWpProfile(),
   ]);
-  
+
   const projects = wpProjects;
   const experiences = wpExperiences;
   const skills = wpSkills.map(s => ({ id: s.id, profile_id: 0, skill_name: s.name }));
@@ -89,13 +126,13 @@ export default async function PortfolioPage() {
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-5xl">
-      <ProfileJsonLd 
-        profile={profileData as any} 
-        skills={skills} 
-        experiences={experiences as any} 
-        baseUrl={siteConfig.site_domain} 
+      <ProfileJsonLd
+        profile={profileData as any}
+        skills={skills}
+        experiences={experiences as any}
+        baseUrl={siteConfig.site_domain}
       />
-      
+
       {/* Profile Header */}
       <section className="mb-20 flex flex-col items-center text-center">
         {profileData.avatar_url && (
@@ -158,9 +195,9 @@ export default async function PortfolioPage() {
                   {exp.acf.location}
                 </div>
               )}
-              <div 
+              <div
                 className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground"
-                dangerouslySetInnerHTML={{ __html: exp.content.rendered }} 
+                dangerouslySetInnerHTML={{ __html: exp.content.rendered }}
               />
               {exp.acf.technologies && exp.acf.technologies.length > 0 && (
                 <div className="mt-6 flex flex-wrap gap-2">
@@ -187,7 +224,7 @@ export default async function PortfolioPage() {
                 <CardDescription className="text-sm line-clamp-2">{project.acf.description}</CardDescription>
               </CardHeader>
               <CardContent>
-                <div 
+                <div
                   className="text-sm text-muted-foreground mb-6 line-clamp-3 leading-relaxed"
                   dangerouslySetInnerHTML={{ __html: project.excerpt.rendered }}
                 />
@@ -200,8 +237,8 @@ export default async function PortfolioPage() {
                 </div>
                 <div className="flex gap-6 items-center border-t pt-6">
                   {project.acf.project_url && (
-                    <Link 
-                      href={project.acf.project_url} 
+                    <Link
+                      href={project.acf.project_url}
                       target="_blank"
                       className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:opacity-80 transition-opacity"
                     >
@@ -210,8 +247,8 @@ export default async function PortfolioPage() {
                     </Link>
                   )}
                   {project.acf.repo_url && (
-                    <Link 
-                      href={project.acf.repo_url} 
+                    <Link
+                      href={project.acf.repo_url}
                       target="_blank"
                       className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
                     >

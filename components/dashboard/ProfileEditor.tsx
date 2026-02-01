@@ -10,12 +10,14 @@ import { ExperienceEditor } from './ExperienceEditor';
 import { ProjectsEditor } from './ProjectsEditor';
 import { Textarea } from '../ui/textarea';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 
 interface ProfileEditorProps {
   profile: Profile;
 }
 
 export function ProfileEditor({ profile }: ProfileEditorProps) {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     full_name: profile.full_name,
     avatar_url: profile.avatar_url || '',
@@ -60,10 +62,17 @@ export function ProfileEditor({ profile }: ProfileEditorProps) {
   };
 
   const handleSave = () => {
-    updateProfile.mutate({ id: profile.id, ...formData });
+    updateProfile.mutate(
+      { id: profile.id, ...formData },
+      {
+        onSuccess: () => {
+          router.refresh();
+        }
+      }
+    );
   };
 
-  const hasChanges = 
+  const hasChanges =
     formData.full_name !== profile.full_name ||
     formData.avatar_url !== (profile.avatar_url || '') ||
     formData.role !== (profile.role || '') ||
@@ -90,10 +99,10 @@ export function ProfileEditor({ profile }: ProfileEditorProps) {
               <div className="relative group">
                 <div className="w-32 h-32 rounded-full border-2 border-dashed border-muted-foreground/25 flex items-center justify-center overflow-hidden bg-muted">
                   {formData.avatar_url ? (
-                    <Image 
-                      src={formData.avatar_url} 
-                      alt="Profile" 
-                      fill 
+                    <Image
+                      src={formData.avatar_url}
+                      alt="Profile"
+                      fill
                       className="object-cover"
                     />
                   ) : (
@@ -162,7 +171,7 @@ export function ProfileEditor({ profile }: ProfileEditorProps) {
               </div>
             </div>
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="headline">Professional Headline</Label>
             <Input
