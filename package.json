@@ -8,7 +8,11 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "docker:test": "docker compose build nextjs && docker compose run --rm nextjs pnpm test",
+    "docker:build": "docker build -t portfolio-prod .",
+    "docker:smoke": "pnpm docker:build && docker rm -f portfolio-smoke-test 2>/dev/null || true && docker run -d --name portfolio-smoke-test -p 3005:3000 portfolio-prod && sleep 5 && curl -f http://localhost:3005 && docker rm -f portfolio-smoke-test",
+    "docker:ci": "pnpm docker:test && pnpm docker:smoke"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

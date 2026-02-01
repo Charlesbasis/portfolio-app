@@ -6,6 +6,7 @@ import * as auth from '@/lib/auth';
 vi.mock('@/lib/users', () => ({
   getUserByEmail: vi.fn(),
   createUser: vi.fn(),
+  updateUserWpId: vi.fn(),
 }));
 
 vi.mock('@/lib/auth', () => ({

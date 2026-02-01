@@ -4,11 +4,23 @@ import { getAllProfiles } from "@/lib/profile";
 import { siteConfig } from "@/site.config";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [posts, pages, profiles] = await Promise.all([
-    getAllPostsForSitemap(),
-    getAllPagesForSitemap(),
-    getAllProfiles(),
-  ]);
+  let posts: any[] = [];
+  let pages: any[] = [];
+  let profiles: any[] = [];
+
+  try {
+    const results = await Promise.allSettled([
+      getAllPostsForSitemap(),
+      getAllPagesForSitemap(),
+      getAllProfiles(),
+    ]);
+
+    if (results[0].status === 'fulfilled') posts = results[0].value;
+    if (results[1].status === 'fulfilled') pages = results[1].value;
+    if (results[2].status === 'fulfilled') profiles = results[2].value;
+  } catch (error) {
+    console.error('Sitemap generation error:', error);
+  }
 
   const staticUrls: MetadataRoute.Sitemap = [
     {
