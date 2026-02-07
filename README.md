@@ -4,31 +4,34 @@ A professional-grade, SEO-optimized headless WordPress starter built with **Next
 
 ## 🛠️ Getting Started
 
-You can set up this kit either manually or using Docker. Docker is the recommended approach for a consistent development environment.
+Follow these steps to set up the development environment locally and deploy to your VPS.
 
-### 🐳 Docker Development (Recommended)
-
-The entire stack (Next.js, WordPress, and MariaDB) is containerized and ready to go.
+### 🔌 Local Development
 
 1. **Clone and Setup Environment**
    ```bash
    cp .env.example .env
    ```
+   Update `.env` with your WordPress URL and Database credentials.
 
-2. **Start the Stack**
+2. **Install Dependencies**
    ```bash
-   docker compose up -d
+   pnpm install
    ```
 
-3. **Access Services**
-   - **Next.js Frontend:** [http://localhost:3000](http://localhost:3000)
-   - **WordPress Admin:** [http://localhost:8080/wp-admin](http://localhost:8080/wp-admin)
-   - **Database:** `localhost:3307`
+3. **Start Developing**
+   ```bash
+   pnpm dev
+   ```
+   - **Frontend:** [http://localhost:3000](http://localhost:3000)
 
-4. **Initialize WordPress**
-   The Docker setup automatically installs WordPress, activates the **Next.js Headless** theme, and the **Next.js Revalidation** plugin.
-   - **Default Admin User:** `admin`
-   - **Default Admin Password:** `changeme` (Change this immediately!)
+---
+
+### 🚀 VPS Deployment (Node 22 LTS)
+
+This project is optimized for deployment on a standard VPS with **Node.js 22**, **Apache/Nginx**, and **PM2**.
+
+Follow the detailed instructions in [.agent/workflows/deploy-vps.md](.agent/workflows/deploy-vps.md) for a professional "Push-to-Deploy" setup.
 
 ---
 
@@ -53,26 +56,6 @@ This plugin is included in `plugin/next-revalidate` and is auto-configured in Do
 - **Webhook Secret:** Ensure `WORDPRESS_WEBHOOK_SECRET` matches in both WordPress (Settings > Next.js Revalidation) and your `.env` file.
 
 ---
-
-## 🛠️ Manual Development
-
-If you prefer to run Next.js locally against a remote WordPress instance:
-
-### 1. Project Configuration
-Customize your site's identity in `site.config.ts`:
-```typescript
-export const siteConfig = {
-  site_name: "My Professional Portfolio",
-  site_description: "Built with Next.js and Headless WordPress",
-  site_domain: "https://yourdomain.com",
-};
-```
-
-### 2. Start Developing
-```bash
-pnpm install
-pnpm dev
-```
 
 ---
 
@@ -110,8 +93,8 @@ git push -u origin main
 
 ## 🚀 Deployment
 
-### Railway (Recommended)
-This kit is optimized for Railway's one-click deployment, handling the Next.js frontend, WordPress CMS, and MySQL database in a single stack.
+### VPS (Self-Hosted)
+Follow the guide in [.agent/workflows/deploy-vps.md](.agent/workflows/deploy-vps.md).
 
 ### Vercel / Netlify
 Ensure you provide the necessary Environment Variables in your dashboard and connect your WordPress instance.
