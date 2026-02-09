@@ -5,55 +5,38 @@ export const db: Pool = (() => {
   if (typeof window !== 'undefined') return {} as any;
 
   const mysql = require('mysql2');
-
-  // Helper to get sanitized env var (trims quotes and whitespace)
-  const getEnv = (key: string) => process.env[key]?.replace(/^["']|["']$/g, '').trim();
-
-  const dbHost = getEnv('DB_HOST');
-  const dbUser = getEnv('DB_USER');
-  const dbPass = getEnv('DB_PASSWORD');
-  const dbName = getEnv('DB_NAME');
-  const dbPort = getEnv('DB_PORT');
-  const url = process.env.DATABASE_URL;
-
-  // Preferred: Individual variables (Safer for special characters)
-  if (dbHost && dbUser) {
-    if (process.env.NODE_ENV === 'production') {
-      console.log(`🔌 Database: ${dbUser}@${dbHost}:${dbPort || 3306}/${dbName}`);
-    }
-    return mysql.createPool({
-      host: dbHost,
-      user: dbUser,
-      password: dbPass,
-      database: dbName,
-      port: Number(dbPort) || 3306,
-      waitForConnections: true,
-      connectionLimit: 10,
-      queueLimit: 0,
-      charset: 'utf8mb4',
-      connectTimeout: 10000,
-      enableKeepAlive: true,
-      keepAliveInitialDelay: 0
-    }).promise();
-  } else if (process.env.NODE_ENV === 'production' && !url) {
-    throw new Error(`Critical DB environment variables missing: DB_HOST=${!!dbHost}, DB_USER=${!!dbUser}. Check if .env is being loaded.`);
-  }
-
-  // Fallback: Connection string
-  if (url) {
-    try {
-      return mysql.createPool(url).promise();
-    } catch (err) {
-      console.error('❌ Failed to parse DATABASE_URL. If your password has special characters, use individual DB_* variables instead.');
-      throw err;
-    }
-  }
+  
+  // Direct retrieval to ensure we get the latest process.env
+  const dbHost = process.env.DB_HOST || 'localhost';
+  const dbUser = process.env.DB_USER;
+  const dbPass = process.env.DB_PASSWORD;
+  const dbName = process.env.DB_NAME;
+  const dbPort = process.env.DB_PORT;
 
   if (process.env.NODE_ENV === 'production') {
-    throw new Error('Database configuration missing. Set DB_HOST/DB_USER or DATABASE_URL.');
+    console.log(`🔌 DB Init: ${dbUser}@${dbHost} -> ${dbName}`);
   }
 
-  console.warn('⚠️ No database configuration found. Using mock driver.');
+  if (dbHost && dbUser && dbPass) {
+    return mysql.createPool({
+      host: dbHost.replace(/['"]/g, ''), // Strip any accidental quotes
+      user: dbUser.replace(/['"]/g, ''),
+      password: dbPass.replace(/['"]/g, ''),
+      database: dbName?.replace(/['"]/g, ''),
+      port: Number(dbPort) || 3306,
+      waitForConnections: true,
+      connectionLimit: 5,
+      queueLimit: 0,
+    }).promise();
+  }
+
+  const url = process.env.DATABASE_URL;
+  if (url) return mysql.createPool(url).promise();
+
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('DATABASE CONFIGURATION MISSING');
+  }
+
   return {
     query: () => Promise.resolve([[]]),
     execute: () => Promise.resolve([{ insertId: 0 }]),
