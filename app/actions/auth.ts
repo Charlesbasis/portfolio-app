@@ -13,7 +13,13 @@ export async function signIn(email: string, password: string): Promise<{ error: 
 
     if (!wpId) {
       try {
-        const wpResponse = await fetch(`${process.env.WORDPRESS_URL}/wp-json/wp/v2/users...`);
+        const adminAuth = Buffer.from(
+          `${process.env.WP_USER}:${process.env.WP_APPLICATION_PASSWORD}`
+        ).toString("base64");
+        const wpResponse = await fetch(`${process.env.WORDPRESS_URL}/wp-json/wp/v2/users...`, {
+          headers: { Authorization: `Basic ${adminAuth}` },
+          next: { revalidate: 0 } // Ensures Next.js doesn't try to bake this into a static page
+        });
         if (!wpResponse.ok) {
           console.warn("WP API blocked, skipping user sync during build.");
           return { error: null }; // Proceed without crashing the build
@@ -89,6 +95,7 @@ export async function signUp(name: string, email: string, password: string): Pro
         headers: {
           Authorization: `Basic ${adminAuth}`,
         },
+        next: { revalidate: 0 },
       });
 
       if (wpSearchResponse.ok) {
