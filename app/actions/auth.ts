@@ -17,11 +17,16 @@ export async function signIn(email: string, password: string): Promise<{ error: 
         const adminAuth = Buffer.from(
           `${process.env.WP_USER}:${process.env.WP_APPLICATION_PASSWORD}`
         ).toString("base64");
-        const wpResponse = await fetch(`${process.env.WORDPRESS_URL}/wp-json/wp/v2/users?search=${email}&context=edit`, {
-          headers: {
-            Authorization: `Basic ${adminAuth}`,
-          },
-        });
+        const wpResponse = await fetch(
+          `${process.env.WORDPRESS_URL}/wp-json/wp/v2/users?search=${encodeURIComponent(email)}&context=edit`,
+          {
+            headers: {
+              Authorization: `Basic ${adminAuth}`,
+              'Content-Type': 'application/json',
+            },
+            cache: 'no-store', // Crucial: Prevents Next.js from trying to cache this during build
+          }
+        );
         if (wpResponse.ok) {
           const wpUsers = await wpResponse.json();
           const matchingUser = wpUsers.find((u: any) => u.email === email);
@@ -82,7 +87,7 @@ export async function signUp(name: string, email: string, password: string): Pro
     }
 
     const hashedPassword = hashPassword(password);
-    
+
     // First create local user
     let newUser = await createUser({
       name,
@@ -96,14 +101,14 @@ export async function signUp(name: string, email: string, password: string): Pro
       const adminAuth = Buffer.from(
         `${process.env.WP_USER}:${process.env.WP_APPLICATION_PASSWORD}`
       ).toString("base64");
-      
+
       // Search first
       const wpSearchResponse = await fetch(`${process.env.WORDPRESS_URL}/wp-json/wp/v2/users?search=${email}&context=edit`, {
         headers: {
           Authorization: `Basic ${adminAuth}`,
         },
       });
-      
+
       if (wpSearchResponse.ok) {
         const wpUsers = await wpSearchResponse.json();
         const matchingUser = wpUsers.find((u: any) => u.email === email);
@@ -151,7 +156,7 @@ export async function signUp(name: string, email: string, password: string): Pro
       wpId,
     };
     await setSession(user);
-    
+
     return { error: null };
   } catch (err) {
     console.error("Sign up error:", err);
