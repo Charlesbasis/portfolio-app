@@ -4,7 +4,6 @@ import { Inter as FontSans } from "next/font/google";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { Nav } from "@/components/layout/nav";
 import { Footer } from "@/components/layout/footer";
-import { Analytics } from "@vercel/analytics/react";
 import { WebsiteStructuredData } from "@/components/seo/structured-data";
 import { Toaster } from "sonner";
 
@@ -75,7 +74,6 @@ export default function RootLayout({
             </AuthProvider>
           </QueryProvider>
         </ThemeProvider>
-        <Analytics />
       </body>
     </html>
   );
