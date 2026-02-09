@@ -15,7 +15,7 @@ export default function Setup() {
   const [username, setUsername] = useState('');
   const [fullName, setFullName] = useState('');
   const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
-  
+
   const { user, loading: authLoading } = useAuth();
   const { data: profile, isLoading: profileLoading } = useCurrentProfile();
   const createProfile = useCreateProfile();
@@ -23,7 +23,9 @@ export default function Setup() {
   const router = useRouter();
 
   useEffect(() => {
+    // Only redirect if we ARE NOT loading and we HAVE NO user
     if (!authLoading && !user) {
+      console.log("No user found, redirecting to auth...");
       router.push('/auth');
     }
     if (profile) {
@@ -55,7 +57,7 @@ export default function Setup() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (usernameStatus !== 'available') {
       toast.error('Username unavailable. Please choose a different username.');
       return;
@@ -143,9 +145,9 @@ export default function Setup() {
             </div>
           </CardContent>
           <CardFooter>
-            <Button 
-              type="submit" 
-              className="w-full" 
+            <Button
+              type="submit"
+              className="w-full"
               disabled={createProfile.isPending || usernameStatus !== 'available' || !fullName.trim()}
             >
               {createProfile.isPending ? 'Creating...' : 'Create my profile'}

@@ -24,20 +24,22 @@ export default function AuthPage() {
 
     try {
       if (isSignIn) {
-        const { error } = await signIn(email, password);
+        const { error, user: signedInUser } = await signIn(email, password);
         if (error) {
           toast.error(error);
         } else {
           toast.success("Signed in successfully");
-          router.push("/pages/setup");
+          // Force a small delay to ensure cookie is processed
+          setTimeout(() => router.push("/pages/setup"), 100);
         }
       } else {
-        const { error } = await signUp(name, email, password);
+        const { error, user: newUser } = await signUp(name, email, password);
         if (error) {
           toast.error(error);
         } else {
           toast.success("Account created successfully");
-          router.push("/pages/setup");
+          // Force a small delay to ensure cookie is processed
+          setTimeout(() => router.push("/pages/setup"), 100);
         }
       }
     } catch (error) {
