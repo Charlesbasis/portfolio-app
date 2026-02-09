@@ -3,7 +3,7 @@
 import { setSession, removeSession, verifyPassword, hashPassword } from "@/lib/auth";
 import { User } from "@/lib/types";
 
-export async function signIn(email: string, password: string): Promise<{ error: string | null }> {
+export async function signIn(email: string, password: string): Promise<{ error: string | null; user?: User }> {
   try {
     const { getUserByEmail, updateUserWpId } = await import("@/lib/users");
 
@@ -58,7 +58,7 @@ export async function signIn(email: string, password: string): Promise<{ error: 
           wpId: data.id,
         };
         await setSession(user);
-        return { error: null };
+        return { error: null, user };
       }
     } catch (err) {
       console.error("WP Auth error:", err);
@@ -79,7 +79,7 @@ export async function signIn(email: string, password: string): Promise<{ error: 
   }
 }
 
-export async function signUp(name: string, email: string, password: string): Promise<{ error: string | null }> {
+export async function signUp(name: string, email: string, password: string): Promise<{ error: string | null; user?: User }> {
   const { getUserByEmail, createUser, updateUserWpId } = await import("@/lib/users");
   try {
     const existingUser = await getUserByEmail(email);
@@ -159,7 +159,7 @@ export async function signUp(name: string, email: string, password: string): Pro
     };
     await setSession(user);
 
-    return { error: null };
+    return { error: null, user };
   } catch (err: any) {
     console.error("Sign up error:", err);
 

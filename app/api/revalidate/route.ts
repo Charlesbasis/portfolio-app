@@ -36,48 +36,47 @@ export async function POST(request: NextRequest) {
 
     try {
       console.log(
-        `Revalidating content: ${contentType}${
-          contentId ? ` (ID: ${contentId})` : ""
+        `Revalidating content: ${contentType}${contentId ? ` (ID: ${contentId})` : ""
         }`,
         data
       );
 
       // Revalidate specific content type tags
-      revalidateTag("wordpress", { expire: 0 });
+      revalidateTag("wordpress", {});
 
       if (contentType === "post") {
-        revalidateTag("posts", { expire: 0 });
+        revalidateTag("posts", {});
         if (contentId) {
-          revalidateTag(`post-${contentId}`, { expire: 0 });
+          revalidateTag(`post-${contentId}`, {});
         }
         // If it's a specific post type from the new plugin format
         if (data.type === "page") {
-          revalidateTag("pages", { expire: 0 });
+          revalidateTag("pages", {});
         }
         // Clear all post pages when any post changes
-        revalidateTag("posts-page-1", { expire: 0 });
+        revalidateTag("posts-page-1", {});
       } else if (contentType === "page") {
-        revalidateTag("pages", { expire: 0 });
+        revalidateTag("pages", {});
         if (contentId) {
-          revalidateTag(`page-${contentId}`, { expire: 0 });
+          revalidateTag(`page-${contentId}`, {});
         }
       } else if (contentType === "category") {
-        revalidateTag("categories", { expire: 0 });
+        revalidateTag("categories", {});
         if (contentId) {
-          revalidateTag(`posts-category-${contentId}`, { expire: 0 });
-          revalidateTag(`category-${contentId}`, { expire: 0 });
+          revalidateTag(`posts-category-${contentId}`, {});
+          revalidateTag(`category-${contentId}`, {});
         }
       } else if (contentType === "tag") {
-        revalidateTag("tags", { expire: 0 });
+        revalidateTag("tags", {});
         if (contentId) {
-          revalidateTag(`posts-tag-${contentId}`, { expire: 0 });
-          revalidateTag(`tag-${contentId}`, { expire: 0 });
+          revalidateTag(`posts-tag-${contentId}`, {});
+          revalidateTag(`tag-${contentId}`, {});
         }
       } else if (contentType === "author" || contentType === "user") {
-        revalidateTag("authors", { expire: 0 });
+        revalidateTag("authors", {});
         if (contentId) {
-          revalidateTag(`posts-author-${contentId}`, { expire: 0 });
-          revalidateTag(`author-${contentId}`, { expire: 0 });
+          revalidateTag(`posts-author-${contentId}`, {});
+          revalidateTag(`author-${contentId}`, {});
         }
       }
 
@@ -86,9 +85,8 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({
         revalidated: true,
-        message: `Revalidated ${contentType}${
-          contentId ? ` (ID: ${contentId})` : ""
-        } and related content`,
+        message: `Revalidated ${contentType}${contentId ? ` (ID: ${contentId})` : ""
+          } and related content`,
         timestamp: new Date().toISOString(),
       });
     } catch (error) {
