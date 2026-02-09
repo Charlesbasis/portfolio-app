@@ -14,12 +14,18 @@ Follow these steps to set up the development environment locally and deploy to y
    ```
    Update `.env` with your WordPress URL and Database credentials.
 
-2. **Install Dependencies**
+2. **Initialize Database**
+   ```bash
+   pnpm db:setup
+   ```
+   This creates the necessary tables (`users`, `profiles`, etc.) in your MySQL database.
+
+3. **Install Dependencies**
    ```bash
    pnpm install
    ```
 
-3. **Start Developing**
+4. **Start Developing**
    ```bash
    pnpm dev
    ```
