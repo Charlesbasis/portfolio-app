@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { ArrowRight, Link as LinkIcon, Shield, User } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function Landing() {
   const { user } = useAuth();
@@ -27,10 +28,21 @@ export default function Landing() {
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
-            <Button size="lg" variant="outline" asChild className="text-base">
+            {/* <Button size="lg" variant="outline" asChild className="text-base">
               <Link href="/sarah-chen">See an example</Link>
-            </Button>
+            </Button> */}
           </div>
+        </div>
+
+        <div className="mt-20 w-full overflow-hidden border-y border-border/50 bg-background/50 backdrop-blur-sm group">
+          <Image
+            src="/profolio.webp"
+            alt="Profolio Platform Preview"
+            width={1920}
+            height={1080}
+            priority
+            className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-[1.01]"
+          />
         </div>
       </section>
 

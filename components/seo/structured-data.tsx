@@ -54,7 +54,7 @@ export function ArticleStructuredData({
       "name": siteConfig.site_name,
       "logo": {
         "@type": "ImageObject",
-        "url": `${siteConfig.site_domain}/logo.svg`,
+        "url": `${siteConfig.site_domain}/profolio.svg`,
       },
     },
   };
