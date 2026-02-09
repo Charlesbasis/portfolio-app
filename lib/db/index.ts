@@ -6,6 +6,9 @@ export const db: Pool = (() => {
 
   const url = process.env.DATABASE_URL;
   if (!url) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('DATABASE_URL is not defined in production environment.');
+    }
     console.warn('⚠️ DATABASE_URL is not defined. Database features will be unavailable.');
     return {
       query: () => Promise.resolve([[]]),
@@ -14,7 +17,6 @@ export const db: Pool = (() => {
     } as any;
   }
 
-  // Use require to bypass potential bundling issues with native modules
   const mysql = require('mysql2');
   return mysql.createPool(url).promise();
 })() as Pool;

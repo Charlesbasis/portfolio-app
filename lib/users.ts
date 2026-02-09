@@ -25,11 +25,16 @@ export async function createUser(userData: NewUser): Promise<DbUser> {
     'INSERT INTO users (email, password, name, wp_id) VALUES (?, ?, ?, ?)',
     [userData.email, userData.password, userData.name, userData.wp_id || null]
   );
-  
+
   const [rows] = await db.query<DbUser[]>(
     'SELECT * FROM users WHERE id = ? LIMIT 1',
     [result.insertId]
   );
+
+  if (!rows[0]) {
+    throw new Error('Failed to retrieve user after creation');
+  }
+
   return rows[0];
 }
 

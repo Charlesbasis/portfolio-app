@@ -4,66 +4,79 @@ import { setSession, removeSession, verifyPassword, hashPassword } from "@/lib/a
 import { User } from "@/lib/types";
 
 export async function signIn(email: string, password: string): Promise<{ error: string | null }> {
-  const { getUserByEmail, updateUserWpId } = await import("@/lib/users");
-
-  // 1. Check local users
-  const localUser = await getUserByEmail(email);
-  if (localUser && verifyPassword(password, localUser.password)) {
-    let wpId = localUser.wp_id;
-
-    if (!wpId) {
-      try {
-        const adminAuth = Buffer.from(
-          `${process.env.WP_USER}:${process.env.WP_APPLICATION_PASSWORD}`
-        ).toString("base64");
-        const wpResponse = await fetch(`${process.env.WORDPRESS_URL}/wp-json/wp/v2/users...`, {
-          headers: { Authorization: `Basic ${adminAuth}` },
-          next: { revalidate: 0 } // Ensures Next.js doesn't try to bake this into a static page
-        });
-        if (!wpResponse.ok) {
-          console.warn("WP API blocked, skipping user sync during build.");
-          return { error: null }; // Proceed without crashing the build
-        }
-      } catch (e) {
-        return { error: null };
-      }
-    }
-
-    const user: User = {
-      id: localUser.id.toString(),
-      name: localUser.name,
-      email: localUser.email,
-      wpId,
-    };
-    await setSession(user);
-    return { error: null };
-  }
-
-  // 2. Check against WordPress REST API for WordPress users
   try {
-    const auth = Buffer.from(`${email}:${password}`).toString("base64");
-    const response = await fetch(`${process.env.WORDPRESS_URL}/wp-json/wp/v2/users/me`, {
-      headers: {
-        Authorization: `Basic ${auth}`,
-      },
-    });
+    const { getUserByEmail, updateUserWpId } = await import("@/lib/users");
 
-    if (response.ok) {
-      const data = await response.json();
+    // 1. Check local users
+    const localUser = await getUserByEmail(email);
+    if (localUser && verifyPassword(password, localUser.password)) {
+      let wpId = localUser.wp_id;
+
+      if (!wpId) {
+        try {
+          const adminAuth = Buffer.from(
+            `${process.env.WP_USER}:${process.env.WP_APPLICATION_PASSWORD}`
+          ).toString("base64");
+          const wpResponse = await fetch(`${process.env.WORDPRESS_URL}/wp-json/wp/v2/users...`, {
+            headers: { Authorization: `Basic ${adminAuth}` },
+            next: { revalidate: 0 } // Ensures Next.js doesn't try to bake this into a static page
+          });
+          if (!wpResponse.ok) {
+            console.warn("WP API blocked, skipping user sync during build.");
+            return { error: null }; // Proceed without crashing the build
+          }
+        } catch (e) {
+          return { error: null };
+        }
+      }
+
       const user: User = {
-        id: data.id.toString(),
-        name: data.name,
-        email: email,
-        wpId: data.id,
+        id: localUser.id.toString(),
+        name: localUser.name,
+        email: localUser.email,
+        wpId,
       };
       await setSession(user);
       return { error: null };
     }
-  } catch (err) {
-    console.error("Auth error:", err);
-  }
 
-  return { error: "Invalid credentials" };
+    // 2. Check against WordPress REST API for WordPress users
+    try {
+      const auth = Buffer.from(`${email}:${password}`).toString("base64");
+      const response = await fetch(`${process.env.WORDPRESS_URL}/wp-json/wp/v2/users/me`, {
+        headers: {
+          Authorization: `Basic ${auth}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const user: User = {
+          id: data.id.toString(),
+          name: data.name,
+          email: email,
+          wpId: data.id,
+        };
+        await setSession(user);
+        return { error: null };
+      }
+    } catch (err) {
+      console.error("WP Auth error:", err);
+    }
+
+    return { error: "Invalid credentials" };
+  } catch (err: any) {
+    console.error("Sign in error:", err);
+
+    if (err.code === 'ECONNREFUSED' || err.code === 'ER_ACCESS_DENIED_ERROR') {
+      return { error: "Database connection failed. Check your DATABASE_URL." };
+    }
+    if (err.code === 'ER_NO_SUCH_TABLE') {
+      return { error: "Database tables not found. Have you run lib/db/init.sql?" };
+    }
+
+    return { error: "An unexpected error occurred during sign in." };
+  }
 }
 
 export async function signUp(name: string, email: string, password: string): Promise<{ error: string | null }> {
@@ -147,8 +160,17 @@ export async function signUp(name: string, email: string, password: string): Pro
     await setSession(user);
 
     return { error: null };
-  } catch (err) {
+  } catch (err: any) {
     console.error("Sign up error:", err);
+
+    // Provide more specific feedback for common VPS deployment issues
+    if (err.code === 'ECONNREFUSED' || err.code === 'ER_ACCESS_DENIED_ERROR') {
+      return { error: "Database connection failed. Check your DATABASE_URL in .env." };
+    }
+    if (err.code === 'ER_NO_SUCH_TABLE') {
+      return { error: "Database tables not found. Have you run lib/db/init.sql on your VPS?" };
+    }
+
     return { error: "Failed to create account" };
   }
 }
