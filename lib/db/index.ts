@@ -18,6 +18,9 @@ export const db: Pool = (() => {
 
   // Preferred: Individual variables (Safer for special characters)
   if (dbHost && dbUser) {
+    if (process.env.NODE_ENV === 'production') {
+      console.log(`🔌 Connecting to MySQL: ${dbUser}@${dbHost}:${dbPort || 3306}/${dbName}`);
+    }
     return mysql.createPool({
       host: dbHost,
       user: dbUser,
@@ -26,7 +29,8 @@ export const db: Pool = (() => {
       port: Number(dbPort) || 3306,
       waitForConnections: true,
       connectionLimit: 10,
-      queueLimit: 0
+      queueLimit: 0,
+      charset: 'utf8mb4'
     }).promise();
   }
 
