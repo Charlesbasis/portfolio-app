@@ -69,7 +69,7 @@ export async function signIn(email: string, password: string): Promise<{ error: 
     console.error("Sign in error:", err);
 
     if (err.code === 'ECONNREFUSED' || err.code === 'ER_ACCESS_DENIED_ERROR') {
-      return { error: "Database connection failed. Check your DATABASE_URL." };
+      return { error: `Database connection failed (${err.code}). Check your .env credentials.` };
     }
     if (err.code === 'ER_NO_SUCH_TABLE') {
       return { error: "Database tables not found. Have you run lib/db/init.sql?" };
@@ -165,7 +165,7 @@ export async function signUp(name: string, email: string, password: string): Pro
 
     // Provide more specific feedback for common VPS deployment issues
     if (err.code === 'ECONNREFUSED' || err.code === 'ER_ACCESS_DENIED_ERROR') {
-      return { error: "Database connection failed. Check your DATABASE_URL in .env." };
+      return { error: `Database connection failed (${err.code}). Check your .env credentials.` };
     }
     if (err.code === 'ER_NO_SUCH_TABLE') {
       return { error: "Database tables not found. Have you run lib/db/init.sql on your VPS?" };
