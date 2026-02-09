@@ -4,29 +4,32 @@ import type { Pool } from 'mysql2/promise';
 export const db: Pool = (() => {
   if (typeof window !== 'undefined') return {} as any;
 
+  // Direct retrieval with aggressive sanitation
   const mysql = require('mysql2');
-  
-  // Direct retrieval to ensure we get the latest process.env
-  const dbHost = process.env.DB_HOST || 'localhost';
-  const dbUser = process.env.DB_USER;
-  const dbPass = process.env.DB_PASSWORD;
-  const dbName = process.env.DB_NAME;
-  const dbPort = process.env.DB_PORT;
+  const cleanEnv = (val: string | undefined) => val?.replace(/['"]/g, '').trim() || '';
+
+  const dbHost = cleanEnv(process.env.DB_HOST) || '127.0.0.1';
+  const dbUser = cleanEnv(process.env.DB_USER);
+  const dbPass = cleanEnv(process.env.DB_PASSWORD);
+  const dbName = cleanEnv(process.env.DB_NAME);
+  const dbPort = cleanEnv(process.env.DB_PORT);
 
   if (process.env.NODE_ENV === 'production') {
-    console.log(`🔌 DB Init: ${dbUser}@${dbHost} -> ${dbName}`);
+    // This will help us see if there are any weird characters lurking
+    console.log(`🔌 DB Init: User=[${dbUser}] Host=[${dbHost}] DB=[${dbName}] Port=[${dbPort || 3306}]`);
   }
 
   if (dbHost && dbUser && dbPass) {
     return mysql.createPool({
-      host: dbHost.replace(/['"]/g, ''), // Strip any accidental quotes
-      user: dbUser.replace(/['"]/g, ''),
-      password: dbPass.replace(/['"]/g, ''),
-      database: dbName?.replace(/['"]/g, ''),
+      host: dbHost,
+      user: dbUser,
+      password: dbPass,
+      database: dbName,
       port: Number(dbPort) || 3306,
       waitForConnections: true,
-      connectionLimit: 5,
+      connectionLimit: 10,
       queueLimit: 0,
+      charset: 'utf8mb4'
     }).promise();
   }
 
