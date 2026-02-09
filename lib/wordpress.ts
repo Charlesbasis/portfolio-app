@@ -16,7 +16,8 @@ import type {
 } from "./wordpress.d";
 
 // Single source of truth for WordPress configuration
-const baseUrl = process.env.WORDPRESS_URL;
+const baseUrl = process.env.WORDPRESS_URL?.replace(/\/+$/, "");
+const postBaseUrl = (process.env.WORDPRESS_POST_URL || process.env.WORDPRESS_URL)?.replace(/\/+$/, "");
 const isConfigured = Boolean(baseUrl);
 
 if (!isConfigured) {
@@ -47,6 +48,10 @@ export interface WordPressResponse<T> {
   headers: WordPressPaginationHeaders;
 }
 
+const WP_AUTH = process.env.WP_USER && process.env.WP_APPLICATION_PASSWORD
+  ? Buffer.from(`${process.env.WP_USER}:${process.env.WP_APPLICATION_PASSWORD}`).toString("base64")
+  : null;
+
 const USER_AGENT = "Next.js WordPress Client";
 const CACHE_TTL = 3600; // 1 hour
 
@@ -56,17 +61,30 @@ async function wordpressFetch<T>(
   query?: Record<string, any>,
   tags: string[] = ["wordpress"]
 ): Promise<T> {
-  if (!baseUrl) {
+  const isPostRelated = path.includes("/wp/v2/posts") ||
+    path.includes("/wp/v2/media") ||
+    path.includes("/wp/v2/categories") ||
+    path.includes("/wp/v2/tags") ||
+    path.includes("/wp/v2/users");
+
+  const currentBaseUrl = isPostRelated ? postBaseUrl : baseUrl;
+
+  if (!currentBaseUrl) {
     throw new Error("WordPress URL not configured");
   }
 
   // Only strip /wp-json if we are using the rest_route bypass URL
-  const isBypass = baseUrl.includes("rest_route");
+  const isBypass = currentBaseUrl.includes("rest_route");
   const sanitizedPath = isBypass ? path.replace(/^\/wp-json/, "") : path;
-  const url = `${baseUrl}${sanitizedPath}${query ? `${isBypass ? "&" : "?"}${querystring.stringify(query)}` : ""}`;
+  const url = `${currentBaseUrl}${sanitizedPath}${query ? `${isBypass ? "&" : "?"}${querystring.stringify(query)}` : ""}`;
+
+  const headers: Record<string, string> = { "User-Agent": USER_AGENT };
+  if (WP_AUTH) {
+    headers["Authorization"] = `Basic ${WP_AUTH}`;
+  }
 
   const response = await fetch(url, {
-    headers: { "User-Agent": USER_AGENT },
+    headers,
     next: { tags, revalidate: CACHE_TTL },
   });
 
@@ -106,17 +124,30 @@ async function wordpressFetchPaginated<T>(
   query?: Record<string, any>,
   tags: string[] = ["wordpress"]
 ): Promise<WordPressResponse<T>> {
-  if (!baseUrl) {
+  const isPostRelated = path.includes("/wp/v2/posts") ||
+    path.includes("/wp/v2/media") ||
+    path.includes("/wp/v2/categories") ||
+    path.includes("/wp/v2/tags") ||
+    path.includes("/wp/v2/users");
+
+  const currentBaseUrl = isPostRelated ? postBaseUrl : baseUrl;
+
+  if (!currentBaseUrl) {
     throw new Error("WordPress URL not configured");
   }
 
   // Only strip /wp-json if we are using the rest_route bypass URL
-  const isBypass = baseUrl.includes("rest_route");
+  const isBypass = currentBaseUrl.includes("rest_route");
   const sanitizedPath = isBypass ? path.replace(/^\/wp-json/, "") : path;
-  const url = `${baseUrl}${sanitizedPath}${query ? `${isBypass ? "&" : "?"}${querystring.stringify(query)}` : ""}`;
+  const url = `${currentBaseUrl}${sanitizedPath}${query ? `${isBypass ? "&" : "?"}${querystring.stringify(query)}` : ""}`;
+
+  const headers: Record<string, string> = { "User-Agent": USER_AGENT };
+  if (WP_AUTH) {
+    headers["Authorization"] = `Basic ${WP_AUTH}`;
+  }
 
   const response = await fetch(url, {
-    headers: { "User-Agent": USER_AGENT },
+    headers,
     next: { tags, revalidate: CACHE_TTL },
   });
 
@@ -254,9 +285,9 @@ export async function getCategoryById(id: number): Promise<Category | null> {
   return wordpressFetchGraceful<Category | null>(`/wp-json/wp/v2/categories/${id}`, null);
 }
 
-export async function getCategoryBySlug(slug: string): Promise<Category> {
-  return wordpressFetch<Category[]>("/wp-json/wp/v2/categories", { slug }).then(
-    (categories) => categories[0]
+export async function getCategoryBySlug(slug: string): Promise<Category | null> {
+  return wordpressFetchGraceful<Category[] | null>("/wp-json/wp/v2/categories", null, { slug }).then(
+    (categories) => categories ? categories[0] : null
   );
 }
 
@@ -283,13 +314,13 @@ export async function getAllTags(): Promise<Tag[]> {
   );
 }
 
-export async function getTagById(id: number): Promise<Tag> {
-  return wordpressFetch<Tag>(`/wp-json/wp/v2/tags/${id}`);
+export async function getTagById(id: number): Promise<Tag | null> {
+  return wordpressFetchGraceful<Tag | null>(`/wp-json/wp/v2/tags/${id}`, null);
 }
 
-export async function getTagBySlug(slug: string): Promise<Tag> {
-  return wordpressFetch<Tag[]>("/wp-json/wp/v2/tags", { slug }).then(
-    (tags) => tags[0]
+export async function getTagBySlug(slug: string): Promise<Tag | null> {
+  return wordpressFetchGraceful<Tag[] | null>("/wp-json/wp/v2/tags", null, { slug }).then(
+    (tags) => tags ? tags[0] : null
   );
 }
 
@@ -302,8 +333,8 @@ export async function getAllPages(): Promise<Page[]> {
   );
 }
 
-export async function getPageById(id: number): Promise<Page> {
-  return wordpressFetch<Page>(`/wp-json/wp/v2/pages/${id}`);
+export async function getPageById(id: number): Promise<Page | null> {
+  return wordpressFetchGraceful<Page | null>(`/wp-json/wp/v2/pages/${id}`, null);
 }
 
 export async function getPageBySlug(slug: string): Promise<Page | undefined> {
@@ -328,9 +359,9 @@ export async function getAuthorById(id: number): Promise<Author | null> {
   return wordpressFetchGraceful<Author | null>(`/wp-json/wp/v2/users/${id}`, null);
 }
 
-export async function getAuthorBySlug(slug: string): Promise<Author> {
-  return wordpressFetch<Author[]>("/wp-json/wp/v2/users", { slug }).then(
-    (users) => users[0]
+export async function getAuthorBySlug(slug: string): Promise<Author | null> {
+  return wordpressFetchGraceful<Author[] | null>("/wp-json/wp/v2/users", null, { slug }).then(
+    (users) => users ? users[0] : null
   );
 }
 
@@ -342,6 +373,7 @@ export async function getPostsByAuthorSlug(
   authorSlug: string
 ): Promise<Post[]> {
   const author = await getAuthorBySlug(authorSlug);
+  if (!author) return [];
   return wordpressFetch<Post[]>("/wp-json/wp/v2/posts", { author: author.id });
 }
 
@@ -349,6 +381,7 @@ export async function getPostsByCategorySlug(
   categorySlug: string
 ): Promise<Post[]> {
   const category = await getCategoryBySlug(categorySlug);
+  if (!category) return [];
   return wordpressFetch<Post[]>("/wp-json/wp/v2/posts", {
     categories: category.id,
   });
@@ -356,11 +389,12 @@ export async function getPostsByCategorySlug(
 
 export async function getPostsByTagSlug(tagSlug: string): Promise<Post[]> {
   const tag = await getTagBySlug(tagSlug);
+  if (!tag) return [];
   return wordpressFetch<Post[]>("/wp-json/wp/v2/posts", { tags: tag.id });
 }
 
-export async function getFeaturedMediaById(id: number): Promise<FeaturedMedia> {
-  return wordpressFetch<FeaturedMedia>(`/wp-json/wp/v2/media/${id}`);
+export async function getFeaturedMediaById(id: number): Promise<FeaturedMedia | null> {
+  return wordpressFetchGraceful<FeaturedMedia | null>(`/wp-json/wp/v2/media/${id}`, null);
 }
 
 export async function searchCategories(query: string): Promise<Category[]> {
