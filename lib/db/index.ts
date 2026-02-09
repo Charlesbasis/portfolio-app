@@ -19,7 +19,7 @@ export const db: Pool = (() => {
   // Preferred: Individual variables (Safer for special characters)
   if (dbHost && dbUser) {
     if (process.env.NODE_ENV === 'production') {
-      console.log(`🔌 Connecting to MySQL: ${dbUser}@${dbHost}:${dbPort || 3306}/${dbName}`);
+      console.log(`🔌 Connecting to MySQL: ${dbUser}@${dbHost}:${dbPort || 3306}/${dbName} (Pass Length: ${dbPass?.length || 0})`);
     }
     return mysql.createPool({
       host: dbHost,
@@ -30,7 +30,8 @@ export const db: Pool = (() => {
       waitForConnections: true,
       connectionLimit: 10,
       queueLimit: 0,
-      charset: 'utf8mb4'
+      charset: 'utf8mb4',
+      connectTimeout: 10000
     }).promise();
   } else if (process.env.NODE_ENV === 'production' && !url) {
     throw new Error(`Critical DB environment variables missing: DB_HOST=${!!dbHost}, DB_USER=${!!dbUser}. Check if .env is being loaded.`);
