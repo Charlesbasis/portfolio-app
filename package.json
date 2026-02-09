@@ -9,7 +9,7 @@
     "lint": "next lint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "db:setup": "tsx lib/db/setup.ts"
+    "db:setup": "tsx --env-file=.env lib/db/setup.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

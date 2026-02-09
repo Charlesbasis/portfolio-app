@@ -1,4 +1,3 @@
-import 'server-only';
 import type { Pool } from 'mysql2/promise';
 
 export const db: Pool = (() => {
