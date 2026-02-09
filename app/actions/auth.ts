@@ -165,6 +165,7 @@ export async function signUp(name: string, email: string, password: string): Pro
 
     // Provide more specific feedback for common VPS deployment issues
     if (err.code === 'ECONNREFUSED' || err.code === 'ER_ACCESS_DENIED_ERROR') {
+      console.error("Database Auth Failure:", err.sqlMessage || err.message);
       return { error: `Database connection failed (${err.code}). Check your .env credentials.` };
     }
     if (err.code === 'ER_NO_SUCH_TABLE') {

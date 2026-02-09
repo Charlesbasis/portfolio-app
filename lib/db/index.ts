@@ -32,6 +32,8 @@ export const db: Pool = (() => {
       queueLimit: 0,
       charset: 'utf8mb4'
     }).promise();
+  } else if (process.env.NODE_ENV === 'production' && !url) {
+    throw new Error(`Critical DB environment variables missing: DB_HOST=${!!dbHost}, DB_USER=${!!dbUser}. Check if .env is being loaded.`);
   }
 
   // Fallback: Connection string
