@@ -31,7 +31,9 @@ export const db: Pool = (() => {
       connectionLimit: 10,
       queueLimit: 0,
       charset: 'utf8mb4',
-      connectTimeout: 10000
+      connectTimeout: 10000,
+      protocol: 'tcp', // FORCE TCP
+      socketPath: undefined // DISABLE SOCKETS
     }).promise();
   } else if (process.env.NODE_ENV === 'production' && !url) {
     throw new Error(`Critical DB environment variables missing: DB_HOST=${!!dbHost}, DB_USER=${!!dbUser}. Check if .env is being loaded.`);
