@@ -22,7 +22,7 @@ export async function createPost(prevState: any, formData: FormData): Promise<{ 
   ).toString("base64");
 
   try {
-    const apiUrl = `${process.env.WORDPRESS_URL}/wp-json/wp/v2/posts`;
+    const apiUrl = `${process.env.WORDPRESS_URL}/wp/v2/posts`;
 
     // Ensure we have a valid WordPress User ID
     if (!user.wpId) {

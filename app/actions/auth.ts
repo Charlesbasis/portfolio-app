@@ -17,7 +17,7 @@ export async function signIn(email: string, password: string): Promise<{ error: 
           const adminAuth = Buffer.from(
             `${process.env.WP_USER}:${process.env.WP_APPLICATION_PASSWORD}`
           ).toString("base64");
-          const wpResponse = await fetch(`${process.env.WORDPRESS_URL}/wp-json/wp/v2/users...`, {
+          const wpResponse = await fetch(`${process.env.WORDPRESS_URL}/wp/v2/users`, {
             headers: { Authorization: `Basic ${adminAuth}` },
             next: { revalidate: 0 } // Ensures Next.js doesn't try to bake this into a static page
           });
@@ -43,7 +43,7 @@ export async function signIn(email: string, password: string): Promise<{ error: 
     // 2. Check against WordPress REST API for WordPress users
     try {
       const auth = Buffer.from(`${email}:${password}`).toString("base64");
-      const response = await fetch(`${process.env.WORDPRESS_URL}/wp-json/wp/v2/users/me`, {
+      const response = await fetch(`${process.env.WORDPRESS_URL}/wp/v2/users/me`, {
         headers: {
           Authorization: `Basic ${auth}`,
         },
@@ -104,7 +104,7 @@ export async function signUp(name: string, email: string, password: string): Pro
       ).toString("base64");
 
       // Search first
-      const wpSearchResponse = await fetch(`${process.env.WORDPRESS_URL}/wp-json/wp/v2/users?search=${email}&context=edit`, {
+      const wpSearchResponse = await fetch(`${process.env.WORDPRESS_URL}/wp/v2/users?search=${email}&context=edit`, {
         headers: {
           Authorization: `Basic ${adminAuth}`,
         },
@@ -122,7 +122,7 @@ export async function signUp(name: string, email: string, password: string): Pro
       // Create if not found
       if (!wpId) {
         const username = email.split("@")[0].toLowerCase().replace(/[^a-z0-9]/g, "") + Math.floor(Math.random() * 1000);
-        const createResponse = await fetch(`${process.env.WORDPRESS_URL}/wp-json/wp/v2/users`, {
+        const createResponse = await fetch(`${process.env.WORDPRESS_URL}/wp/v2/users`, {
           method: "POST",
           headers: {
             Authorization: `Basic ${adminAuth}`,

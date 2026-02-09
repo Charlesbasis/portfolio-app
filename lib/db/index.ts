@@ -29,7 +29,9 @@ export const db: Pool = (() => {
       waitForConnections: true,
       connectionLimit: 10,
       queueLimit: 0,
-      charset: 'utf8mb4'
+      connectTimeout: 20000, // Longer timeout for remote connections
+      enableKeepAlive: true,
+      dateStrings: true
     }).promise();
   }
 

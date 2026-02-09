@@ -60,7 +60,10 @@ async function wordpressFetch<T>(
     throw new Error("WordPress URL not configured");
   }
 
-  const url = `${baseUrl}${path}${query ? `?${querystring.stringify(query)}` : ""}`;
+  // Only strip /wp-json if we are using the rest_route bypass URL
+  const isBypass = baseUrl.includes("rest_route");
+  const sanitizedPath = isBypass ? path.replace(/^\/wp-json/, "") : path;
+  const url = `${baseUrl}${sanitizedPath}${query ? `${isBypass ? "&" : "?"}${querystring.stringify(query)}` : ""}`;
 
   const response = await fetch(url, {
     headers: { "User-Agent": USER_AGENT },
@@ -107,7 +110,10 @@ async function wordpressFetchPaginated<T>(
     throw new Error("WordPress URL not configured");
   }
 
-  const url = `${baseUrl}${path}${query ? `?${querystring.stringify(query)}` : ""}`;
+  // Only strip /wp-json if we are using the rest_route bypass URL
+  const isBypass = baseUrl.includes("rest_route");
+  const sanitizedPath = isBypass ? path.replace(/^\/wp-json/, "") : path;
+  const url = `${baseUrl}${sanitizedPath}${query ? `${isBypass ? "&" : "?"}${querystring.stringify(query)}` : ""}`;
 
   const response = await fetch(url, {
     headers: { "User-Agent": USER_AGENT },
