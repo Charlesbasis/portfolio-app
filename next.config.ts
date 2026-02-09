@@ -4,24 +4,24 @@ const wordpressHostname = process.env.WORDPRESS_HOSTNAME;
 const wordpressUrl = process.env.WORDPRESS_URL;
 
 const nextConfig: NextConfig = {
-  output: "standalone",
+  // output: "standalone",
   serverExternalPackages: ["mysql2"],
   images: {
     remotePatterns: wordpressHostname
       ? [
-          {
-            protocol: "https",
-            hostname: wordpressHostname,
-            port: "",
-            pathname: "/**",
-          },
-          {
-            protocol: "http",
-            hostname: wordpressHostname,
-            port: "",
-            pathname: "/**",
-          },
-        ]
+        {
+          protocol: "https",
+          hostname: wordpressHostname,
+          port: "",
+          pathname: "/**",
+        },
+        {
+          protocol: "http",
+          hostname: wordpressHostname,
+          port: "",
+          pathname: "/**",
+        },
+      ]
       : [],
   },
   async redirects() {
