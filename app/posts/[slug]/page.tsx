@@ -70,7 +70,7 @@ export default async function Page({
       <ArticleStructuredData
         title={post.title.rendered}
         description={stripHtml(post.excerpt.rendered)}
-        authorName={author.name}
+        authorName={author?.name || "Admin"}
         datePublished={post.date}
         dateModified={post.modified}
         image={featuredMedia?.source_url}
@@ -80,28 +80,32 @@ export default async function Page({
         <Prose>
           <h1>
             <span
-                dangerouslySetInnerHTML={{ __html: post.title.rendered }}
-              ></span>
+              dangerouslySetInnerHTML={{ __html: post.title.rendered }}
+            ></span>
           </h1>
           <div className="flex justify-between items-center gap-4 text-sm mb-4">
             <h5>
               Published {date} by{" "}
-              {author.name && (
+              {author ? (
                 <span>
                   <a href={`/posts/?author=${author.id}`}>{author.name}</a>{" "}
                 </span>
+              ) : (
+                <span>Admin</span>
               )}
             </h5>
 
-            <Link
-              href={`/posts/?category=${category.id}`}
-              className={cn(
-                badgeVariants({ variant: "outline" }),
-                "no-underline!"
-              )}
-            >
-              {category.name}
-            </Link>
+            {category && (
+              <Link
+                href={`/posts/?category=${category.id}`}
+                className={cn(
+                  badgeVariants({ variant: "outline" }),
+                  "no-underline!"
+                )}
+              >
+                {category.name}
+              </Link>
+            )}
           </div>
           {featuredMedia?.source_url && (
             <div className="h-96 my-12 md:h-[500px] overflow-hidden flex items-center justify-center border rounded-lg bg-accent/25 relative">

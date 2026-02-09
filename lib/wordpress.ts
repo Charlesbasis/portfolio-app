@@ -68,6 +68,8 @@ async function wordpressFetch<T>(
   });
 
   if (!response.ok) {
+    // Log the error but consider if you want to throw during BUILD phase
+    console.error(`WP API Error [${response.status}] at ${path}`);
     throw new WordPressAPIError(
       `WordPress API request failed: ${response.statusText}`,
       response.status,
@@ -220,8 +222,8 @@ export async function getRecentPosts(filterParams?: {
   ]);
 }
 
-export async function getPostById(id: number): Promise<Post> {
-  return wordpressFetch<Post>(`/wp-json/wp/v2/posts/${id}`);
+export async function getPostById(id: number): Promise<Post | null> {
+  return wordpressFetchGraceful<Post | null>(`/wp-json/wp/v2/posts/${id}`, null);
 }
 
 export async function getPostBySlug(slug: string): Promise<Post | undefined> {
@@ -242,8 +244,8 @@ export async function getAllCategories(): Promise<Category[]> {
   );
 }
 
-export async function getCategoryById(id: number): Promise<Category> {
-  return wordpressFetch<Category>(`/wp-json/wp/v2/categories/${id}`);
+export async function getCategoryById(id: number): Promise<Category | null> {
+  return wordpressFetchGraceful<Category | null>(`/wp-json/wp/v2/categories/${id}`, null);
 }
 
 export async function getCategoryBySlug(slug: string): Promise<Category> {
@@ -316,8 +318,8 @@ export async function getAllAuthors(): Promise<Author[]> {
   );
 }
 
-export async function getAuthorById(id: number): Promise<Author> {
-  return wordpressFetch<Author>(`/wp-json/wp/v2/users/${id}`);
+export async function getAuthorById(id: number): Promise<Author | null> {
+  return wordpressFetchGraceful<Author | null>(`/wp-json/wp/v2/users/${id}`, null);
 }
 
 export async function getAuthorBySlug(slug: string): Promise<Author> {
