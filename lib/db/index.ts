@@ -5,16 +5,25 @@ export const db: Pool = (() => {
   if (typeof window !== 'undefined') return {} as any;
 
   const mysql = require('mysql2');
+
+  // Helper to get sanitized env var (trims quotes and whitespace)
+  const getEnv = (key: string) => process.env[key]?.replace(/^["']|["']$/g, '').trim();
+
+  const dbHost = getEnv('DB_HOST');
+  const dbUser = getEnv('DB_USER');
+  const dbPass = getEnv('DB_PASSWORD');
+  const dbName = getEnv('DB_NAME');
+  const dbPort = getEnv('DB_PORT');
   const url = process.env.DATABASE_URL;
 
   // Preferred: Individual variables (Safer for special characters)
-  if (process.env.DB_HOST && process.env.DB_USER) {
+  if (dbHost && dbUser) {
     return mysql.createPool({
-      host: process.env.DB_HOST,
-      user: process.env.DB_USER,
-      password: process.env.DB_PASSWORD,
-      database: process.env.DB_NAME,
-      port: Number(process.env.DB_PORT) || 3306,
+      host: dbHost,
+      user: dbUser,
+      password: dbPass,
+      database: dbName,
+      port: Number(dbPort) || 3306,
       waitForConnections: true,
       connectionLimit: 10,
       queueLimit: 0
