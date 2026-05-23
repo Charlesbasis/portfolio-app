@@ -1,3 +1,32 @@
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![CI Status](https://github.com/Charlesbasis/portfolio-app/actions/workflows/ci.yml/badge.svg)](https://github.com/Charlesbasis/portfolio-app/actions)
+[![Live Demo](https://img.shields.io/badge/demo-online-success?style=flat&logo=vercel)](https://app.cvhowlader.com)
+
+## Table of Contents
+
+- [Live Demo](#live-demo)
+- [Getting Started](#getting-started)
+- [Docker Development (Recommended)](#docker-development-recommended)
+- [WordPress & Plugins Configuration](#wordpress--plugins-configuration)
+- [Manual Development](#manual-development)
+- [Professional Features Out-of-the-Box](#professional-features-out-of-the-box)
+- [Starting Fresh (Git Reset)](#starting-fresh-git-reset)
+- [Deployment](#deployment)
+- [Project Structure](#project-structure)
+- [Contributing](#contributing)
+- [Code of Conduct](#code-of-conduct)
+- [License](#license)
+
+## Live Demo
+
+Check out a live version at [app.cvhowlader.com](https://app.cvhowlader.com)
+
+### Prerequisites
+
+- [Docker](https://www.docker.com/) (v20+ recommended)  
+- [Node.js](https://nodejs.org/) (v18+ if running manually)
+- [pnpm](https://pnpm.io/) or [yarn](https://yarnpkg.com/) (if not using Docker)
+
 # 🚀 Next.js WordPress Starter Kit
 
 A professional-grade, SEO-optimized headless WordPress starter built with **Next.js 16**, **React 19**, and **Tailwind CSS v4**. Designed for speed, scalability, and ease of use.
@@ -127,5 +156,18 @@ Ensure you provide the necessary Environment Variables in your dashboard and con
 - `menu.config.ts`: Navigation configuration.
 
 ---
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
+
+## Code of Conduct
+
+This project follows a [Code of Conduct](CODE_OF_CONDUCT.md) to foster a welcoming community.
+
+## Contributing
+
+Mainly maintained for the use of my team at CVHowlader, but external issues and PRs are always welcome!  
+Please review [CONTRIBUTING.md](CONTRIBUTING.md) and the [Code of Conduct](CODE_OF_CONDUCT.md) before submitting changes.
 
 Built with ❤️ by [CVHowlader](https://cvhowlader.com).
