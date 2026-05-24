@@ -54,24 +54,39 @@ The entire stack (Next.js, WordPress, and MariaDB) is containerized and ready to
    - **WordPress Admin:** [http://localhost:8080/wp-admin](http://localhost:8080/wp-admin)
    - **Database:** `localhost:3307`
 
-4. **Initialize WordPress**
-   The Docker setup automatically installs WordPress, activates the **Next.js Headless** theme, and the **Next.js Revalidation** plugin.
-   - **Default Admin User:** `admin`
-   - **Default Admin Password:** `changeme` (Change this immediately!)
+4. **Initialize WordPress & Database Schema**
+   * **WordPress Setup:** The Docker configuration automatically installs WordPress, activates the **Next.js Headless** theme, and activates the **Next.js Revalidation** plugin.
+     - *Default Admin User:* `admin` (or as configured in `.env` / `setup.sh`)
+     - *Default Admin Password:* `changeme` (Change this immediately!)
+   * **Database Schema Setup:** The custom portfolio tables (`profiles`, `skills`, `experiences`, and `projects`) are automatically initialized on a fresh database startup.
+     
+     > [!IMPORTANT]
+     > If you are reusing an existing database volume (i.e. the database was already created before), you must run this manual command to initialize the custom tables:
+     > ```bash
+     > docker exec -i portfolio-app-db-1 mariadb -uroot -ppassword wordpress < lib/db/init.sql
+     > ```
 
 ---
 
 ### 🔌 WordPress & Plugins Configuration
 
-For the Next.js frontend to communicate with WordPress, you need to set up an **Application Password**.
+For the Next.js frontend to communicate with WordPress, you must set up a WordPress **Application Password**. You can do this in two ways:
 
+#### Option A: Using the CLI (Recommended & Faster)
+Run the following command in your terminal (replace `root` with your WordPress admin username if it is different):
+```bash
+docker exec -it portfolio-app-wordpress-1 wp user application-password create root "portfolio-app" --allow-root
+```
+Copy the generated password and add it to your `.env` file under `WP_APPLICATION_PASSWORD`.
+
+#### Option B: Via the WordPress Admin UI
 1. Log in to your WordPress Admin.
 2. Go to **Users > Profile**.
-3. Scroll down to **Application Passwords**.
+3. Scroll down to the **Application Passwords** section.
 4. Add a new application password named `portfolio-app`.
 5. Copy the generated password and add it to your `.env` file:
    ```bash
-   WP_USER="admin"
+   WP_USER="root"
    WP_APPLICATION_PASSWORD="xxxx xxxx xxxx xxxx xxxx"
    ```
 

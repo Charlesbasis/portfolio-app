@@ -7,9 +7,9 @@ WORKDIR /app
 # Enable corepack and use the latest pnpm (LTS version)
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# Copy only lockfile and package.json to leverage Docker caching
-COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
+# Copy lockfile, package.json, and workspace configuration to leverage Docker caching
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN CI=true pnpm install --frozen-lockfile
 
 # Stage 2: Builder
 FROM node:22-alpine AS builder
